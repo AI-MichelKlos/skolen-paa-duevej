@@ -646,7 +646,8 @@ function lamp(x, z, h = 6.5, street = false) {
   else { mesh(new THREE.CylinderGeometry(0.34, 0.2, 0.3, 10), M.dark, x, h + 0.1, z); mesh(new THREE.SphereGeometry(0.2, 10, 8), M.bulb, x, h - 0.1, z, { cast: false }); addGlow(x, h - 0.15, z, 3.0); }
   colCirc(x, z, 0.15, 99);
 }
-function addGlow(x, y, z, s) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.glow, color: '#ffcf80', transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending })); sp.position.set(x, y, z); sp.scale.setScalar(s); world.add(sp); glows.push(sp); }
+let GLOW_MAT = null;
+function addGlow(x, y, z, s) { GLOW_MAT = GLOW_MAT || new THREE.SpriteMaterial({ map: TX.glow, color: '#ffcf80', transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }); const sp = new THREE.Sprite(GLOW_MAT); sp.visible = false; sp.position.set(x, y, z); sp.scale.setScalar(s); world.add(sp); glows.push(sp); }
 function bin(x, z) { mesh(new THREE.CylinderGeometry(0.3, 0.27, 0.95, 12), M.bin, x, 0.475, z, { edges: 40 }); mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.08, 12), M.dark, x, 0.98, z); colCirc(x, z, 0.32, 1.0); }
 const CAR_COLS = ['#d9534f', '#4a7bd0', '#f2c14e', '#6aa56b', '#2f3138', '#ece7dc', '#8e5bb5', '#e8833a'];
 function car(x, z, ry, col) {
@@ -682,7 +683,7 @@ function apartment(x0, x1, z0, z1, floors) {
 }
 const LEAF_COLS = ['#e39a3b', '#d4682f', '#efc04a', '#c2512e', '#9db54b', '#e3b143', '#d98a36'];
 const leafMats = {};
-function leafMat(c) { return leafMats[c] || (leafMats[c] = toon(c)); }
+function leafMat(c) { _c.set(c); const q = v => Math.round(v * 18) / 18; _c.setRGB(q(_c.r), q(_c.g), q(_c.b)); const k = '#' + _c.getHexString(); return leafMats[k] || (leafMats[k] = toon(k)); } // few shades, so leaves can be merged
 const icoGeo = new THREE.IcosahedronGeometry(1, 1); icoGeo.computeVertexNormals();
 const treeSpots = [];
 function tree(x, z, kind = 'round', s = 1) {
@@ -754,7 +755,7 @@ const MAIN = brickBlock({ x: 2.5, z: -58.5, w: 14, d: 29, h: 16, rise: 8, over: 
   for (const zz of [-60.2, -56.8]) { addWin('rect', fx, 6.1, zz, Math.PI / 2, 1.3, 2.1); addWin('rect', fx, 10.1, zz, Math.PI / 2, 1.3, 2.1); addWin('arch', fx, 14.1, zz, Math.PI / 2, 1.3, 2.0); }
   box(1.4, 0.3, 3.4, M.stone, 11.6, 0, -58.5, { col: true, cast: false });
   box(0.7, 0.15, 3.4, M.stone, 12.5, 0, -58.5, { col: true, cast: false });
-  const clk = new THREE.Group(); clk.position.set(10.9 + 0.07, 19.3, -58.5); clk.rotation.y = Math.PI / 2; world.add(clk);
+  const clk = new THREE.Group(); clk.position.set(10.9 + 0.07, 19.3, -58.5); clk.rotation.y = Math.PI / 2; clk.userData.noMerge = true; world.add(clk);
   clk.add(new THREE.Mesh(new THREE.CircleGeometry(0.95, 32), toon('#fff', { map: TX.clock })));
   const hh = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.5, 0.02), M.dark); hh.geometry.translate(0, 0.22, 0.02); clk.add(hh);
   const mh = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.75, 0.02), M.dark); mh.geometry.translate(0, 0.34, 0.03); clk.add(mh);
@@ -956,10 +957,9 @@ const TRAMPS = [];
   rectG(1.5, 13.5, 32.5, 50.5, M.turf2, 0.035, '#6caa58');
   const L = (x0, x1, z0, z1) => rectG(x0, x1, z0, z1, M.line, 0.05);
   L(2.2, 12.8, 33.2, 33.32); L(2.2, 12.8, 49.68, 49.8); L(2.2, 2.32, 33.2, 49.8); L(12.68, 12.8, 33.2, 49.8); L(2.2, 12.8, 41.44, 41.56);
-  for (const [gz, dir] of [[33.4, -1], [49.6, 1]]) {
+  for (const gz of [33.4, 49.6]) {
     for (const px of [6, 9]) { mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.3, 8), M.white, px, 0.65, gz); colCirc(px, gz, 0.08, 99); }
     mesh(new THREE.CylinderGeometry(0.05, 0.05, 3.1, 8), M.white, 7.5, 1.3, gz, { rz: Math.PI / 2 });
-    const n = mesh(mplane(3, 1.4), M.net, 7.5, 0.65, gz + dir * 0.55, { cast: false }); n.rotation.x = dir * 0.4;
   }
   const bed = box(14, 0.3, 4.6, M.mound, 7.5, 0, 53.2, { edges: true, col: true, cast: false });
   mapItems.push({ k: 'r', x0: 0.5, x1: 14.5, z0: 50.9, z1: 55.5, fill: '#9ccbb0' });
@@ -1047,6 +1047,10 @@ const TRAMPS = [];
   for (let x = -4.6; x < 38.8; x += rr(2.9, 3.6)) tree(x, rr(59.8, 61.0), pick(['round', 'round', 'big', 'tall', 'birch']), rr(0.9, 1.15));
   for (let x = -3; x < 38.5; x += rr(4.0, 5.0)) tree(x, rr(64.5, 68.5), pick(['round', 'big', 'tall']), rr(0.85, 1.1));
   for (let x = -5; x < 39; x += rr(2.0, 2.6)) bush(x, rr(59.6, 60.0), rr(0.7, 0.85));
+  // and lots of trees in the gardens of the houses to the west, along the plank fence
+  for (let z = -20.5; z < 57; z += rr(2.8, 3.5)) tree(rr(-9.4, -8.4), z, pick(['round', 'round', 'big', 'tall', 'birch']), rr(0.9, 1.15));
+  for (let z = -19; z < 56; z += rr(4.0, 5.0)) tree(rr(-13.2, -11.8), z, pick(['round', 'big', 'tall']), rr(0.85, 1.1));
+  for (let z = -21; z < 57.5; z += rr(2.0, 2.6)) bush(rr(-7.9, -7.5), z, rr(0.7, 0.85));
 }
 // ---------------- the path with trees to the south
 {
@@ -1164,7 +1168,7 @@ function applyEvening() {
   sunSprite.material.color.lerpColors(DAY.sunC, EVE.sunC, ev);
   for (const m of nightMats) m.emissiveIntensity = ev * 1.05;
   M.bulb.color.lerpColors(BULB_DAY, BULB_EVE, ev);
-  for (const s of glows) s.material.opacity = ev * 0.9;
+  if (GLOW_MAT) GLOW_MAT.opacity = ev * 0.9; for (const s of glows) s.visible = ev > 0.01;
 }
 
 // ======================================================================== FLAG
@@ -1401,7 +1405,7 @@ const ANIMAL_DEFS = [
   { k: 'and', n: 'And', d: 'anden', b: buildDuck, x: 12.6, z: -46.4, s: 1.5, wander: 1.0, speed: 0.6 },
   { k: 'egern', n: 'Egern', d: 'egernet', b: buildSquirrel, x: 14.0, z: 12.7, s: 1.8 },
   { k: 'hund', n: 'Hund', d: 'hunden', b: buildDog, x: -22, z: -52, s: 1.4 },
-  { k: 'hoene', n: 'Høne', d: 'hønen', b: buildHen, x: 16, z: 67.5, s: 1.5, wander: 1.4, speed: 0.6 },
+  { k: 'hoene', n: 'Høne', d: 'hønen', b: buildHen, x: 16.2, z: 88.3, s: 1.5, wander: 1.4, speed: 0.6 },
   { k: 'pindsvin', n: 'Pindsvin', d: 'pindsvinet', b: buildHedgehog, x: -11, z: 87, s: 1.7, wander: 1.5, speed: 0.35 },
   { k: 'froe', n: 'Frø', d: 'frøen', b: buildFrog, x: 1.1, z: 54.9, s: 1.9 },
   { k: 'kanin', n: 'Kanin', d: 'kaninen', b: buildRabbit, x: 21, z: -8, s: 1.6, wander: 1.8, speed: 1.1, hop: true },
@@ -1573,6 +1577,47 @@ function updLeaves(dt, t, cx, cz) {
 // ======================================================================== freeze static world
 world.traverse(o => { o.updateMatrix(); o.matrixAutoUpdate = false; });
 world.updateMatrixWorld(true);
+// Static meshes that share a material are merged into one mesh, and all outlines into one line set.
+// The scene looks the same, but the computer draws a few hundred pieces instead of thousands.
+{
+  const keep = o => { for (let p = o; p; p = p.parent) if (p.userData.noMerge) return true; return false; };
+  const groups = new Map(), lines = [];
+  world.traverse(o => {
+    if (keep(o)) return;
+    if (o.isLineSegments && o.material === edgeMat) lines.push(o);
+    else if (o.isMesh && !o.isInstancedMesh && !Array.isArray(o.material) && o.matrixWorld.determinant() > 0) {
+      const key = o.material.uuid + (o.castShadow ? 's' : '-') + (o.receiveShadow ? 'r' : '-');
+      if (!groups.has(key)) groups.set(key, { mat: o.material, cast: o.castShadow, recv: o.receiveShadow, list: [] });
+      groups.get(key).list.push(o);
+    }
+  });
+  const flat = o => { const g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone(); g.applyMatrix4(o.matrixWorld); return g; };
+  if (lines.length > 1) {
+    const gs = lines.map(flat); let n = 0; for (const g of gs) n += g.attributes.position.array.length;
+    const pos = new Float32Array(n); let off = 0; for (const g of gs) { pos.set(g.attributes.position.array, off); off += g.attributes.position.array.length; g.dispose(); }
+    const bg = new THREE.BufferGeometry(); bg.setAttribute('position', new THREE.BufferAttribute(pos, 3)); bg.computeBoundingSphere();
+    const ls = new THREE.LineSegments(bg, edgeMat); ls.matrixAutoUpdate = false; world.add(ls);
+    for (const l of lines) l.parent.remove(l);
+  }
+  for (const { mat, cast, recv, list } of groups.values()) {
+    const ok = list.filter(o => o.children.length === 0);
+    if (ok.length < 2) continue;
+    const gs = ok.map(o => { const g = flat(o); if (!g.attributes.normal) g.computeVertexNormals(); return g; });
+    let n = 0; for (const g of gs) n += g.attributes.position.count;
+    const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), uv = new Float32Array(n * 2); let v = 0;
+    for (const g of gs) {
+      const c = g.attributes.position.count;
+      pos.set(g.attributes.position.array, v * 3); nor.set(g.attributes.normal.array, v * 3);
+      if (g.attributes.uv && g.attributes.uv.itemSize === 2) uv.set(g.attributes.uv.array, v * 2);
+      v += c; g.dispose();
+    }
+    const bg = new THREE.BufferGeometry();
+    bg.setAttribute('position', new THREE.BufferAttribute(pos, 3)); bg.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); bg.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    bg.computeBoundingSphere();
+    const m = new THREE.Mesh(bg, mat); m.castShadow = cast; m.receiveShadow = recv; m.matrixAutoUpdate = false; world.add(m);
+    for (const o of ok) o.parent.remove(o);
+  }
+}
 const camCols = [...cols.filter(c => c.t === 'b' && c.top > 3), ...camOnly];
 
 // ======================================================================== POIs
