@@ -447,6 +447,7 @@ function edges(mesh, thr = 25) { const l = new THREE.LineSegments(new THREE.Edge
 
 // ---------------------------------------------------------------- colliders + map data
 const cols = [];
+const camOnly = []; // roofs the camera must stay under: { x0, x1, z0, z1, bot, top }
 const mapItems = [];
 function colBox(x0, x1, z0, z1, top) { cols.push({ t: 'b', x0, x1, z0, z1, top }); }
 function colCirc(x, z, r, top) { cols.push({ t: 'c', x, z, r, top }); }
@@ -609,15 +610,17 @@ rectG(-200, 200, -106, -96, M.road, 0.01, '#8b8b8e');
 rectG(44, 54, -200, 200, M.road, 0.012, '#8b8b8e');
 rectG(-51.5, -41.5, -200, 200, M.road, 0.014, '#8b8b8e');
 rectG(-41.5, 44, 91, 98, M.path, 0.02, '#d9c4a0');
+rectG(-200, 44, 99.5, 109.5, M.road, 0.018, '#8b8b8e');
 {
   const sw = (x0, x1, z0, z1) => slab(x0, x1, z0, z1, 0.12, M.sidewalk, '#d8d3c8');
   sw(-200, -51.5, -96, -92); sw(-41.5, 44, -96, -92); sw(54, 200, -96, -92);
   sw(-200, -51.5, -110, -106); sw(-41.5, 44, -110, -106); sw(54, 200, -110, -106);
-  sw(40, 44, -92, 91); sw(40, 44, 98, 200); sw(40, 44, -200, -110); sw(54, 58, -92, 200); sw(54, 58, -200, -110);
-  sw(-41.5, -37.5, -92, 91); sw(-41.5, -37.5, 98, 200); sw(-41.5, -37.5, -200, -110); sw(-55.5, -51.5, -92, 200); sw(-55.5, -51.5, -200, -110);
+  sw(40, 44, -92, 91); sw(40, 44, 109.5, 200); sw(40, 44, -200, -110); sw(54, 58, -92, 200); sw(54, 58, -200, -110);
+  sw(-41.5, -37.5, -92, 91); sw(-41.5, -37.5, 113.5, 200); sw(-41.5, -37.5, -200, -110); sw(-55.5, -51.5, -92, 99.5); sw(-55.5, -51.5, 113.5, 200); sw(-55.5, -51.5, -200, -110);
+  // Egernvej: a strip between the path and the road, and the far side
+  sw(-41.5, 44, 98, 99.5); sw(-200, -55.5, 95.5, 99.5); sw(-200, -51.5, 109.5, 113.5); sw(-41.5, 40, 109.5, 113.5);
   for (let i = 0; i < 9; i++) box(4, 0.02, 0.55, M.zebra, -20, 0.012, -105.3 + i * 1.15, { cast: false });
-  for (let i = 0; i < 9; i++) box(0.55, 0.02, 4, M.zebra, 44.7 + i * 1.15, 0.014, -19.5, { cast: false });
-  for (let i = 0; i < 9; i++) box(0.55, 0.02, 4, M.zebra, 44.7 + i * 1.15, 0.014, 94.5, { cast: false });
+  for (let i = 0; i < 9; i++) box(0.55, 0.02, 4, M.zebra, 44.7 + i * 1.15, 0.014, -57.5, { cast: false });
   for (let i = 0; i < 9; i++) box(0.55, 0.02, 4, M.zebra, -50.8 + i * 1.15, 0.016, 30, { cast: false });
   for (let i = 0; i < 9; i++) box(0.55, 0.02, 4, M.zebra, -50.8 + i * 1.15, 0.016, 94.5, { cast: false });
 }
@@ -771,7 +774,7 @@ const MAIN = brickBlock({ x: 2.5, z: -58.5, w: 14, d: 29, h: 16, rise: 8, over: 
   const stem = brickBlock({ x: 22.75, z: -37, w: 13.5, d: 8, h: 9.5, rise: 4.5, roofMat: M.scale });
   facadeWins('rect', bar, 'E', [2.3, 6.4], 6, 1.2, 1.8);
   facadeWins('rect', bar, 'W', [2.3, 6.4], 6, 1.2, 1.8, { skip: (x, z) => z > -42.5 && z < -31.5 });
-  facadeWins('rect', bar, 'N', [2.3, 6.4], 2, 1.2, 1.8); facadeWins('rect', bar, 'S', [2.3, 6.4], 2, 1.2, 1.8);
+  facadeWins('rect', bar, 'N', [2.3, 6.4], 2, 1.2, 1.8); facadeWins('rect', bar, 'S', [2.3, 6.4], 2, 1.2, 1.8, { skip: x => x > 34 });
   facadeWins('rect', stem, 'N', [2.3, 6.4], 3, 1.2, 1.8, { margin: 1.2 }); facadeWins('rect', stem, 'S', [2.3, 6.4], 3, 1.2, 1.8, { margin: 1.2 });
   addWin('doorGreen', 16 - WOFF, 1.2, -37, -Math.PI / 2, 1.4, 2.4, 0); addWin('rect', 16 - WOFF, 6.4, -37, -Math.PI / 2, 1.2, 1.8);
   roofWin(bar, 35.5, -48, 'E'); roofWin(bar, 35.5, -29, 'E'); roofWin(stem, 20, -34.5, 'S');
@@ -795,6 +798,15 @@ const YB = brickBlock({ x: 33.5, z: 6.25, w: 9, d: 8.5, h: 7.6, rise: 3.2, wall:
   addWin('doorModern', 31, 4.95, -13.5 - WOFF, Math.PI, 1.1, 2.2, 0.3);
   box(1.4, 0.12, 1.0, M.steel, 31, 3.75, -14.0, { cast: false });
   spiralStair(32.6, -15.2, 1.0, 3.75, 4.2);
+}
+// ---------------- the closed walkway on the first floor between 4 and 10
+{
+  const x0 = 34.3, x1 = 37.2, z0 = -25.5, z1 = -13.5, y0 = 3.8, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, L = z1 - z0, W = x1 - x0;
+  box(W + 0.2, 0.35, L, M.dark, cx, y0, cz, { edges: true });
+  box(W, 2.6, L, M.curtain, cx, y0 + 0.35, cz, { edges: true, map: '#5d7890' });
+  box(W + 0.3, 0.3, L + 0.1, M.dark, cx, y0 + 2.95, cz, { edges: true });
+  for (let z = z0 + 1.5; z < z1 - 1; z += 3) for (const x of [x0 - 0.02, x1 + 0.02]) box(0.06, 2.6, 0.1, M.dark, x, y0 + 0.35, z, { cast: false });
+  camOnly.push({ x0, x1, z0, z1, bot: y0, top: y0 + 3.3 });
 }
 // ---------------- 11: the new wooden building (big, along Duevej)
 {
@@ -866,7 +878,7 @@ wallSeg(-38, PX0, -92, -22);
 // ---------------- bikes under a roof
 {
   for (let i = 0; i <= 6; i++) { const x = -35.5 + i * 4.33; for (const z of [-29.3, -32.7]) { mesh(new THREE.CylinderGeometry(0.07, 0.07, 2.6, 6), M.dark, x, 1.3, z); colCirc(x, z, 0.12, 99); } }
-  box(27.6, 0.2, 4.2, M.dark, -22.5, 2.6, -31, { edges: true });
+  box(27.6, 0.2, 4.2, M.dark, -22.5, 2.6, -31, { edges: true }); camOnly.push({ x0: -36.3, x1: -8.7, z0: -33.1, z1: -28.9, bot: 2.5, top: 2.9 });
   box(27.6, 0.25, 0.1, toon('#26282d'), -22.5, 2.5, -28.95);
   mapItems.push({ k: 'r', x0: -36.3, x1: -8.7, z0: -33.1, z1: -28.9, fill: '#4a4c52' });
   const bc = ['#d9534f', '#4a7bd0', '#6aa56b', '#f2c14e', '#8e5bb5', '#2f3138', '#e8833a', '#ece7dc'];
@@ -883,14 +895,14 @@ wallSeg(-38, PX0, -92, -22);
   deck(0, -30, 3.6); deck(20, -52, 3.0);
   ttTable(-1, -12, 0); ttTable(16, -26, 0);
   bench(-3, -40, Math.PI / 2); bench(4, 2, 0.3); bench(22, -60, 0); bench(28, 44.5, Math.PI / 2); bench(-3.5, 52, Math.PI / 2);
-  lamp(-2, -20); lamp(14, -44); lamp(-3, 8); lamp(18, 36); lamp(14, -72); lamp(34, -20); lamp(22, -68);
+  lamp(-2, -20); lamp(14, -44); lamp(-3, 8); lamp(18, 36); lamp(14, -72); lamp(31.5, -20.5); lamp(22, -68);
   bin(10.4, -42.5); bin(27.5, -75.8); bin(38.6, 40); bin(-5.6, -26);
   const rb = new THREE.CylinderGeometry(2.4, 2.4, 0.45, 32, 1, true); mesh(rb, M.deck, 12, 0.225, 12, { cast: false });
   const rt = new THREE.RingGeometry(1.6, 2.4, 32); rt.rotateX(-Math.PI / 2); mesh(rt, M.deck, 12, 0.45, 12, { cast: false });
   discG(12, 12, 1.6, M.grass, 0.4); colCirc(12, 12, 2.4, 0.45); mapItems.push({ k: 'c', x: 12, z: 12, r: 2.4, fill: '#b48559' });
   const hp = new THREE.PlaneGeometry(1.4, 4.4); hp.rotateX(-Math.PI / 2); mesh(hp, M.chalk, 24, 0.05, -18, { cast: false });
   // hedges toward the small houses with gardens
-  hedgeBox(-7, -6, -22, 58.5, 1.4); hedgeBox(PX0, -7, -22.5, -21.5, 1.4); hedgeBox(-6, 39.6, 57.5, 58.5, 1.4);
+  hedgeBox(-7, -6, -22, 58.5, 1.4); hedgeBox(PX0, -7, -22.5, -21.5, 1.4);
   // rubber mounds with stone animals
   for (const m of [{ x: 0, z: 22, r: 5, h: 1.5 }, { x: 12, z: 26, r: 4.2, h: 1.2 }]) {
     mounds.push(m);
@@ -912,6 +924,18 @@ wallSeg(-38, PX0, -92, -22);
     for (const s of [-1, 1]) { mesh(new THREE.SphereGeometry(0.14, 8, 6), M.granite, s * 0.3, 1.8, 0, { parent: g }); mesh(new THREE.SphereGeometry(0.22, 10, 8), M.granite, s * 0.32, 0.18, 0.42, { parent: g }); const a = mesh(new THREE.CapsuleGeometry(0.13, 0.4, 4, 8), M.granite, s * 0.5, 0.75, 0.25, { parent: g }); a.rotation.x = -0.6; }
     colCirc(12, 26, 0.8, 99); }
 }
+// ---------------- red brick wall with a lean-to roof toward the gardens in the south
+{
+  const x0 = -7, x1 = 39.6, z0 = 58.0, z1 = 58.6, h = 2.9, dz = 2.3, hp = 2.4, zp = z0 - dz + 0.2;
+  wallSeg(x0, x1, z0, z1, h);
+  const run = dz + 0.2, a = Math.atan2(h - hp, run), L = Math.hypot(run, h - hp) + 0.3;
+  const roof = mesh(boxGeo(x1 - x0 + 0.4, 0.12, L), M.metal, (x0 + x1) / 2, (h + hp) / 2 + 0.1, z0 - run / 2 - 0.1, { edges: 20 }); roof.rotation.x = -a;
+  box(x1 - x0 - 0.2, 0.2, 0.16, M.dark, (x0 + x1) / 2, hp - 0.2, zp, { cast: false });
+  for (const x of [-5.6, -1, 3.5, 8, 13, 18, 23, 28, 33, 39]) { mesh(new THREE.CylinderGeometry(0.08, 0.08, hp, 8), M.dark, x, hp / 2, zp); colCirc(x, zp, 0.12, 99); }
+  camOnly.push({ x0, x1, z0: z0 - run - 0.3, z1, bot: hp - 0.25, top: h + 0.3 });
+  mapItems.push({ k: 'r', x0, x1, z0: z0 - run, z1: z0, fill: '#7d838a' });
+  bench(-2.8, 57.3, 0); bench(17.5, 57.3, 0);
+}
 // ---------------- small green football pitch + trampolines in a raised rubber bed
 const TRAMPS = [];
 {
@@ -923,11 +947,11 @@ const TRAMPS = [];
     mesh(new THREE.CylinderGeometry(0.05, 0.05, 3.1, 8), M.white, 7.5, 1.3, gz, { rz: Math.PI / 2 });
     const n = mesh(mplane(3, 1.4), M.net, 7.5, 0.65, gz + dir * 0.55, { cast: false }); n.rotation.x = dir * 0.4;
   }
-  const bed = box(14, 0.3, 6, M.mound, 7.5, 0, 54.3, { edges: true, col: true, cast: false });
-  mapItems.push({ k: 'r', x0: 0.5, x1: 14.5, z0: 51.3, z1: 57.3, fill: '#9ccbb0' });
+  const bed = box(14, 0.3, 4.6, M.mound, 7.5, 0, 53.2, { edges: true, col: true, cast: false });
+  mapItems.push({ k: 'r', x0: 0.5, x1: 14.5, z0: 50.9, z1: 55.5, fill: '#9ccbb0' });
   const rimCols = ['#3f7cc4', '#e8833a', '#6aa56b', '#d9473b'];
   [2.6, 5.9, 9.2, 12.4].forEach((x, i) => {
-    const z = 54.3 + (i % 2 ? 0.7 : -0.6);
+    const z = 53.2 + (i % 2 ? 0.55 : -0.5);
     const rim = new THREE.Mesh(new THREE.RingGeometry(0.82, 1.05, 32), toon(rimCols[i])); rim.rotation.x = -Math.PI / 2; rim.position.set(x, 0.312, z); world.add(rim);
     const mat = new THREE.Mesh(new THREE.CircleGeometry(0.82, 32), toon('#26272c')); mat.rotation.x = -Math.PI / 2; mat.position.set(x, 0.31, z); dyn.add(mat);
     TRAMPS.push({ x, z, r: 0.85, mat, squash: 0 });
@@ -1006,8 +1030,7 @@ const TRAMPS = [];
 }
 // ---------------- the path with trees to the south
 {
-  hedgeBox(-37.5, 40, 98, 98.8, 1.2);
-  for (let x = -36; x <= 40; x += 9.5) { tree(x, 91.6, 'round', 0.75); tree(x + 4.7, 97.5, pick(['round', 'birch']), 0.75); }
+  for (let x = -36; x <= 36; x += 9.5) { tree(x, 91.6, 'round', 0.75); tree(x + 4.7, 97.5, pick(['round', 'birch']), 0.75); }
   for (const x of [-25, 5, 32]) lamp(x, 97.3);
 }
 // ---------------- streets: lamps, parked cars and bikes
@@ -1017,18 +1040,20 @@ const TRAMPS = [];
   for (const x of [-30, 0, 30]) lamp(x, -94.6, 7, true);
   for (const z of [-80, -50, -20, 10, 40, 70]) lamp(-39.4, z, 7, true);
   let ci = 0;
-  for (const z of [-86, -72, -58, -44, -30, -6, 8, 22, 36, 50, 64, 78]) car(52.3, z, Math.PI, CAR_COLS[ci++ % CAR_COLS.length]);
+  for (const z of [-86, -72, -44, -30, -16, -2, 12, 26, 40, 54, 68, 82]) car(52.3, z, Math.PI, CAR_COLS[ci++ % CAR_COLS.length]);
   for (const x of [-75, -30, -8, 14, 32]) car(x, -104.3, Math.PI / 2, CAR_COLS[ci++ % CAR_COLS.length]);
+  for (const x of [-90, -66, -28, -6, 16, 34]) car(x, 107.8, -Math.PI / 2, CAR_COLS[ci++ % CAR_COLS.length]);
+  for (const x of [-70, -25, 5, 32]) lamp(x, 111.4, 7, true);
   for (const z of [-86, -70, -54, -38, -6, 10, 46, 62, 78]) car(-49.8, z, 0, CAR_COLS[ci++ % CAR_COLS.length]);
   bike(41.4, -14.5, Math.PI / 2, '#f2c14e'); bike(41.4, -13.3, Math.PI / 2 + 0.08, '#4a7bd0'); bike(41.4, 39.5, Math.PI / 2, '#d9534f');
 }
 apartment(-140, -60, -132, -114, 5); apartment(-34, 36, -132, -114, 5); apartment(62, 140, -132, -114, 5);
 apartment(62, 78, -92, -34, 5); apartment(62, 78, -28, 30, 5); apartment(62, 78, 36, 88, 5); apartment(62, 78, 104, 160, 5);
-apartment(-80, -60, -92, -34, 6); apartment(-80, -60, -28, 30, 5); apartment(-80, -60, 36, 88, 4); apartment(-80, -60, 104, 160, 5);
-apartment(-36, -4, 103, 121, 4); apartment(2, 38, 103, 121, 4);
+apartment(-80, -60, -92, -34, 6); apartment(-80, -60, -28, 30, 5); apartment(-80, -60, 36, 88, 4); apartment(-80, -60, 115, 160, 5);
+apartment(-36, -4, 115, 133, 4); apartment(2, 38, 115, 133, 4);
 // ---------------- yard trees, street trees
 [[6, -36, 'round', 1], [-3, -6, 'round', 1.05], [18, -6, 'tall', 0.95], [24, 9, 'round', 0.9], [12, 12, 'big', 1.1], [-2, 40, 'tall', 0.95], [16, 40, 'round', 0.85],
- [24, -62, 'birch', 0.95], [36.5, -57, 'birch', 0.9], [36, -20, 'round', 0.8], [17, -74, 'tall', 0.7], [22, -48, 'round', 0.9], [0, -30, 'round', 0.9], [20, -52, 'round', 0.8],
+ [24, -62, 'birch', 0.95], [37, -67, 'birch', 0.9], [26.5, -22.5, 'round', 0.8], [17, -74, 'tall', 0.7], [22, -48, 'round', 0.9], [0, -30, 'round', 0.9], [20, -52, 'round', 0.8],
  [-20, -89, 'round', 0.8], [-33, -89, 'tall', 0.7]].forEach(t => tree(...t));
 for (const z of [-80, -55, -30, -5, 20, 45, 70, 95]) tree(56.2, z, 'round', 0.85);
 for (const x of [-90, -25, 5, 25, 72]) tree(x, -108.2, 'round', 0.85);
@@ -1055,8 +1080,8 @@ for (const k in WIN) {
     tries++;
     let x, z;
     if (rand() < 0.68) { const t = pick(treeSpots); const a = rand() * Math.PI * 2, r = Math.sqrt(rand()) * t.r * 1.35; x = t.x + Math.cos(a) * r; z = t.z + Math.sin(a) * r; }
-    else { x = rr(-55, 58); z = rr(-110, 98); }
-    if (x < -55.5 || x > 58 || z > 98 || z < -110 || (x > 44 && x < 54)) continue;
+    else { x = rr(-55, 58); z = rr(-110, 113); }
+    if (x < -55.5 || x > 58 || z > 113 || z < -110 || (x > 44 && x < 54) || (z > 99.5 && z < 109.5)) continue;
     let bad = false; for (const c of tall) { if (c.t === 'c') { if ((x - c.x) ** 2 + (z - c.z) ** 2 < c.r * c.r) { bad = true; break; } } else if (c.t === 'b' && x > c.x0 && x < c.x1 && z > c.z0 && z < c.z1) { bad = true; break; } }
     if (bad) continue;
     const y = groundAt(x, z, 1.0) + 0.035;
@@ -1342,14 +1367,14 @@ function buildTurtle() {
 }
 
 const ANIMAL_DEFS = [
-  { k: 'due', n: 'Due', d: 'duen', b: buildDove, x: 41.8, z: -57.5, s: 1.7, wander: 1.5, speed: 0.75 },
+  { k: 'due', n: 'Due', d: 'duen', b: buildDove, x: 42.2, z: 13.3, s: 1.7, wander: 1.5, speed: 0.75 },
   { k: 'kat', n: 'Kat', d: 'katten', b: buildCat, x: 21.6, z: -50.6, s: 1.45 },
   { k: 'and', n: 'And', d: 'anden', b: buildDuck, x: 12.6, z: -46.4, s: 1.5, wander: 1.0, speed: 0.6 },
   { k: 'egern', n: 'Egern', d: 'egernet', b: buildSquirrel, x: 14.0, z: 12.7, s: 1.8 },
   { k: 'hund', n: 'Hund', d: 'hunden', b: buildDog, x: -22, z: -52, s: 1.4 },
   { k: 'hoene', n: 'Høne', d: 'hønen', b: buildHen, x: 16, z: 67.5, s: 1.5, wander: 1.4, speed: 0.6 },
   { k: 'pindsvin', n: 'Pindsvin', d: 'pindsvinet', b: buildHedgehog, x: -11, z: 87, s: 1.7, wander: 1.5, speed: 0.35 },
-  { k: 'froe', n: 'Frø', d: 'frøen', b: buildFrog, x: 1.2, z: 56.7, s: 1.9 },
+  { k: 'froe', n: 'Frø', d: 'frøen', b: buildFrog, x: 1.1, z: 54.9, s: 1.9 },
   { k: 'kanin', n: 'Kanin', d: 'kaninen', b: buildRabbit, x: 21, z: -8, s: 1.6, wander: 1.8, speed: 1.1, hop: true },
   { k: 'ugle', n: 'Ugle', d: 'uglen', b: buildOwl, x: 21.5, z: 23.2, s: 1.6 },
   { k: 'raev', n: 'Ræv', d: 'ræven', b: buildFox, x: -14, z: 22.5, s: 1.45, wander: 1.0, speed: 0.8 },
@@ -1365,7 +1390,7 @@ ANIMAL_DEFS.forEach((def, i) => {
 
 // ======================================================================== CYCLISTS
 function lanePath(o) {
-  const x0 = -41.5 - o, x1 = 44 + o, z0 = -96 - o, z1 = 91 + o, R = 6;
+  const x0 = -41.5 - o, x1 = 44 + o, z0 = -96 - o, z1 = 99.5 + o, R = 6;
   const V = (x, z) => new THREE.Vector3(x, 0, z);
   const p = new THREE.CurvePath();
   p.add(new THREE.LineCurve3(V(x0 + R, z0), V(x1 - R, z0)));
@@ -1519,7 +1544,7 @@ function updLeaves(dt, t, cx, cz) {
 // ======================================================================== freeze static world
 world.traverse(o => { o.updateMatrix(); o.matrixAutoUpdate = false; });
 world.updateMatrixWorld(true);
-const camCols = cols.filter(c => c.t === 'b' && c.top > 3);
+const camCols = [...cols.filter(c => c.t === 'b' && c.top > 3), ...camOnly];
 
 // ======================================================================== POIs
 const POIS = [
@@ -1529,27 +1554,30 @@ const POIS = [
   { n: 'Det lille røde hus', t: 'Et lille hus i røde mursten med skifertag og grøn dør. Det ligger helt oppe ved hegnet ind til naboen.', x: 31, z: -68, r: 8 },
   { n: 'Huset med fiskeskælstaget', t: 'Et rødt hus formet som et T. Taget er lagt med skifer, der ligner fiskeskæl.', x: 28, z: -38, r: 11 },
   { n: 'De gule huse', t: 'To gule huse med røde striber, bundet sammen af et trappetårn i glas. En vindeltrappe snor sig op til en dør på første sal.', x: 30, z: -1, r: 10 },
+  { n: 'Gangen mellem husene', t: 'En lukket gang af glas på første sal. Her kan man gå tørskoet fra de gule huse over i huset med fiskeskælstaget.', x: 35.7, z: -19.5, r: 5 },
+  { n: 'Muren med halvtaget', t: 'En rød mur ind mod haverne med et halvtag, hvor man kan sidde i læ, når det regner.', area: [-7, 39.6, 55.6, 58.6], s: 0.5 },
   { n: 'Den nye træbygning', t: 'En stor bygning klædt i træribber med en stueetage af glas. Gå op ad ståltrappen og kig ud over skolegården.', x: 29, z: 27.5, r: 15 },
   { n: 'Den store fodboldbane', t: 'Kunstgræs, hvide streger og to store mål. Det høje hegn holder bolden inde. Indgangen er i den ende, der vender mod cykelskuret.', x: -22, z: -60, r: 18 },
   { n: 'Cykelskuret', t: 'Et langt tag med plads til mange cykler. Her parkerer man, når man cykler i skole.', x: -22, z: -31, r: 8 },
   { n: 'Træet med den runde bænk', t: 'Et stort træ med en rund bænk omkring. Et godt sted at sidde og se bladene falde.', x: 12, z: 12, r: 5 },
   { n: 'Stendyrene', t: 'Bløde grønne bakker. På toppen hviler en odder og en bjørn, der er hugget i sten.', x: 5, z: 24, r: 9 },
   { n: 'Den lille fodboldbane', t: 'En lille grøn bane med to små mål. Perfekt til en hurtig kamp i frikvarteret.', x: 7.5, z: 41.5, r: 8 },
-  { n: 'Trampolinerne', t: 'Fire trampoliner gravet ned i et bed af blødt gummi. Gå ud på dem, så hopper du af dig selv. Tryk på hop for at komme helt højt op.', x: 7.5, z: 54.3, r: 7 },
+  { n: 'Trampolinerne', t: 'Fire trampoliner gravet ned i et bed af blødt gummi. Gå ud på dem, så hopper du af dig selv. Tryk på hop for at komme helt højt op.', x: 7.5, z: 53.2, r: 7 },
   { n: 'Legepladsen', t: 'Klatrestativer af træstammer med net, balancestubbe og masser af sand. Prøv at hoppe fra stub til stub.', x: 31, z: 50, r: 9 },
   { n: 'Naboens røde hus', t: 'Det store røde hus ud mod Mariendalsvej. Det hører ikke til skolen.', x: 15, z: -85, r: 13 },
   { n: 'Husene med haver', t: 'Små huse med hver sin have. Her bor der nogen, så de hører ikke til skolen.', area: [-37.5, -6, -21.5, 91] },
   { n: 'Husene med haver', t: 'Små huse med hver sin have. Her bor der nogen, så de hører ikke til skolen.', area: [-6, 40, 58.5, 91] },
-  { n: 'Duevej', t: 'Vejen, der har givet skolen sit navn. Bilerne holder parkeret i en lang række under træerne, og cyklisterne suser forbi. Lågerne i hegnet fører ind i skolegården.', area: [40, 60, -96, 200] },
+  { n: 'Egernvej', t: 'Vejen syd for skolen. Den løber langs stien med træerne og fortsætter lige ud mod vest. Cyklisterne kører her, så kig dig for.', area: [-200, 44, 98, 113.5] },
+  { n: 'Duevej', t: 'Vejen, der har givet skolen sit navn. Bilerne holder parkeret i en lang række under træerne, og cyklisterne suser forbi. Fodgængerovergangen ligger mellem det lille røde hus og huset med fiskeskælstaget.', area: [40, 60, -96, 200] },
   { n: 'Mariendalsvej', t: 'Den store vej på nordsiden af skolen. Kig dig for, før du går over.', area: [-200, 200, -200, -92] },
   { n: 'Vejen bag haverne', t: 'Her kan du gå hele vejen rundt om skolen. Cyklisterne kører i begge retninger, så kig dig for, før du går over.', area: [-60, -37.5, -92, 200] },
-  { n: 'Stien med træerne', t: 'En sti med træer på begge sider. Cyklisterne kører også her, så hold øje med dem.', area: [-37.5, 40, 91, 200] },
+  { n: 'Stien med træerne', t: 'En sti med træer på begge sider. Lige ved siden af løber Egernvej.', area: [-37.5, 40, 91, 98] },
 ];
 function inArea(p, x, z) { return x >= p.area[0] && x <= p.area[1] && z >= p.area[2] && z <= p.area[3]; }
 function poiAt(x, z) {
   let best = null, bs = 1;
   for (const p of POIS) {
-    const s = p.area ? (inArea(p, x, z) ? 0.9 : 9) : Math.hypot(x - p.x, z - p.z) / p.r;
+    const s = p.area ? (inArea(p, x, z) ? (p.s ?? 0.9) : 9) : Math.hypot(x - p.x, z - p.z) / p.r;
     if (s < bs) { bs = s; best = p; }
   }
   return best;
@@ -1633,7 +1661,7 @@ function updEffects(dt) {
 // ======================================================================== UI
 const hud = $('hud'), intro = $('intro'), goBtn = $('goBtn');
 const mapCv = $('map'), mctx = mapCv.getContext('2d');
-let mapBase = null; const MX0 = -60, MX1 = 64, MZ0 = -114, MZ1 = 104;
+let mapBase = null; const MX0 = -60, MX1 = 64, MZ0 = -112, MZ1 = 115;
 function sizeMap() {
   const cssW = window.innerWidth < 600 ? 104 : 150; const cssH = Math.round(cssW * (MZ1 - MZ0) / (MX1 - MX0));
   mapCv.style.width = cssW + 'px'; mapCv.style.height = cssH + 'px';
@@ -1660,6 +1688,7 @@ function buildMapBase() {
   g.font = `600 ${fs}px Lexend, system-ui, sans-serif`; g.fillStyle = '#2a2238'; g.textBaseline = 'middle';
   g.textAlign = 'center'; g.fillText('Mariendalsvej', mpx(-4), mpz(-101));
   g.save(); g.translate(mpx(49), mpz(20)); g.rotate(Math.PI / 2); g.fillText('Duevej', 0, 0); g.restore();
+  g.fillText('Egernvej', mpx(-12), mpz(104.5));
   mapBase = cv;
 }
 function drawMap() {
@@ -1753,10 +1782,10 @@ $('jump').addEventListener('pointerdown', e => { e.preventDefault(); jumpReq = t
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 
 // ======================================================================== PHYSICS
-const P = { pos: new THREE.Vector3(42, 0.12, -19.5), vel: new THREE.Vector3(), onGround: true, walkT: 0, face: -Math.PI / 2 };
+const P = { pos: new THREE.Vector3(42, 0.12, -57.5), vel: new THREE.Vector3(), onGround: true, walkT: 0, face: -Math.PI / 2 };
 const TRAMP_Y = 0.3;
 function trampAt(x, z) { for (const t of TRAMPS) if ((x - t.x) ** 2 + (z - t.z) ** 2 < t.r * t.r) return t; return null; }
-const STEP = 0.5, RAD = 0.35, G = 22, BOUNDS = [-57.6, 60.6, -112, 101.6];
+const STEP = 0.5, RAD = 0.35, G = 22, BOUNDS = [-57.6, 60.6, -112, 113.2];
 const angDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 function resolve(p) {
   for (let it = 0; it < 2; it++) for (const c of cols) {
@@ -1835,7 +1864,7 @@ function rayHit(a, b) {
   for (const c of camCols) {
     let t0 = 0, t1 = best, ok = true;
     const slab = (o, d, mn, mx) => { if (Math.abs(d) < 1e-9) { if (o < mn || o > mx) ok = false; return; } let ta = (mn - o) / d, tb = (mx - o) / d; if (ta > tb) { const t = ta; ta = tb; tb = t; } if (ta > t0) t0 = ta; if (tb < t1) t1 = tb; if (t0 > t1) ok = false; };
-    slab(a.x, dx, c.x0 - 0.3, c.x1 + 0.3); if (ok) slab(a.z, dz, c.z0 - 0.3, c.z1 + 0.3); if (ok) slab(a.y, dy, -1, c.top);
+    slab(a.x, dx, c.x0 - 0.3, c.x1 + 0.3); if (ok) slab(a.z, dz, c.z0 - 0.3, c.z1 + 0.3); if (ok) slab(a.y, dy, c.bot ?? -1, c.top);
     if (ok && t0 > 0 && t0 < best) best = t0;
   }
   return best;

@@ -4,7 +4,7 @@ En hyggelig 3D-gåtur i tegnefilmsstil rundt på Skolen på Duevej på Frederiks
 
 **Spil her:** https://ai-michelklos.github.io/skolen-paa-duevej/
 
-Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, hop på trampolinerne ved den lille fodboldbane, og gå hele vejen rundt om skolen, hvor cyklisterne kører forbi. Tolv dyr gemmer sig rundt omkring: en due, en kat, en and, et egern, en hund, en høne, et pindsvin, en frø, en kanin, en ugle, en ræv og en skildpadde. Kan du finde dem alle?
+Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, hop på trampolinerne ved den lille fodboldbane, og gå hele vejen rundt om skolen ad Mariendalsvej, Duevej og Egernvej, hvor cyklisterne kører forbi. Tolv dyr gemmer sig rundt omkring: en due, en kat, en and, et egern, en hund, en høne, et pindsvin, en frø, en kanin, en ugle, en ræv og en skildpadde. Kan du finde dem alle?
 
 ## Styring
 
