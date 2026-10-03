@@ -871,7 +871,7 @@ apartment(-6.5, 36, -91, -79, 3);
 fenceSeg(-7.5, -76.5, 39.6, -76.5, 2.2);
 fenceSeg(39.6, -92, 39.6, -76.5, 2.2);
 wallSeg(36, 39.6, -92.5, -92); wallSeg(PX0, -6.5, -92.5, -92);
-wallSeg(-38, PX0, -92, -22);
+wallSeg(-38, PX0, -92, -35.6); wallSeg(-38, PX0, -29.6, -22);
 greenStrip(38.8, 40, -76.5, -61); greenStrip(38.8, 40, -54, 13); greenStrip(39.05, 40, 13, 41.8, false);
 // ---------------- big football field
 {
@@ -940,20 +940,10 @@ greenStrip(38.8, 40, -76.5, -61); greenStrip(38.8, 40, -54, 13); greenStrip(39.0
     for (const s of [-1, 1]) { mesh(new THREE.SphereGeometry(0.14, 8, 6), M.granite, s * 0.3, 1.8, 0, { parent: g }); mesh(new THREE.SphereGeometry(0.22, 10, 8), M.granite, s * 0.32, 0.18, 0.42, { parent: g }); const a = mesh(new THREE.CapsuleGeometry(0.13, 0.4, 4, 8), M.granite, s * 0.5, 0.75, 0.25, { parent: g }); a.rotation.x = -0.6; }
     colCirc(12, 26, 0.8, 99); }
 }
-// ---------------- red brick wall with a lean-to roof toward the gardens in the south
+// ---------------- plank fence toward the gardens in the south
 {
-  const x0 = -6.5, x1 = 16, z0 = 58.0, z1 = 58.6, h = 2.9, dz = 2.3, hp = 2.4, zp = z0 - dz + 0.2;
-  wallSeg(x0, x1, z0, z1, h);
-  const run = dz + 0.2, a = Math.atan2(h - hp, run), L = Math.hypot(run, h - hp) + 0.3;
-  const roof = mesh(boxGeo(x1 - x0 + 0.4, 0.12, L), M.metal, (x0 + x1) / 2, (h + hp) / 2 + 0.1, z0 - run / 2 - 0.1, { edges: 20 }); roof.rotation.x = -a;
-  box(x1 - x0 - 0.2, 0.2, 0.16, M.dark, (x0 + x1) / 2, hp - 0.2, zp, { cast: false });
-  for (const x of [-5.6, -1, 3.5, 8, 12, 15.6]) { mesh(new THREE.CylinderGeometry(0.08, 0.08, hp, 8), M.dark, x, hp / 2, zp); colCirc(x, zp, 0.12, 99); }
-  camOnly.push({ x0, x1, z0: z0 - run - 0.3, z1, bot: hp - 0.25, top: h + 0.3 });
-  mapItems.push({ k: 'r', x0, x1, z0: z0 - run, z1: z0, fill: '#7d838a' });
+  plankFence(-6.5, 39.6, 58.0, 58.12);
   bench(-2.8, 57.3, 0); bench(10.2, 57.3, 0);
-  // further east: a plank fence, with the gardens' trees right behind it
-  plankFence(16, 39.6, 58.0, 58.12);
-  for (const [x, z, k] of [[21, 60.6, 'round'], [26.6, 60.3, 'birch'], [32, 60.8, 'round'], [37.2, 60.5, 'tall']]) tree(x, z, k, 0.8);
 }
 // ---------------- small green football pitch + trampolines in a raised rubber bed
 const TRAMPS = [];
@@ -1011,13 +1001,13 @@ const TRAMPS = [];
     const wall = WALLS[hi % WALLS.length], roofM = ROOFS[hi % ROOFS.length], door = DOORS[hi % DOORS.length]; hi++;
     box(w, 3.6, d, wall, cx, 0, cz, { edges: true });
     colBox(cx - w / 2, cx + w / 2, cz - d / 2, cz + d / 2, 9);
-    const ridgeZ = facing === 'W'; const len = ridgeZ ? d : w, span = ridgeZ ? w : d;
+    const ridgeZ = facing === 'W' || facing === 'E'; const len = ridgeZ ? d : w, span = ridgeZ ? w : d;
     gableRoof(len, span, span * 0.42, roofM, cx, 3.6, cz, { ridgeZ, over: 0.45, gableMat: wall, capMat: M.dark });
-    if (facing === 'W') {
-      const fx = cx - w / 2 - WOFF, bx = cx + w / 2 + WOFF;
-      addWin(door, fx, 1.15, cz, -Math.PI / 2, 1.1, 2.2, 0);
-      for (const s of [-1, 1]) { addWin('rect', fx, 1.9, cz + s * d * 0.3, -Math.PI / 2, 1.2, 1.4, 0.6); addWin('rect', bx, 1.9, cz + s * d * 0.25, Math.PI / 2, 1.2, 1.4, 0.6); }
-      box(0.7, 2.4, 0.8, M.brick, cx + w * 0.12, 3.6 + span * 0.42 - 1.3, cz + d * 0.25);
+    if (ridgeZ) {
+      const sg = facing === 'W' ? -1 : 1, fx = cx + sg * (w / 2 + WOFF), bx = cx - sg * (w / 2 + WOFF);
+      addWin(door, fx, 1.15, cz, sg * Math.PI / 2, 1.1, 2.2, 0);
+      for (const s of [-1, 1]) { addWin('rect', fx, 1.9, cz + s * d * 0.3, sg * Math.PI / 2, 1.2, 1.4, 0.6); addWin('rect', bx, 1.9, cz + s * d * 0.25, -sg * Math.PI / 2, 1.2, 1.4, 0.6); }
+      box(0.7, 2.4, 0.8, M.brick, cx - sg * w * 0.12, 3.6 + span * 0.42 - 1.3, cz + d * 0.25);
     } else {
       const fz = cz + d / 2 + WOFF, bz = cz - d / 2 - WOFF;
       addWin(door, cx, 1.15, fz, 0, 1.1, 2.2, 0);
@@ -1028,8 +1018,8 @@ const TRAMPS = [];
   }
   const zsA = [-13.5, -1, 11.5, 24, 36.5, 49, 61.5, 74, 85.5];
   zsA.forEach(z => smallHouse(-25, z, 10, 9, 'W'));
-  const xsB = [2, 13, 24, 34.5];
-  xsB.forEach(x => smallHouse(x, 76.5, 9, 9, 'S'));
+  const xsB = [0, 11.8, 23.6, 35.2];
+  xsB.forEach(x => smallHouse(x, 77.5, 7.5, 8.5, 'S'));
   // front hedges with garden gates, and low hedges between the gardens
   { let z0 = -21.5; for (const z of zsA) { hedgeBox(PX0, PX0 + 0.9, z0, z - 1.1, 1.0); z0 = z + 1.1; } hedgeBox(PX0, PX0 + 0.9, z0, 91, 1.0); }
   { let x0 = PX0 + 0.9; for (const x of xsB) { hedgeBox(x0, x - 1.1, 90.1, 91, 1.0); x0 = x + 1.1; } hedgeBox(x0, 39.6, 90.1, 91, 1.0); }
@@ -1039,9 +1029,19 @@ const TRAMPS = [];
   for (let i = 0; i < xsB.length - 1; i++) { const xm = (xsB[i] + xsB[i + 1]) / 2; hedgeBox(xm - 0.25, xm + 0.25, 58.5, 90.1, 0.85); }
   // garden paths, trees and bushes
   for (const z of zsA) rectG(PX0 + 0.9, -30, z - 0.7, z + 0.7, M.path, 0.04);
-  for (const x of xsB) rectG(x - 0.7, x + 0.7, 81, 90.1, M.path, 0.04);
+  for (const x of xsB) rectG(x - 0.7, x + 0.7, 81.75, 90.1, M.path, 0.04);
   for (const z of zsA) { tree(-12.5 + rr(-2, 2), z + rr(-2.5, 2.5), pick(['round', 'round', 'birch', 'tall']), rr(0.6, 0.85)); bush(-33.5, z + 3, 0.7); }
-  for (const x of xsB) { tree(x + rr(-2, 2), 64 + rr(-2, 2), pick(['round', 'birch']), rr(0.6, 0.85)); bush(x + 3, 86, 0.7); }
+  for (const x of xsB) bush(x + 2.6, 86, 0.7);
+  // small detached houses on the other side of the road to the west
+  const zsW = []; for (let z = -85.5; z <= 90; z += 12.5) zsW.push(z);
+  zsW.forEach(z => smallHouse(-65, z, 9, 8.5, 'E'));
+  { let z0 = -91.5; for (const z of zsW) { hedgeBox(-56.6, -56, z0, z - 1.1, 1.0); z0 = z + 1.1; } hedgeBox(-56.6, -56, z0, 95.4, 1.0); }
+  for (let i = 0; i < zsW.length - 1; i++) { const zm = (zsW[i] + zsW[i + 1]) / 2; hedgeBox(-82, -56.6, zm - 0.25, zm + 0.25, 0.85); }
+  for (const z of zsW) { rectG(-60.5, -56.6, z - 0.7, z + 0.7, M.path, 0.04); tree(-75 + rr(-2.5, 2.5), z + rr(-3, 3), pick(['round', 'birch', 'tall', 'big']), rr(0.7, 0.95)); bush(-58.5, z + 3.2, 0.65); }
+  // lots of green behind the plank fence, so the houses are only just visible from the schoolyard
+  for (let x = -4.6; x < 38.8; x += rr(2.9, 3.6)) tree(x, rr(59.8, 61.0), pick(['round', 'round', 'big', 'tall', 'birch']), rr(0.9, 1.15));
+  for (let x = -3; x < 38.5; x += rr(4.0, 5.0)) tree(x, rr(64.5, 68.5), pick(['round', 'big', 'tall']), rr(0.85, 1.1));
+  for (let x = -5; x < 39; x += rr(2.0, 2.6)) bush(x, rr(59.6, 60.0), rr(0.7, 0.85));
 }
 // ---------------- the path with trees to the south
 {
@@ -1064,7 +1064,7 @@ const TRAMPS = [];
 }
 apartment(-140, -60, -132, -114, 5); apartment(-34, 36, -132, -114, 5); apartment(62, 140, -132, -114, 5);
 apartment(62, 78, -92, -34, 5); apartment(62, 78, -28, 30, 5); apartment(62, 78, 36, 88, 5); apartment(62, 78, 104, 160, 5);
-apartment(-80, -60, -92, -34, 6); apartment(-80, -60, -28, 30, 5);  apartment(-80, -60, 115, 160, 5);
+apartment(-80, -60, 115, 160, 5);
 apartment(-36, -4, 115, 133, 4); apartment(2, 38, 115, 133, 4);
 // ---------------- yard trees, street trees
 [[6, -36, 'round', 1], [-3, -6, 'round', 1.05], [18, -6, 'tall', 0.95], [24, 9, 'round', 0.9], [12, 12, 'big', 1.1], [-2, 40, 'tall', 0.95], [16, 40, 'round', 0.85],
@@ -1073,7 +1073,6 @@ apartment(-36, -4, 115, 133, 4); apartment(2, 38, 115, 133, 4);
 for (const z of [-80, -55, -30, -5, 20, 45, 70, 95]) tree(56.2, z, 'round', 0.85);
 for (const x of [-90, -25, 5, 25, 72]) tree(x, -108.2, 'round', 0.85);
 for (const z of [-80, -55, -30, -5, 20, 45, 70]) tree(-53.6, z, 'round', 0.85);
-for (const [x, z, k] of [[-64, 42, 'round'], [-72, 50, 'big'], [-63, 61, 'birch'], [-74, 70, 'round'], [-65, 80, 'tall'], [-76, 86, 'round']]) tree(x, z, k, 0.95);
 
 // ---------------- tall grass in the green strips
 if (GRASS_TUFTS.length) {
@@ -1402,7 +1401,7 @@ const ANIMAL_DEFS = [
   { k: 'froe', n: 'Frø', d: 'frøen', b: buildFrog, x: 1.1, z: 54.9, s: 1.9 },
   { k: 'kanin', n: 'Kanin', d: 'kaninen', b: buildRabbit, x: 21, z: -8, s: 1.6, wander: 1.8, speed: 1.1, hop: true },
   { k: 'ugle', n: 'Ugle', d: 'uglen', b: buildOwl, x: 21.5, z: 23.2, s: 1.6 },
-  { k: 'raev', n: 'Ræv', d: 'ræven', b: buildFox, x: -14, z: 22.5, s: 1.45, wander: 1.0, speed: 0.8 },
+  { k: 'raev', n: 'Ræv', d: 'ræven', b: buildFox, x: -17.5, z: 15, s: 1.45, wander: 1.0, speed: 0.8 },
   { k: 'skildpadde', n: 'Skildpadde', d: 'skildpadden', b: buildTurtle, x: 36.5, z: 55, s: 1.5, wander: 1.2, speed: 0.2 },
 ];
 const animals = [];
@@ -1580,10 +1579,9 @@ const POIS = [
   { n: 'Huset med fiskeskælstaget', t: 'Et rødt hus formet som et T. Taget er lagt med skifer, der ligner fiskeskæl.', x: 28, z: -38, r: 11 },
   { n: 'De gule huse', t: 'To gule huse med røde striber, bundet sammen af et trappetårn i glas. En vindeltrappe snor sig op til en dør på første sal.', x: 30, z: -1, r: 10 },
   { n: 'Gangen mellem husene', t: 'En lukket gang af glas på første sal. Her kan man gå tørskoet fra de gule huse over i huset med fiskeskælstaget.', x: 35.7, z: -19.5, r: 5 },
-  { n: 'Muren med halvtaget', t: 'En rød mur ind mod haverne med et halvtag, hvor man kan sidde i læ, når det regner.', area: [-7, 16, 55.6, 58.6], s: 0.5 },
   { n: 'Den nye træbygning', t: 'En stor bygning klædt i træribber med en stueetage af glas. Gå op ad ståltrappen og kig ud over skolegården.', x: 29, z: 27.5, r: 15 },
   { n: 'Den store fodboldbane', t: 'Kunstgræs, hvide streger og to store mål. Det høje hegn holder bolden inde. Indgangen er i den ende, der vender mod cykelskuret.', x: -22, z: -60, r: 18 },
-  { n: 'Cykelskuret', t: 'Et langt tag med plads til mange cykler. Her parkerer man, når man cykler i skole.', x: -22, z: -31, r: 8 },
+  { n: 'Cykelskuret', t: 'Et langt tag med plads til mange cykler. For enden af cykelskuret kan man gå direkte ud på vejen bag haverne.', x: -22, z: -31, r: 8 },
   { n: 'Træet med den runde bænk', t: 'Et stort træ med en rund bænk omkring. Et godt sted at sidde og se bladene falde.', x: 12, z: 12, r: 5 },
   { n: 'Stendyrene', t: 'Bløde grønne bakker. På toppen hviler en odder og en bjørn, der er hugget i sten.', x: 5, z: 24, r: 9 },
   { n: 'Den lille fodboldbane', t: 'En lille grøn bane med to små mål. Perfekt til en hurtig kamp i frikvarteret.', x: 7.5, z: 41.5, r: 8 },
@@ -1595,7 +1593,7 @@ const POIS = [
   { n: 'Egernvej', t: 'Vejen syd for skolen. Den løber langs stien med træerne og fortsætter lige ud mod vest. Cyklisterne kører her, så kig dig for.', area: [-200, 44, 98, 113.5] },
   { n: 'Duevej', t: 'Vejen, der har givet skolen sit navn. Bilerne holder parkeret i en lang række under træerne, og cyklisterne suser forbi. Fodgængerovergangen ligger mellem det lille røde hus og huset med fiskeskælstaget. Langs skolen er der et grønt bælte med højt græs og små træer.', area: [40, 60, -96, 200] },
   { n: 'Mariendalsvej', t: 'Den store vej på nordsiden af skolen. Kig dig for, før du går over.', area: [-200, 200, -200, -92] },
-  { n: 'Vejen bag haverne', t: 'Her kan du gå hele vejen rundt om skolen. Cyklisterne kører i begge retninger, så kig dig for, før du går over.', area: [-60, -37.5, -92, 200] },
+  { n: 'Vejen bag haverne', t: 'Her kan du gå hele vejen rundt om skolen. På den anden side af vejen ligger små parcelhuse med haver. Cyklisterne kører i begge retninger, så kig dig for, før du går over.', area: [-60, -37.5, -92, 200] },
   { n: 'Stien med træerne', t: 'En sti med træer på begge sider. Lige ved siden af løber Egernvej.', area: [-37.5, 40, 91, 98] },
 ];
 function inArea(p, x, z) { return x >= p.area[0] && x <= p.area[1] && z >= p.area[2] && z <= p.area[3]; }
