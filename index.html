@@ -64,6 +64,8 @@ kbd{display:inline-block;min-width:1.6em;text-align:center;padding:1px 6px;borde
 .err{background:#ffe0d6;border:2px solid var(--ink);border-radius:10px;padding:8px 12px;font-size:13.5px;margin:0 0 12px}
 #joy{position:fixed;width:112px;height:112px;margin:-56px 0 0 -56px;border-radius:50%;border:2.5px solid var(--ink);background:rgba(255,250,240,.55);pointer-events:none}
 #knob{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:var(--paper);border:2.5px solid var(--ink);box-shadow:2px 3px 0 var(--ink)}
+#umb{position:fixed;right:16px;bottom:calc(22px + env(safe-area-inset-bottom,0px));background:#cfe4f3}
+.touch #umb{bottom:calc(116px + env(safe-area-inset-bottom,0px))}
 #jump{position:fixed;right:22px;bottom:calc(26px + env(safe-area-inset-bottom,0px));width:78px;height:78px;border-radius:50%;font:800 18px var(--display);color:var(--ink);background:var(--leaf);touch-action:none}
 #touchHint{position:fixed;left:22px;bottom:calc(26px + env(safe-area-inset-bottom,0px));width:96px;height:96px;border-radius:50%;border:2.5px dashed rgba(42,34,56,.55);display:grid;place-items:center;font-size:11px;font-weight:600;text-align:center;color:var(--ink);background:rgba(255,250,240,.35);pointer-events:none;line-height:1.2}
 body.touch #poi{bottom:calc(118px + env(safe-area-inset-bottom,0px))}
@@ -98,6 +100,7 @@ body.touch #poi{bottom:calc(118px + env(safe-area-inset-bottom,0px))}
   <div id="touchHint" hidden>Træk her<br>for at gå</div>
   <div id="joy" hidden><div id="knob"></div></div>
   <button id="jump" class="sticker" type="button" hidden>Hop</button>
+  <button id="umb" class="sticker btn" type="button" aria-pressed="false" title="Paraply (P)" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"><path d="M2.5 12a9.5 8 0 0119 0c-1.6-1.3-3.2-1.3-4.75 0-1.6-1.3-3.2-1.3-4.75 0-1.6-1.3-3.2-1.3-4.75 0-1.6-1.3-3.2-1.3-4.75 0z"/><path d="M12 12v7a2 2 0 01-4 0"/></svg><span id="umbTxt">Paraply</span></button>
 </div>
 
 <div id="intro" class="overlay">
@@ -115,11 +118,13 @@ body.touch #poi{bottom:calc(118px + env(safe-area-inset-bottom,0px))}
       <span><kbd>Mellemrum</kbd></span><span>Hop</span>
       <span>Træk med musen</span><span>Kig dig omkring (rul for at zoome)</span>
       <span><kbd>N</kbd> <kbd>M</kbd></span><span>Dag eller aften · vis eller skjul kortet</span>
+      <span><kbd>P</kbd></span><span>Slå paraplyen op eller ned, når det regner</span>
     </div>
     <div class="keys" id="keysTouch" hidden>
       <span>Venstre tommel</span><span>Skub op for at gå, til siden for at dreje</span>
       <span>Højre tommel</span><span>Træk for at kigge dig omkring</span>
       <span>Hop-knappen</span><span>Hop op på bænke og stubbe</span>
+      <span>Paraply-knappen</span><span>Kommer frem, når det regner</span>
     </div>
     <button class="go" id="goBtn" type="button" disabled>Henter skolen …</button>
     <p class="foot">Tegnet frit efter fotos af Skolen på Duevej og en håndtegnet plan af skolen. Placeringer og detaljer er forenklede.</p>
@@ -307,7 +312,7 @@ TX.aptMask = ctex(256, 256, (g, w, h) => drawApt(g, w, h, true), { rep: 1 / 12, 
 // window textures
 function drawWin(g, w, h, kind, mask) {
   const arch = kind === 'arch' || kind === 'doorArch';
-  const frameCol = mask ? '#000' : ({ modern: '#3a3e45', doorModern: '#3a3e45', doorArch: '#5b3a26', doorGreen: '#3f6b4f' }[kind] || '#f6f3ec');
+  const frameCol = mask ? '#000' : ({ modern: '#3a3e45', doorModern: '#3a3e45', doorArch: '#5b3a26', doorGreen: '#3f6b4f', green: '#2e4a37' }[kind] || '#f6f3ec');
   const shape = (i) => { g.beginPath(); const x0 = i, x1 = w - i, y1 = h - i; if (arch) { const r = (x1 - x0) / 2, cy = i + r; g.moveTo(x0, y1); g.lineTo(x0, cy); g.arc(w / 2, cy, r, Math.PI, 0, false); g.lineTo(x1, y1); g.closePath(); } else g.rect(x0, i, x1 - x0, y1 - i); };
   const glass = () => { if (mask) return '#fff'; const gr = g.createLinearGradient(0, 0, w * 0.6, h); gr.addColorStop(0, '#8aa8c0'); gr.addColorStop(1, '#3b536c'); return gr; };
   g.clearRect(0, 0, w, h);
@@ -324,14 +329,14 @@ function drawWin(g, w, h, kind, mask) {
   }
   g.fillStyle = glass(); shape(fw); g.fill();
   g.save(); shape(0); g.clip(); g.fillStyle = frameCol;
-  if (kind === 'rect') { g.fillRect(w / 2 - 2, 0, 4, h); g.fillRect(0, h * 0.36, w, 4); }
+  if (kind === 'rect' || kind === 'green') { g.fillRect(w / 2 - 2, 0, 4, h); g.fillRect(0, h * 0.36, w, 4); }
   else if (kind === 'arch') { g.fillRect(w / 2 - 2, 0, 4, h); const cy = w / 2; g.fillRect(0, cy, w, 4); g.strokeStyle = frameCol; g.lineWidth = 3; g.beginPath(); g.moveTo(w / 2, cy); g.lineTo(w / 2 - w * 0.4, cy - w * 0.4); g.moveTo(w / 2, cy); g.lineTo(w / 2 + w * 0.4, cy - w * 0.4); g.stroke(); }
   else if (kind === 'yellow') { g.fillRect(w / 2 - 2, h * 0.28, 4, h); g.fillRect(0, h * 0.28, w, 4); }
   else if (kind === 'doorModern') { g.fillRect(w / 2 - 2, 0, 4, h); }
   if (!mask) { g.fillStyle = 'rgba(255,255,255,.22)'; g.beginPath(); g.moveTo(w * 0.2, h); g.lineTo(w * 0.45, h); g.lineTo(w * 0.95, h * 0.25); g.lineTo(w * 0.7, h * 0.25); g.closePath(); g.fill(); }
   g.restore();
 }
-const WINKINDS = ['rect', 'arch', 'yellow', 'modern', 'doorArch', 'doorGreen', 'doorModern'];
+const WINKINDS = ['rect', 'arch', 'yellow', 'modern', 'doorArch', 'doorGreen', 'doorModern', 'green'];
 const WINMAT = {};
 const nightMats = [];
 for (const k of WINKINDS) {
@@ -624,7 +629,7 @@ rectG(-200, 44, 99.5, 109.5, M.road, 0.018, '#8b8b8e');
   sw(40, 44, -92, 91); sw(40, 44, 109.5, 200); sw(40, 44, -200, -110); sw(54, 58, -92, 200); sw(54, 58, -200, -110);
   sw(-41.5, -37.5, -92, 91); sw(-41.5, -37.5, 113.5, 200); sw(-41.5, -37.5, -200, -110); sw(-55.5, -51.5, -92, 99.5); sw(-55.5, -51.5, 113.5, 200); sw(-55.5, -51.5, -200, -110);
   // Egernvej: a strip between the path and the road, and the far side
-  sw(-41.5, 44, 98, 99.5); sw(-200, -55.5, 95.5, 99.5); sw(-200, -51.5, 109.5, 113.5); sw(-41.5, 40, 109.5, 113.5);
+  sw(-41.5, 44, 98, 99.5); sw(-200, -55.5, 95.5, 99.5); sw(-200, -51.5, 109.5, 113.5); sw(-41.5, -3, 109.5, 113.5); sw(3, 40, 109.5, 113.5); sw(-5.5, -3, 113.5, 200); sw(3, 5.5, 113.5, 200);
   for (let i = 0; i < 9; i++) box(4, 0.02, 0.55, M.zebra, -20, 0.012, -105.3 + i * 1.15, { cast: false });
   for (let i = 0; i < 9; i++) box(0.55, 0.02, 4, M.zebra, 44.7 + i * 1.15, 0.014, -57.5, { cast: false });
   for (let i = 0; i < 9; i++) box(0.55, 0.02, 4, M.zebra, -50.8 + i * 1.15, 0.016, 30, { cast: false });
@@ -686,8 +691,8 @@ const leafMats = {};
 function leafMat(c) { _c.set(c); const q = v => Math.round(v * 18) / 18; _c.setRGB(q(_c.r), q(_c.g), q(_c.b)); const k = '#' + _c.getHexString(); return leafMats[k] || (leafMats[k] = toon(k)); } // few shades, so leaves can be merged
 const icoGeo = new THREE.IcosahedronGeometry(1, 1); icoGeo.computeVertexNormals();
 const treeSpots = [];
-function tree(x, z, kind = 'round', s = 1) {
-  let th = 3.0 * s, col = pick(LEAF_COLS);
+function tree(x, z, kind = 'round', s = 1, colIn) {
+  let th = 3.0 * s, col = colIn || pick(LEAF_COLS);
   if (kind === 'birch') { col = '#f2cf4f'; th = 4.2 * s; }
   if (kind === 'tall') th = 2.4 * s;
   if (kind === 'big') th = 3.6 * s;
@@ -698,7 +703,7 @@ function tree(x, z, kind = 'round', s = 1) {
   if (kind === 'tall') { R = 1.6 * s; const m = new THREE.Mesh(icoGeo, leafMat(col)); m.position.set(x, th + 2.6 * s, z); m.scale.set(1.6 * s, 3.2 * s, 1.6 * s); m.castShadow = true; m.receiveShadow = true; world.add(m); blob(0.5 * s, th + 4.2 * s, 0.2 * s, 0.9 * s, col); }
   else if (kind === 'birch') { R = 1.5 * s; blob(0, th + 1.2 * s, 0, 1.3 * s, col); blob(0.6 * s, th + 2.2 * s, 0.2 * s, 0.9 * s, col); blob(-0.5 * s, th + 0.6 * s, -0.3 * s, 0.9 * s, col); }
   else {
-    const big = kind === 'big'; R = (big ? 3.2 : 2.2) * s; const c2 = pick(LEAF_COLS);
+    const big = kind === 'big'; R = (big ? 3.2 : 2.2) * s; const c2 = colIn || pick(LEAF_COLS);
     blob(0, th + R * 0.75, 0, R, col);
     const n = big ? 6 : 4;
     for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2 + rand(); blob(Math.cos(a) * R * 0.7, th + R * (0.5 + rand() * 0.5), Math.sin(a) * R * 0.7, R * rr(0.55, 0.75), i % 2 ? c2 : col); }
@@ -972,6 +977,7 @@ const TRAMPS = [];
     mapItems.push({ k: 'c', x, z, r: 1.05, fill: rimCols[i] });
   });
 }
+const BARS = []; // the low steel bars she swings around
 // ---------------- low bars to swing on, sunburst and sandbox by Duevej
 {
   polyG([[25, 44], [38.5, 43], [39, 52], [37.5, 57], [27, 57], [24.5, 50.5]], M.sand, 0.03, '#ead197');
@@ -982,7 +988,7 @@ const TRAMPS = [];
   const swingBar = (x0, x1, z, h) => {
     for (const x of [x0, x1]) { mesh(new THREE.CylinderGeometry(0.05, 0.055, h + 0.04, 10), M.steel, x, (h + 0.04) / 2, z); colCirc(x, z, 0.08, 99); }
     const m = mesh(new THREE.CylinderGeometry(0.035, 0.035, x1 - x0 + 0.06, 10), M.steel, (x0 + x1) / 2, h, z); m.quaternion.setFromUnitVectors(Y, new THREE.Vector3(1, 0, 0));
-    colBox(x0, x1, z - 0.05, z + 0.05, h);
+    colBox(x0, x1, z - 0.05, z + 0.05, h); BARS.push({ x0, x1, z, h });
     mapItems.push({ k: 'l', x0, z0: z, x1, z1: z, stroke: '#5f656c' });
   };
   for (const [x0, z, h] of [[27, 46, 0.8], [30.4, 46, 1.0], [33.8, 46, 0.9], [28.6, 49, 1.05], [32, 49, 0.8], [35.4, 49, 0.95], [27, 52, 0.9], [30.4, 52, 1.05], [33.8, 52, 0.8], [29.2, 55, 0.85], [32.6, 55, 1.0]]) swingBar(x0, x0 + 2.4, z, h);
@@ -1073,8 +1079,46 @@ const TRAMPS = [];
 }
 apartment(-140, -60, -132, -114, 5); apartment(-34, 36, -132, -114, 5); apartment(62, 140, -132, -114, 5);
 apartment(62, 78, -92, -34, 5); apartment(62, 78, -28, 30, 5); apartment(62, 78, 36, 88, 5); apartment(62, 78, 104, 160, 5);
-apartment(-80, -60, 115, 160, 5);
-apartment(-36, -4, 115, 133, 4); apartment(2, 38, 115, 133, 4);
+// ---------------- row houses on the far side of Egernvej, and Solsortvej
+{
+  const rowBrick = toon('#fff', { map: brickTex('#a8885c', '#77634a') });
+  const trellis = toon('#ffffff', { map: ctex(64, 64, (g, w, h) => { g.clearRect(0, 0, w, h); g.strokeStyle = '#3e3b33'; g.lineWidth = 3; g.strokeRect(1.5, 1.5, w - 3, h - 3); }, { rep: 2 }), alphaTest: 0.5, side: THREE.DoubleSide });
+  const binM = toon('#2b2d31'), ridgeM = toon('#8f3c26');
+  function rowBlock(x0, x1, zf) {
+    const D = 9, H = 6.6, w = x1 - x0, cx = (x0 + x1) / 2, cz = zf + D / 2, rise = 4.0;
+    box(w, H, D, rowBrick, cx, 0, cz, { edges: true });
+    colBox(x0, x1, zf, zf + D, 12);
+    box(w + 0.1, 0.9, D + 0.1, M.concrete, cx, 0, cz, { cast: false });
+    gableRoof(w, D, rise, M.tile, cx, H, cz, { over: 0.45, gableMat: rowBrick, capMat: ridgeM });
+    mapItems.push({ k: 'r', x0, x1, z0: zf, z1: zf + D, fill: '#b9925e', line: true });
+    mesh(mplane(w - 0.4, 2.1), trellis, cx, 2.0, zf - 0.08, { cast: false, ry: Math.PI });
+    const n = Math.max(1, Math.round(w / 5.6)), uw = w / n;
+    for (let i = 0; i < n; i++) {
+      const ux = x0 + uw * (i + 0.5), dx = ux - uw * 0.24, wx = ux + uw * 0.18;
+      addWin('doorGreen', dx, 2.05, zf - WOFF, Math.PI, 1.0, 2.2, 0);
+      addWin('green', wx, 2.2, zf - WOFF, Math.PI, 1.2, 1.5, 0.5);
+      addWin('green', dx, 4.9, zf - WOFF, Math.PI, 0.9, 1.4, 0.5); addWin('green', wx, 4.9, zf - WOFF, Math.PI, 1.1, 1.4, 0.5);
+      addWin('green', wx, 0.45, zf - WOFF, Math.PI, 0.9, 0.45, 0.2);
+      addWin('green', ux - uw * 0.2, 2.2, zf + D + WOFF, 0, 1.1, 1.5, 0.5); addWin('green', ux + uw * 0.2, 4.9, zf + D + WOFF, 0, 1.1, 1.4, 0.5);
+      for (let s = 0; s < 3; s++) box(1.3, 0.3 * (s + 1), 0.35, M.concrete, dx, 0, zf - 0.175 - (2 - s) * 0.35, { col: true, cast: false });
+      box(0.14, 1.05, 1.05, M.concrete, dx + 0.72, 0, zf - 0.525, { cast: false });
+      box(0.8, 1.7, 0.8, rowBrick, ux + uw * 0.3, H + rise - 0.4, cz, { edges: true }); box(1.0, 0.16, 1.0, M.dark, ux + uw * 0.3, H + rise + 1.3, cz);
+      if (i > 0) mesh(new THREE.CylinderGeometry(0.05, 0.05, H, 6), M.dark, x0 + uw * i, H / 2, zf - 0.12, { cast: false });
+      if (i % 2 === 0) for (const k of [0, 1]) { box(0.55, 1.0, 0.6, binM, wx + 0.45 + k * 0.62, 0, zf - 0.45, { col: true }); }
+    }
+  }
+  rowBlock(-37, -5.5, 115.5); rowBlock(5.5, 39.5, 115.5); rowBlock(-95, -56.5, 115.5);
+  // Solsortvej runs south from Egernvej between the two rows
+  rectG(-3, 3, 109.5, 200, M.road, 0.02, '#8b8b8e');
+  // the corner with the street sign and a pink cherry tree
+  const sign = (txt) => ctex(256, 48, (g, w, h) => { g.fillStyle = '#2d3a4a'; g.fillRect(0, 0, w, h); g.strokeStyle = '#e9eef2'; g.lineWidth = 3; g.strokeRect(4, 4, w - 8, h - 8); g.fillStyle = '#f2f5f7'; g.font = 'bold 28px Lexend, system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, w / 2, h / 2 + 1); }, { wrap: false });
+  mesh(new THREE.CylinderGeometry(0.04, 0.04, 2.6, 8), M.steel, -4.2, 1.3, 112.2);
+  const s1 = toon('#ffffff', { map: sign('Egernvej'), side: THREE.DoubleSide }), s2 = toon('#ffffff', { map: sign('Solsortvej'), side: THREE.DoubleSide });
+  mesh(new THREE.PlaneGeometry(1.2, 0.24), s1, -4.85, 2.45, 112.2, { cast: false });
+  mesh(new THREE.PlaneGeometry(1.2, 0.24), s2, -4.2, 2.15, 112.85, { cast: false, ry: Math.PI / 2 });
+  colCirc(-4.2, 112.2, 0.08, 99);
+  tree(-7.2, 112.4, 'big', 0.8, '#eda6c4');
+}
 // ---------------- yard trees, street trees
 [[6, -36, 'round', 1], [-3, -6, 'round', 1.05], [18, -6, 'tall', 0.95], [24, 9, 'round', 0.9], [12, 12, 'big', 1.1], [-2, 40, 'tall', 0.95], [16, 40, 'round', 0.85],
  [24, -62, 'birch', 0.95], [37, -67, 'birch', 0.9], [26.5, -22.5, 'round', 0.8], [17, -74, 'tall', 0.7], [22, -48, 'round', 0.9], [0, -30, 'round', 0.9], [20, -52, 'round', 0.8],
@@ -1158,7 +1202,7 @@ const BULB_DAY = new THREE.Color('#efe9da'), BULB_EVE = new THREE.Color('#ffd27a
 let evening = false, ev = 0, evApplied = -1;
 const sunOff = new THREE.Vector3();
 function applyEvening() {
-  if (Math.abs(ev - evApplied) < 0.002) return; evApplied = ev;
+  if (Math.abs(ev - evApplied) < 0.002 && Math.abs(wet - wetApplied) < 0.002) return; evApplied = ev; wetApplied = wet;
   skyU.top.value.lerpColors(DAY.top, EVE.top, ev); skyU.mid.value.lerpColors(DAY.mid, EVE.mid, ev); skyU.bot.value.lerpColors(DAY.bot, EVE.bot, ev);
   scene.fog.color.copy(skyU.mid.value);
   hemi.color.lerpColors(DAY.hs, EVE.hs, ev); hemi.groundColor.lerpColors(DAY.hg, EVE.hg, ev); hemi.intensity = DAY.hi + (EVE.hi - DAY.hi) * ev;
@@ -1169,6 +1213,14 @@ function applyEvening() {
   for (const m of nightMats) m.emissiveIntensity = ev * 1.05;
   M.bulb.color.lerpColors(BULB_DAY, BULB_EVE, ev);
   if (GLOW_MAT) GLOW_MAT.opacity = ev * 0.9; for (const s of glows) s.visible = ev > 0.01;
+  if (wet > 0.001) {
+    const w = wet * (0.75 - 0.35 * ev);
+    skyU.top.value.lerp(RAIN.top, w); skyU.mid.value.lerp(RAIN.mid, w); skyU.bot.value.lerp(RAIN.bot, w); scene.fog.color.copy(skyU.mid.value);
+    cloudMat.color.lerp(RAIN.cloud, w); cloudMat.emissive.copy(cloudMat.color);
+    sun.intensity *= 1 - 0.6 * wet; hemi.intensity *= 1 - 0.12 * wet;
+  }
+  scene.fog.near = 140 - 70 * wet; scene.fog.far = 470 - 190 * wet;
+  sunSprite.material.opacity = 1 - 0.9 * wet;
 }
 
 // ======================================================================== FLAG
@@ -1636,11 +1688,11 @@ const POIS = [
   { n: 'Stendyrene', t: 'Bløde grønne bakker. På toppen hviler en odder og en bjørn, der er hugget i sten.', x: 5, z: 24, r: 9 },
   { n: 'Den lille fodboldbane', t: 'En lille grøn bane med to små mål. Perfekt til en hurtig kamp i frikvarteret.', x: 7.5, z: 41.5, r: 8 },
   { n: 'Trampolinerne', t: 'Fire trampoliner gravet ned i et bed af blødt gummi. Gå ud på dem, så hopper du af dig selv. Tryk på hop for at komme helt højt op.', x: 7.5, z: 53.2, r: 7 },
-  { n: 'Rørene', t: 'Lave stålrør i hoftehøjde for en voksen. Her kan man svinge sig rundt og hænge med hovedet nedad.', x: 31, z: 50, r: 9 },
+  { n: 'Rørene', t: 'Lave stålrør i hoftehøjde for en voksen. Gå lige ind i et af rørene, så svinger hun sig rundt om det og går videre.', x: 31, z: 50, r: 9 },
   { n: 'Naboens røde hus', t: 'Det store røde hus ud mod Mariendalsvej. Det hører ikke til skolen.', x: 15, z: -85, r: 13 },
   { n: 'Husene med haver', t: 'Små huse med hver sin have. Her bor der nogen, så de hører ikke til skolen.', area: [-37.5, -6, -21.5, 91] },
   { n: 'Husene med haver', t: 'Små huse med hver sin have. Her bor der nogen, så de hører ikke til skolen.', area: [-6, 40, 58.5, 91] },
-  { n: 'Egernvej', t: 'Vejen syd for skolen. Den løber langs stien med træerne og fortsætter lige ud mod vest. Cyklisterne kører her, så kig dig for.', area: [-200, 44, 98, 113.5] },
+  { n: 'Egernvej', t: 'Vejen syd for skolen. Den løber langs stien med træerne og fortsætter lige ud mod vest. På den anden side ligger lange rækkehuse i gule mursten med grønne døre. Cyklisterne kører her, så kig dig for.', area: [-200, 44, 98, 116] },
   { n: 'Duevej', t: 'Vejen, der har givet skolen sit navn. Bilerne holder parkeret i en lang række under træerne, og cyklisterne suser forbi. Fodgængerovergangen ligger mellem det lille røde hus og huset med fiskeskælstaget. Langs skolen er der et grønt bælte med højt græs og små træer.', area: [40, 60, -96, 200] },
   { n: 'Mariendalsvej', t: 'Den store vej på nordsiden af skolen. Kig dig for, før du går over.', area: [-200, 200, -200, -92] },
   { n: 'Vejen bag haverne', t: 'Her kan du gå hele vejen rundt om skolen. På den anden side af vejen ligger små parcelhuse med haver. Cyklisterne kører i begge retninger, så kig dig for, før du går over.', area: [-60, -37.5, -92, 200] },
@@ -1823,6 +1875,7 @@ window.addEventListener('keydown', e => {
   if (e.code === 'Space' && !e.repeat) jumpReq = true;
   if (e.code === 'KeyN' && !e.repeat) setEvening(!evening);
   if (e.code === 'KeyM' && !e.repeat) setMapVisible(!showMap);
+  if (e.code === 'KeyP' && !e.repeat) toggleUmbrella();
 });
 window.addEventListener('keyup', e => keys.delete(e.code));
 window.addEventListener('blur', () => keys.clear());
@@ -1852,13 +1905,14 @@ const endPtr = e => { if (e.pointerId === joy.id) { joy.id = null; joy.x = joy.y
 canvas.addEventListener('pointerup', endPtr); canvas.addEventListener('pointercancel', endPtr);
 canvas.addEventListener('wheel', e => { if (!started) return; e.preventDefault(); cam.dist = Math.min(18, Math.max(3.2, cam.dist * (1 + Math.sign(e.deltaY) * 0.1))); }, { passive: false });
 $('jump').addEventListener('pointerdown', e => { e.preventDefault(); jumpReq = true; });
+$('umb').addEventListener('click', () => { toggleUmbrella(); $('c').focus(); });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 
 // ======================================================================== PHYSICS
 const P = { pos: new THREE.Vector3(42, 0.12, -57.5), vel: new THREE.Vector3(), onGround: true, walkT: 0, face: -Math.PI / 2 };
 const TRAMP_Y = 0.3;
 function trampAt(x, z) { for (const t of TRAMPS) if ((x - t.x) ** 2 + (z - t.z) ** 2 < t.r * t.r) return t; return null; }
-const STEP = 0.5, RAD = 0.35, G = 22, BOUNDS = [-57.6, 60.6, -112, 113.2];
+const STEP = 0.5, RAD = 0.35, G = 22, BOUNDS = [-57.6, 60.6, -112, 115.3];
 const angDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 function resolve(p) {
   for (let it = 0; it < 2; it++) for (const c of cols) {
@@ -1876,6 +1930,7 @@ function resolve(p) {
   }
 }
 function updPlayer(dt) {
+  if (P.swing) { updSwing(dt); updUmbrella(dt); return; }
   let fwd = 0, turn = 0;
   if (!paused) {
     if (keys.has('KeyW') || keys.has('ArrowUp')) fwd += 1;
@@ -1892,6 +1947,8 @@ function updPlayer(dt) {
   const acc = P.onGround ? 12 : 5;
   P.vel.x += (fx * speed - P.vel.x) * Math.min(1, acc * dt); P.vel.z += (fz * speed - P.vel.z) * Math.min(1, acc * dt);
   P.pos.x += P.vel.x * dt; P.pos.z += P.vel.z * dt;
+  if (P.swingCd > 0) P.swingCd -= dt;
+  else if (P.onGround && fwd > 0.3 && !paused) { const hit = barHit(); if (hit) { startSwing(hit); return; } }
   resolve(P.pos); pushFromCyclists(P.pos);
   P.pos.x = Math.min(BOUNDS[1], Math.max(BOUNDS[0], P.pos.x)); P.pos.z = Math.min(BOUNDS[3], Math.max(BOUNDS[2], P.pos.z));
   const tr = trampAt(P.pos.x, P.pos.z);
@@ -1927,7 +1984,44 @@ function updPlayer(dt) {
   }
   for (const l of L) l.shoe.rotation.x = -(l.hip.rotation.x + l.knee.rotation.x) * 0.55;
   kid.head.rotation.z = Math.sin(clockT * 1.3) * 0.04 * (1 - k);
+  updUmbrella(dt);
   kid.root.position.copy(P.pos);
+}
+
+// ---------------- swinging around the low steel bars: walk into one and she rolls over it
+const sm = t => t * t * (3 - 2 * t);
+function barHit() {
+  for (const b of BARS) {
+    if (P.pos.x < b.x0 + 0.2 || P.pos.x > b.x1 - 0.2 || P.pos.y > b.h - 0.3) continue;
+    const dz = b.z - P.pos.z; if (Math.abs(dz) > RAD + 0.15) continue;
+    const dir = Math.sign(dz) || 1; if (P.vel.z * dir < 0.8) continue;
+    return { b, dir };
+  }
+  return null;
+}
+function startSwing({ b, dir }) {
+  const x = Math.min(b.x1 - 0.3, Math.max(b.x0 + 0.3, P.pos.x)), z1 = b.z + dir * (RAD + 0.35);
+  P.swing = { b, dir, t: 0, start: new THREE.Vector3(x, P.pos.y, b.z - dir * (RAD + 0.05)), bar: new THREE.Vector3(x, b.h, b.z), end: new THREE.Vector3(x, groundAt(x, z1, 0.5), z1), face: dir > 0 ? 0 : Math.PI };
+  P.face = P.swing.face; P.vel.set(0, 0, 0);
+  tone(320, 980, 0.05, 0.55, 0.05, 'triangle');
+}
+function updSwing(dt) {
+  const s = P.swing; s.t = Math.min(1, s.t + dt / 1.15); const t = s.t;
+  let drop, phi = 0;
+  if (t < 0.18) { const e = sm(t / 0.18); P.pos.lerpVectors(s.start, s.bar, e); drop = e; }
+  else if (t < 0.82) { P.pos.copy(s.bar); drop = 1; phi = sm((t - 0.18) / 0.64) * Math.PI * 2; }
+  else { const e = sm((t - 0.82) / 0.18); P.pos.lerpVectors(s.bar, s.end, e); drop = 1 - e; }
+  const hip = 0.552 * drop;
+  kid.g.rotation.x = phi; kid.g.position.set(0, -hip * Math.cos(phi), -hip * Math.sin(phi));
+  kid.root.rotation.y = s.face; kid.root.position.copy(P.pos);
+  const tuck = Math.sin(Math.min(1, Math.max(0, (t - 0.12) / 0.76)) * Math.PI);
+  const L = kid.legs, A = kid.arms;
+  for (const l of L) { l.hip.rotation.x = -0.75 * tuck; l.knee.rotation.x = 1.1 * tuck; l.shoe.rotation.x = -0.2 * tuck; }
+  for (const [i, a] of A.entries()) { a.rotation.x = -0.35 * drop; a.rotation.z = (i ? 0.1 : -0.1); }
+  if (t >= 1) {
+    P.swing = null; P.swingCd = 0.5; P.pos.copy(s.end); P.onGround = true; P.vel.set(0, 0, s.dir * 3.2);
+    kid.g.rotation.x = 0; kid.g.position.set(0, 0, 0); hop();
+  }
 }
 
 // ======================================================================== CAMERA (always behind her, looking where she walks)
@@ -2040,6 +2134,121 @@ function onResize() { const w = window.innerWidth, h = window.innerHeight; rende
 window.addEventListener('resize', onResize);
 camera.fov = window.innerWidth / window.innerHeight < 0.8 ? 70 : 55; camera.updateProjectionMatrix();
 
+// ======================================================================== RAIN AND UMBRELLA
+// About every few minutes a shower passes for a minute. P (or the umbrella button) opens and closes her umbrella.
+const UMB = (() => {
+  const root = new THREE.Group(); root.position.set(0.3, 0, 0.3); root.visible = false; kid.g.add(root);
+  const shaftM = toon('#3b3f46'), ink = new THREE.LineBasicMaterial({ color: '#231a22' });
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 1.55, 8), shaftM); shaft.position.y = 1.55; shaft.castShadow = true; root.add(shaft);
+  const hook = new THREE.Mesh(new THREE.TorusGeometry(0.07, 0.022, 6, 12, Math.PI), toon('#7a4a2a')); hook.position.set(0.07, 0.8, 0); hook.rotation.z = Math.PI; root.add(hook);
+  const canopy = new THREE.Group(); canopy.position.y = 2.32; root.add(canopy);
+  const R = 0.95, H = 0.38, N = 8, mats = [toon('#e2483c', { side: THREE.DoubleSide }), toon('#f6efe2', { side: THREE.DoubleSide })];
+  const rim = [];
+  for (let i = 0; i < N; i++) {
+    const a0 = i / N * Math.PI * 2, a1 = (i + 1) / N * Math.PI * 2, am = (a0 + a1) / 2;
+    const P0 = [Math.cos(a0) * R, -H, Math.sin(a0) * R], Pm = [Math.cos(am) * R * 0.9, -H * 0.8, Math.sin(am) * R * 0.9], P1 = [Math.cos(a1) * R, -H, Math.sin(a1) * R];
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, ...Pm, ...P0, 0, 0, 0, ...P1, ...Pm], 3)); g.computeVertexNormals();
+    const m = new THREE.Mesh(g, mats[i % 2]); m.castShadow = true; canopy.add(m);
+    rim.push(new THREE.Vector3(...P0), new THREE.Vector3(...Pm));
+  }
+  canopy.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(rim), ink));
+  const tip = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 6), shaftM); tip.position.y = 0.06; canopy.add(tip);
+  return { root, canopy, open: false, k: 0 };
+})();
+function updUmbBtn() {
+  const b = $('umb'); b.hidden = !(started && (WEATHER.raining || UMB.open));
+  b.setAttribute('aria-pressed', String(UMB.open)); $('umbTxt').textContent = UMB.open ? 'Luk paraply' : 'Paraply';
+}
+function toggleUmbrella() {
+  if (!started || paused) return;
+  UMB.open = !UMB.open;
+  if (UMB.open) { tone(380, 760, 0, 0.14, 0.05, 'triangle'); tone(900, 1300, 0.08, 0.08, 0.03); } else tone(700, 360, 0, 0.14, 0.05, 'triangle');
+  updUmbBtn();
+}
+function updUmbrella(dt) {
+  UMB.k += ((UMB.open ? 1 : 0) - UMB.k) * Math.min(1, dt * 6);
+  if (UMB.k < 0.01 && !UMB.open) { UMB.root.visible = false; return; }
+  UMB.root.visible = true;
+  const k = UMB.k;
+  UMB.canopy.scale.set(0.12 + 0.88 * k, 1.7 - 0.7 * k, 0.12 + 0.88 * k);
+  UMB.root.scale.setScalar(0.55 + 0.45 * Math.min(1, k * 1.6));
+  UMB.root.rotation.z = Math.sin(P.walkT) * 0.035 * k;
+  const a = kid.arms[1]; a.rotation.x += (-0.9 - a.rotation.x) * k; a.rotation.z += (0.05 - a.rotation.z) * k;
+}
+
+const WEATHER = { t: 45, raining: false };  // the first shower comes after about 45 seconds of walking
+let wet = 0, wetApplied = -1;
+const RAIN = { top: new THREE.Color('#8e9aa6'), mid: new THREE.Color('#bfc3c6'), bot: new THREE.Color('#a9aaa8'), cloud: new THREE.Color('#9aa1a8') };
+const RAIN_N = isTouch ? 700 : 1600, RB = 26, RH = 22;
+const rainPos = new Float32Array(RAIN_N * 6), rainV = new Float32Array(RAIN_N);
+const rainGeo = new THREE.BufferGeometry(); rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
+const rainMat = new THREE.LineBasicMaterial({ color: '#dbe7f3', transparent: true, opacity: 0, depthWrite: false });
+const rainLines = new THREE.LineSegments(rainGeo, rainMat); rainLines.frustumCulled = false; rainLines.visible = false; scene.add(rainLines);
+for (let i = 0; i < RAIN_N; i++) { rainV[i] = rr(15, 21); const x = rr(-RB, RB), y = rr(0, RH), z = rr(-RB, RB); rainPos.set([x, y, z, x, y - 0.7, z], i * 6); }
+const SPL_N = isTouch ? 40 : 90;
+const splGeo = new THREE.RingGeometry(0.55, 1, 14); splGeo.rotateX(-Math.PI / 2);
+const splash = new THREE.InstancedMesh(splGeo, new THREE.MeshBasicMaterial({ color: '#e4edf5', transparent: true, opacity: 0.55, depthWrite: false }), SPL_N);
+splash.frustumCulled = false; splash.visible = false; scene.add(splash);
+const splT = new Float32Array(SPL_N).fill(1), splXYZ = new Float32Array(SPL_N * 3); let splI = 0;
+const _sd = new THREE.Object3D();
+{ _sd.scale.setScalar(0); _sd.updateMatrix(); for (let i = 0; i < SPL_N; i++) splash.setMatrixAt(i, _sd.matrix); }
+let rainSnd = null, rainLvl = -1;
+function rainSound(level) {
+  if (!actx) return;
+  if (!rainSnd) {
+    const a = actx, len = a.sampleRate * 2, buf = a.createBuffer(1, len, a.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    const src = a.createBufferSource(); src.buffer = buf; src.loop = true;
+    const f = a.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1500; f.Q.value = 0.5;
+    const g = a.createGain(); g.gain.value = 0; src.connect(f); f.connect(g); g.connect(a.destination); src.start();
+    rainSnd = { g };
+  }
+  rainSnd.g.gain.setTargetAtTime(level, actx.currentTime, 0.4);
+}
+function updRain(dt) {
+  if (started && !paused) {
+    WEATHER.t -= dt;
+    if (WEATHER.t <= 0) {
+      WEATHER.raining = !WEATHER.raining;
+      const key = isTouch ? 'Tryk på paraply-knappen' : 'Tryk på P';
+      if (WEATHER.raining) { WEATHER.t = 60; toast(`Det begynder at regne! ${key} for at slå paraplyen op.`); }
+      else { WEATHER.t = rr(150, 240); toast(UMB.open ? `Det er holdt op med at regne. ${key} for at slå paraplyen ned.` : 'Det er holdt op med at regne.'); }
+      updUmbBtn();
+    }
+  }
+  wet += ((WEATHER.raining ? 1 : 0) - wet) * Math.min(1, dt * 0.45);
+  const lvl = soundOn && !paused ? Math.round(wet * 40) / 40 * 0.05 : 0;
+  if (lvl !== rainLvl) { rainLvl = lvl; rainSound(lvl); }
+  const show = wet > 0.02; rainLines.visible = show;
+  let anyS = false;
+  if (show) {
+    rainMat.opacity = 0.6 * Math.min(1, wet * 1.3);
+    const n = Math.max(1, Math.floor(RAIN_N * Math.min(1, wet * 1.2)));
+    rainGeo.setDrawRange(0, n * 2);
+    const cx = camera.position.x, cz = camera.position.z, base = Math.max(0, camera.position.y - 14), wind = 1.6;
+    const px = started ? P.pos.x : cx, pz = started ? P.pos.z : cz;
+    for (let i = 0; i < n; i++) {
+      const o = i * 6; let x = rainPos[o], y = rainPos[o + 1], z = rainPos[o + 2];
+      y -= rainV[i] * dt; x += wind * dt;
+      if (x - cx > RB) x -= 2 * RB; else if (cx - x > RB) x += 2 * RB;
+      if (z - cz > RB) z -= 2 * RB; else if (cz - z > RB) z += 2 * RB;
+      if (y < 0) {
+        if ((x - px) ** 2 + (z - pz) ** 2 < 150 && rand() < 0.5) { const s = splI; splI = (splI + 1) % SPL_N; splT[s] = 0; splXYZ[s * 3] = x; splXYZ[s * 3 + 1] = groundAt(x, z, 0.6) + 0.04; splXYZ[s * 3 + 2] = z; }
+        y += base + RH + rr(0, 3); x = cx + rr(-RB, RB); z = cz + rr(-RB, RB);
+      }
+      rainPos[o] = x; rainPos[o + 1] = y; rainPos[o + 2] = z; rainPos[o + 3] = x - wind * 0.045; rainPos[o + 4] = y - 0.75; rainPos[o + 5] = z;
+    }
+    rainGeo.attributes.position.needsUpdate = true;
+  }
+  for (let i = 0; i < SPL_N; i++) {
+    if (splT[i] >= 1) continue;
+    splT[i] = Math.min(1, splT[i] + dt * 3.2); anyS = true;
+    const s = splT[i] >= 1 ? 0 : 0.04 + splT[i] * 0.22;
+    _sd.position.set(splXYZ[i * 3], splXYZ[i * 3 + 1], splXYZ[i * 3 + 2]); _sd.scale.setScalar(s); _sd.updateMatrix(); splash.setMatrixAt(i, _sd.matrix);
+  }
+  splash.visible = anyS; if (anyS) splash.instanceMatrix.needsUpdate = true;
+}
+
 // ======================================================================== MAIN LOOP
 let last = performance.now(), clockT = 0, poiT = 0, mapT = 0, clockTick = 0;
 function updClock() { const d = new Date(); const m = d.getMinutes() + d.getSeconds() / 60, h = (d.getHours() % 12) + m / 60; const H = window.__clockHands; if (!H) return; H.mh.rotation.z = -m / 60 * Math.PI * 2; H.hh.rotation.z = -h / 12 * Math.PI * 2; H.mh.updateMatrix(); H.hh.updateMatrix(); H.mh.parent.updateMatrixWorld(true); }
@@ -2054,6 +2263,7 @@ function frame(now) {
   const fxz = started ? P.pos : orbitC;
   updLeaves(dt, clockT, started ? P.pos.x : camera.position.x * 0.3, started ? P.pos.z : camera.position.z * 0.3);
   updFlag(clockT);
+  updRain(dt);
   clouds.rotation.y += dt * 0.004;
   sun.position.set(fxz.x + sunOff.x, sunOff.y, fxz.z + sunOff.z); sun.target.position.set(fxz.x, 0, fxz.z); sun.target.updateMatrixWorld();
   sky.position.copy(camera.position);
@@ -2085,7 +2295,7 @@ function boot(data) {
   requestAnimationFrame(t => { last = t; frame(t); });
 }
 window.claude?.hot?.snapshot?.(() => ({ found: [...found], pos: P.pos.toArray(), face: P.face, started, evening }));
-window.__duevej = { P, cam, kid, setEvening, start: () => goBtn.click(), animals, cyclists, renderer, peek: (y) => { cam.yaw = y; lastDragEnd = clockT + 30; }, snap: (e) => { camInit = false; startBlend = 1; if (typeof e === 'number') { evening = e > 0.5; ev = e; } } };
+window.__duevej = { BARS, WEATHER, UMB, toggleUmbrella, P, cam, kid, setEvening, start: () => goBtn.click(), animals, cyclists, renderer, peek: (y) => { cam.yaw = y; lastDragEnd = clockT + 30; }, snap: (e) => { camInit = false; startBlend = 1; if (typeof e === 'number') { evening = e > 0.5; ev = e; } } };
 if (window.claude?.hot?.ready) window.claude.hot.ready(boot); else boot(window.claude?.hot?.data ?? {});
 </script>
 </body>
