@@ -64,6 +64,9 @@ kbd{display:inline-block;min-width:1.6em;text-align:center;padding:1px 6px;borde
 .err{background:#ffe0d6;border:2px solid var(--ink);border-radius:10px;padding:8px 12px;font-size:13.5px;margin:0 0 12px}
 #joy{position:fixed;width:112px;height:112px;margin:-56px 0 0 -56px;border-radius:50%;border:2.5px solid var(--ink);background:rgba(255,250,240,.55);pointer-events:none}
 #knob{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:var(--paper);border:2.5px solid var(--ink);box-shadow:2px 3px 0 var(--ink)}
+#kickHint{position:fixed;left:50%;top:13%;transform:translateX(-50%);padding:8px 14px;font:700 17px var(--display);background:#fff1d8;animation:pop .3s ease-out}
+#kickHint kbd{display:inline-block;min-width:1.4em;padding:1px 6px;margin-right:4px;border:2px solid var(--ink);border-radius:6px;background:#fff;font:800 15px var(--body);text-align:center}
+#kickBtn{position:fixed;right:112px;bottom:calc(30px + env(safe-area-inset-bottom,0px));width:70px;height:70px;border-radius:50%;font:800 16px var(--display);color:var(--ink);background:#ffd27a;touch-action:none}
 #umb{position:fixed;right:16px;bottom:calc(22px + env(safe-area-inset-bottom,0px));background:#cfe4f3}
 .touch #umb{bottom:calc(116px + env(safe-area-inset-bottom,0px))}
 #jump{position:fixed;right:22px;bottom:calc(26px + env(safe-area-inset-bottom,0px));width:78px;height:78px;border-radius:50%;font:800 18px var(--display);color:var(--ink);background:var(--leaf);touch-action:none}
@@ -100,6 +103,8 @@ body.touch #poi{bottom:calc(118px + env(safe-area-inset-bottom,0px))}
   <div id="touchHint" hidden>Træk her<br>for at gå</div>
   <div id="joy" hidden><div id="knob"></div></div>
   <button id="jump" class="sticker" type="button" hidden>Hop</button>
+  <div id="kickHint" class="sticker" hidden><kbd>S</kbd> for spark</div>
+  <button id="kickBtn" class="sticker" type="button" hidden>Spark</button>
   <button id="umb" class="sticker btn" type="button" aria-pressed="false" title="Paraply (P)" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"><path d="M2.5 12a9.5 8 0 0119 0c-1.6-1.3-3.2-1.3-4.75 0-1.6-1.3-3.2-1.3-4.75 0-1.6-1.3-3.2-1.3-4.75 0-1.6-1.3-3.2-1.3-4.75 0z"/><path d="M12 12v7a2 2 0 01-4 0"/></svg><span id="umbTxt">Paraply</span></button>
 </div>
 
@@ -116,6 +121,7 @@ body.touch #poi{bottom:calc(118px + env(safe-area-inset-bottom,0px))}
       <span><kbd>A</kbd><kbd>D</kbd> <kbd>←</kbd><kbd>→</kbd></span><span>Drej</span>
       <span><kbd>Shift</kbd></span><span>Løb</span>
       <span><kbd>Mellemrum</kbd></span><span>Hop</span>
+      <span><kbd>S</kbd> med bolden</span><span>Spark bolden (bolden ligger på den store fodboldbane)</span>
       <span>Træk med musen</span><span>Kig dig omkring (rul for at zoome)</span>
       <span><kbd>N</kbd> <kbd>M</kbd></span><span>Dag eller aften · vis eller skjul kortet</span>
       <span><kbd>P</kbd></span><span>Slå paraplyen op eller ned, når det regner</span>
@@ -2098,7 +2104,7 @@ const POIS = [
   { n: 'Inde i de gule huse', t: 'Til venstre ligger salen, trappen går op til 1. sal, og til højre er garderoben.', x: 24.5, z: 0.25, r: 7, in: true, fl: 0 },
   { n: 'Gangen mellem husene', t: 'En lukket gang af glas på første sal. Her kan man gå tørskoet fra de gule huse over i den store træbygning.', x: 35.2, z: 12, r: 4 },
   { n: 'Den nye træbygning', t: 'En stor bygning klædt i træribber med en stueetage af glas. Gå op ad ståltrappen og kig ud over skolegården.', x: 29, z: 27.5, r: 15 },
-  { n: 'Den store fodboldbane', t: 'Kunstgræs, hvide streger og to store mål. Det høje hegn holder bolden inde. Indgangen er i den ende, der vender mod cykelskuret.', x: -22, z: -60, r: 18 },
+  { n: 'Den store fodboldbane', t: 'Kunstgræs, hvide streger og to store mål. Gå hen til bolden, så følger den med dine fødder. Tryk på S for at sparke. Det høje hegn holder bolden inde. Indgangen er i den ende, der vender mod cykelskuret.', x: -22, z: -60, r: 18 },
   { n: 'Cykelskuret', t: 'Et langt tag med plads til mange cykler. For enden af cykelskuret kan man gå direkte ud på vejen bag haverne.', x: -22, z: -31, r: 8 },
   { n: 'Træet med den runde bænk', t: 'Et stort træ med en rund bænk omkring. Et godt sted at sidde og se bladene falde.', x: 12, z: 12, r: 5 },
   { n: 'Stendyrene', t: 'Bløde grønne bakker. På toppen hviler en odder og en bjørn, der er hugget i sten.', x: 5, z: 24, r: 9 },
@@ -2245,6 +2251,7 @@ function drawMap() {
   const k = mapCv.width / (MX1 - MX0);
   g.fillStyle = '#2a2238';
   for (const c of cyclists) { g.beginPath(); g.arc(mpx(c.g.position.x), mpz(c.g.position.z), Math.max(1.4, k * 0.8), 0, Math.PI * 2); g.fill(); }
+  { g.fillStyle = '#ffffff'; g.strokeStyle = '#2a2238'; g.lineWidth = Math.max(1, k * 0.5); g.beginPath(); g.arc(mpx(BALL.pos.x), mpz(BALL.pos.z), Math.max(2, k * 1.1), 0, Math.PI * 2); g.fill(); g.stroke(); }
   for (const a of animals) { if (found.has(a.id)) continue; g.fillStyle = '#ffffff'; g.strokeStyle = '#2a2238'; g.lineWidth = Math.max(1, k * 0.45); g.beginPath(); g.arc(mpx(a.home[0]), mpz(a.home[1]), Math.max(2.2, k * 1.4), 0, Math.PI * 2); g.fill(); g.stroke(); }
   const px = mpx(P.pos.x), pz = mpz(P.pos.z);
   const cy = cam.yaw; const fx = -Math.sin(cy), fz = -Math.cos(cy); const L = 22 * k;
@@ -2299,8 +2306,9 @@ window.addEventListener('keydown', e => {
   if (e.code === 'KeyN' && !e.repeat) setEvening(!evening);
   if (e.code === 'KeyM' && !e.repeat) setMapVisible(!showMap);
   if (e.code === 'KeyP' && !e.repeat) toggleUmbrella();
+  if (e.code === 'KeyS' && !e.repeat && BALL.held) { kickBall(); sHold = true; }
 });
-window.addEventListener('keyup', e => keys.delete(e.code));
+window.addEventListener('keyup', e => { keys.delete(e.code); if (e.code === 'KeyS') sHold = false; });
 window.addEventListener('blur', () => keys.clear());
 let jumpReq = false, lastDragEnd = -10, turnIn = 0;
 const cam = { yaw: Math.PI / 2, pitch: 0.3, dist: 7.5 };
@@ -2329,6 +2337,7 @@ canvas.addEventListener('pointerup', endPtr); canvas.addEventListener('pointerca
 canvas.addEventListener('wheel', e => { if (!started) return; e.preventDefault(); cam.dist = Math.min(18, Math.max(3.2, cam.dist * (1 + Math.sign(e.deltaY) * 0.1))); }, { passive: false });
 $('jump').addEventListener('pointerdown', e => { e.preventDefault(); jumpReq = true; });
 $('umb').addEventListener('click', () => { toggleUmbrella(); $('c').focus(); });
+$('kickBtn').addEventListener('pointerdown', e => { e.preventDefault(); kickBall(); });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 
 // ======================================================================== PHYSICS
@@ -2357,7 +2366,7 @@ function updPlayer(dt) {
   let fwd = 0, turn = 0;
   if (!paused) {
     if (keys.has('KeyW') || keys.has('ArrowUp')) fwd += 1;
-    if (keys.has('KeyS') || keys.has('ArrowDown')) fwd -= 1;
+    if ((keys.has('KeyS') && !BALL.held && !sHold) || keys.has('ArrowDown')) fwd -= 1;
     if (keys.has('KeyA') || keys.has('ArrowLeft')) turn += 1;
     if (keys.has('KeyD') || keys.has('ArrowRight')) turn -= 1;
     if (joy.id !== null) { fwd += -joy.y; turn += -joy.x * 0.9; }
@@ -2405,6 +2414,7 @@ function updPlayer(dt) {
     A[0].rotation.z = -1.1; A[1].rotation.z = 1.1; A[0].rotation.x = 0; A[1].rotation.x = 0;
     kid.g.position.y = 0;
   }
+  if (P.kickT > 0) { P.kickT -= dt; const k = 1 - Math.max(0, P.kickT) / 0.38; L[1].hip.rotation.x = k < 0.35 ? 0.7 * k / 0.35 : 0.7 - 2.2 * Math.min(1, (k - 0.35) / 0.45); L[1].knee.rotation.x = k < 0.35 ? 1.0 * k / 0.35 : 1.0 * Math.max(0, 1 - (k - 0.35) / 0.4); A[0].rotation.x = 0.6 * Math.sin(k * Math.PI); }
   for (const l of L) l.shoe.rotation.x = -(l.hip.rotation.x + l.knee.rotation.x) * 0.55;
   kid.head.rotation.z = Math.sin(clockT * 1.3) * 0.04 * (1 - k);
   updUmbrella(dt);
@@ -2446,6 +2456,93 @@ function updSwing(dt) {
     kid.g.rotation.x = 0; kid.g.position.set(0, 0, 0); hop();
   }
 }
+
+// ---------------- the football on the big field: walk to it and it sticks to her feet, S kicks it away
+const BALL = (() => {
+  const R = 0.22, home = new THREE.Vector3(-22, 0, -60.75);
+  const tex = ctex(256, 128, (g, w, h) => {
+    g.fillStyle = '#f7f5ee'; g.fillRect(0, 0, w, h); g.fillStyle = '#25232a';
+    const pent = (x, y, r) => { g.beginPath(); for (let i = 0; i < 5; i++) { const a = -Math.PI / 2 + i * Math.PI * 2 / 5; g.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r * 0.9); } g.closePath(); g.fill(); };
+    for (const [y, off] of [[22, 0], [64, 32], [106, 0]]) for (let x = off; x < w + 32; x += 64) pent(x % w, y, 15);
+    g.strokeStyle = 'rgba(40,35,45,.35)'; g.lineWidth = 2; for (let x = 0; x < w; x += 32) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x + 16, h); g.stroke(); }
+  }, {});
+  const m = new THREE.Mesh(new THREE.SphereGeometry(R, 20, 14), toon('#ffffff', { map: tex }));
+  m.castShadow = true; dyn.add(m);
+  const ol = new THREE.Mesh(m.geometry, new THREE.MeshBasicMaterial({ color: '#231a22', side: THREE.BackSide })); ol.scale.setScalar(1.06); m.add(ol);
+  // goals on the big field: posts at x cx ± 2.5 on the goal lines, nets about 1.1 m deep (only the ball bumps into the nets)
+  const cx = -22, goals = [{ gz: -84.5, dir: -1 }, { gz: -37, dir: 1 }];
+  const netCols = [];
+  for (const { gz, dir } of goals) {
+    const zb = gz + dir * 1.15, z0 = Math.min(gz, zb), z1 = Math.max(gz, zb);
+    netCols.push({ t: 'b', x0: cx - 2.6, x1: cx + 2.6, z0: zb - 0.06, z1: zb + 0.06, top: 2.1, soft: true });
+    netCols.push({ t: 'b', x0: cx - 2.62, x1: cx - 2.5, z0, z1, top: 2.1, soft: true }, { t: 'b', x0: cx + 2.5, x1: cx + 2.62, z0, z1, top: 2.1, soft: true });
+  }
+  return { R, m, pos: home.clone(), home, vel: new THREE.Vector3(), held: false, cd: 0, goals, cx, netCols, near: [], nearT: 0, goalT: 0, kickAt: -1 };
+})();
+let sHold = false;
+function kickBall() {
+  if (!BALL.held || BALL.kickAt > 0 || paused) return;
+  P.kickT = 0.38; BALL.kickAt = 0.13;
+}
+function ballCollide(p, v) {
+  const R = BALL.R;
+  for (const c of BALL.near) {
+    if (c.top < p.y + 0.06 || (c.bot !== undefined && p.y + 2 * R < c.bot)) continue;
+    let nx = 0, nz = 0, pen = 0;
+    if (c.t === 'c') { const dx = p.x - c.x, dz = p.z - c.z, d = Math.hypot(dx, dz), m = c.r + R; if (d >= m) continue; nx = d > 1e-6 ? dx / d : 1; nz = d > 1e-6 ? dz / d : 0; pen = m - d; }
+    else if (c.t === 'b') {
+      const qx = Math.max(c.x0, Math.min(p.x, c.x1)), qz = Math.max(c.z0, Math.min(p.z, c.z1)), dx = p.x - qx, dz = p.z - qz, d2 = dx * dx + dz * dz;
+      if (d2 >= R * R) continue;
+      if (d2 > 1e-9) { const d = Math.sqrt(d2); nx = dx / d; nz = dz / d; pen = R - d; }
+      else { const l = p.x - c.x0, r = c.x1 - p.x, b = p.z - c.z0, f = c.z1 - p.z, mn = Math.min(l, r, b, f); if (mn === l) { nx = -1; pen = l + R; } else if (mn === r) { nx = 1; pen = r + R; } else if (mn === b) { nz = -1; pen = b + R; } else { nz = 1; pen = f + R; } }
+    } else continue;
+    p.x += nx * pen; p.z += nz * pen;
+    const vn = v.x * nx + v.z * nz, e = c.soft ? 1.05 : 1.6; if (vn < 0) { v.x -= e * vn * nx; v.z -= e * vn * nz; if (c.soft) { v.x *= 0.4; v.z *= 0.4; } if (vn < -3) tone(150, 110, 0, 0.06, 0.03, 'triangle'); }
+  }
+}
+function updBall(dt) {
+  const B = BALL, R = B.R, fx = Math.sin(P.face), fz = Math.cos(P.face);
+  B.nearT -= dt; if (B.nearT <= 0) { B.nearT = 0.4; B.near = cols.filter(c => (c.t === 'c' ? Math.hypot(c.x - B.pos.x, c.z - B.pos.z) - c.r : Math.hypot(Math.max(c.x0 - B.pos.x, 0, B.pos.x - c.x1), Math.max(c.z0 - B.pos.z, 0, B.pos.z - c.z1))) < 14).concat(B.netCols); }
+  if (B.cd > 0) B.cd -= dt;
+  const before = B.pos.clone();
+  if (B.held) {
+    if (P.swing || !started) { B.held = false; B.cd = 0.8; }
+    else {
+      const sp = Math.hypot(P.vel.x, P.vel.z), lead = 0.5 + Math.min(0.25, sp * 0.03) + Math.sin(P.walkT * 0.5) * 0.04 * Math.min(1, sp / 3);
+      const side = 0.3; // a little to her right, so the ball can be seen from behind
+      const tgt = new THREE.Vector3(P.pos.x + fx * lead - fz * side, 0, P.pos.z + fz * lead + fx * side);
+      B.pos.x += (tgt.x - B.pos.x) * Math.min(1, dt * 18); B.pos.z += (tgt.z - B.pos.z) * Math.min(1, dt * 18);
+      ballCollide(B.pos, B.vel); B.vel.set(0, 0, 0);
+      B.pos.y = groundAt(B.pos.x, B.pos.z, P.pos.y + 0.4);
+      if (B.kickAt > 0) {
+        B.kickAt -= dt;
+        if (B.kickAt <= 0) { B.kickAt = -1; B.held = false; B.cd = 0.7; B.vel.set(fx * 15 + P.vel.x * 0.4, 3.2, fz * 15 + P.vel.z * 0.4); tone(110, 70, 0, 0.12, 0.13, 'triangle'); tone(600, 300, 0, 0.05, 0.05); updKickHint(); }
+      }
+    }
+  } else {
+    B.vel.y -= 22 * dt;
+    B.pos.x += B.vel.x * dt; B.pos.z += B.vel.z * dt; B.pos.y += B.vel.y * dt;
+    ballCollide(B.pos, B.vel);
+    B.pos.x = Math.min(BOUNDS[1], Math.max(BOUNDS[0], B.pos.x)); B.pos.z = Math.min(BOUNDS[3], Math.max(BOUNDS[2], B.pos.z));
+    const gnd = groundAt(B.pos.x, B.pos.z, B.pos.y + 0.3);
+    if (B.pos.y <= gnd) { B.pos.y = gnd; if (B.vel.y < -1.6) { B.vel.y = -B.vel.y * 0.5; tone(160, 120, 0, 0.05, 0.025, 'triangle'); } else B.vel.y = 0; }
+    if (B.pos.y <= gnd + 0.01) { const f = Math.exp(-dt * 1.1); B.vel.x *= f; B.vel.z *= f; if (Math.hypot(B.vel.x, B.vel.z) < 0.15) { B.vel.x = 0; B.vel.z = 0; } }
+    // goal?
+    if (B.goalT <= 0) for (const g of B.goals) {
+      if ((before.z - g.gz) * g.dir < 0 && (B.pos.z - g.gz) * g.dir >= 0 && Math.abs(B.pos.x - B.cx) < 2.45 && B.pos.y < 1.95) { B.goalT = 3.2; toast('MÅL! Flot spark!'); fanfare(); }
+    }
+    if (B.goalT > 0) { B.goalT -= dt; if (B.goalT <= 0) { B.pos.copy(B.home); B.vel.set(0, 0, 0); } }
+    // she picks it up when she walks into it
+    const dx = B.pos.x - P.pos.x, dz = B.pos.z - P.pos.z;
+    if (started && !paused && B.cd <= 0 && B.goalT <= 0 && !P.swing && Math.hypot(dx, dz) < 0.8 && Math.abs(B.pos.y - P.pos.y) < 0.6 && Math.hypot(B.vel.x, B.vel.z) < 5) { B.held = true; tone(330, 440, 0, 0.08, 0.04, 'triangle'); updKickHint(); }
+  }
+  // roll the ball
+  const mx = B.pos.x - before.x, mz = B.pos.z - before.z, dist = Math.hypot(mx, mz);
+  if (dist > 1e-5) { _ax.set(mz, 0, -mx).normalize(); B.m.rotateOnWorldAxis(_ax, dist / R); }
+  B.m.position.set(B.pos.x, B.pos.y + R, B.pos.z);
+}
+const _ax = new THREE.Vector3();
+function updKickHint() { const h = $('kickHint'); h.hidden = !(BALL.held && started && !paused); $('kickBtn').hidden = h.hidden || !isTouch; }
 
 // ======================================================================== CAMERA (always behind her, looking where she walks)
 const camPos = new THREE.Vector3(), camLook = new THREE.Vector3(), tmpA = new THREE.Vector3(), tmpB = new THREE.Vector3();
@@ -2684,6 +2781,7 @@ function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now; clockT += dt;
   ev += ((evening ? 1 : 0) - ev) * Math.min(1, dt * 1.6); applyEvening();
   if (started) updPlayer(dt);
+  updBall(dt);
   updCyclists(dt);
   updCamera(dt, clockT);
   updAnimals(dt, clockT);
@@ -2723,7 +2821,7 @@ function boot(data) {
   requestAnimationFrame(t => { last = t; frame(t); });
 }
 window.claude?.hot?.snapshot?.(() => ({ found: [...found], pos: P.pos.toArray(), face: P.face, started, evening }));
-window.__duevej = { BARS, WEATHER, UMB, toggleUmbrella, P, cam, kid, setEvening, start: () => goBtn.click(), animals, cyclists, renderer, peek: (y) => { cam.yaw = y; lastDragEnd = clockT + 30; }, snap: (e) => { camInit = false; startBlend = 1; if (typeof e === 'number') { evening = e > 0.5; ev = e; } } };
+window.__duevej = { BALL, BARS, WEATHER, UMB, toggleUmbrella, P, cam, kid, setEvening, start: () => goBtn.click(), animals, cyclists, renderer, peek: (y) => { cam.yaw = y; lastDragEnd = clockT + 30; }, snap: (e) => { camInit = false; startBlend = 1; if (typeof e === 'number') { evening = e > 0.5; ev = e; } } };
 if (window.claude?.hot?.ready) window.claude.hot.ready(boot); else boot(window.claude?.hot?.data ?? {});
 </script>
 </body>

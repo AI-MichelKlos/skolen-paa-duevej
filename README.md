@@ -14,6 +14,7 @@ Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, h
 | A D eller pil til venstre og højre: drej | |
 | Shift: løb | Højre tommel: kig rundt |
 | Mellemrum: hop | Hop-knappen: hop |
+| S med bolden: spark | Spark-knappen: spark |
 | Træk med musen: kig dig omkring, rul for at zoome | |
 | N: dag eller aften · M: vis eller skjul kortet | |
 | P: slå paraplyen op eller ned | Paraply-knappen: kommer frem, når det regner |
@@ -26,5 +27,6 @@ Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, h
 - Kameraet følger altid bag pigen, så man ser derhen, hvor hun går.
 - Et par gange undervejs kommer der en regnbyge i et minut. Så kan pigen slå sin paraply op.
 - Går man lige ind i et af de lave stålrør, svinger pigen sig rundt om røret og går videre.
+- Der ligger en bold midt på den store fodboldbane. Går man hen til den, følger den med pigens fødder, og S sparker den væk. Ryger den i mål, står der MÅL!
 - Man kan gå ind i de gule huse gennem glastårnet. Til venstre ligger salen, trappen fører op til 1. sal med klasselokaler, og til højre er garderoben.
 - Fundne dyr, dag/aften og lyd huskes i browseren.
