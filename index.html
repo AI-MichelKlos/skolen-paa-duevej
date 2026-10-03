@@ -69,6 +69,9 @@ kbd{display:inline-block;min-width:1.6em;text-align:center;padding:1px 6px;borde
 .sw{width:34px;height:34px;border-radius:50%;border:3px solid var(--ink);cursor:pointer;padding:0}
 .sw[aria-pressed="true"]{box-shadow:0 0 0 3px #fff,0 0 0 6px var(--ink);transform:scale(1.08)}
 .swatches{display:flex;flex-wrap:wrap;gap:10px;margin:2px 0 16px;padding-left:3px}
+#actBtn{position:fixed;left:50%;bottom:calc(180px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);padding:10px 18px;font:800 19px var(--display);color:var(--ink);background:#ffe08a;display:flex;align-items:center;gap:10px;cursor:pointer;animation:pop .3s ease-out;max-width:calc(100% - 32px)}
+#actBtn kbd{display:inline-block;min-width:1.4em;padding:1px 7px;border:2px solid var(--ink);border-radius:6px;background:#fff;font:800 16px var(--body);text-align:center}
+.touch #actBtn kbd{display:none}
 #kickHint{position:fixed;left:50%;top:13%;transform:translateX(-50%);padding:8px 14px;font:700 17px var(--display);background:#fff1d8;animation:pop .3s ease-out}
 #kickHint kbd{display:inline-block;min-width:1.4em;padding:1px 6px;margin-right:4px;border:2px solid var(--ink);border-radius:6px;background:#fff;font:800 15px var(--body);text-align:center}
 #kickBtn{position:fixed;right:112px;bottom:calc(30px + env(safe-area-inset-bottom,0px));width:70px;height:70px;border-radius:50%;font:800 16px var(--display);color:var(--ink);background:#ffd27a;touch-action:none}
@@ -110,6 +113,7 @@ body.touch #poi{bottom:calc(118px + env(safe-area-inset-bottom,0px))}
   <div id="joy" hidden><div id="knob"></div></div>
   <button id="jump" class="sticker" type="button" hidden>Hop</button>
   <button id="findBtn" class="sticker btn" type="button" title="Vis vej til det nærmeste dyr (V)"><svg viewBox="0 0 24 24" fill="#ffd34d" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 2.8l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.6l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"/></svg><span>Vis vej</span></button>
+  <button id="actBtn" class="sticker" type="button" hidden><kbd>E</kbd><span id="actTxt"></span></button>
   <div id="kickHint" class="sticker" hidden><kbd>S</kbd> for spark</div>
   <button id="kickBtn" class="sticker" type="button" hidden>Spark</button>
   <button id="umb" class="sticker btn" type="button" aria-pressed="false" title="Paraply (P)" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"><path d="M2.5 12a9.5 8 0 0119 0c-1.6-1.3-3.2-1.3-4.75 0-1.6-1.3-3.2-1.3-4.75 0-1.6-1.3-3.2-1.3-4.75 0-1.6-1.3-3.2-1.3-4.75 0z"/><path d="M12 12v7a2 2 0 01-4 0"/></svg><span id="umbTxt">Paraply</span></button>
@@ -481,6 +485,15 @@ function edges(mesh, thr = 25) { const l = new THREE.LineSegments(new THREE.Edge
 // ---------------------------------------------------------------- colliders + map data
 const cols = [];
 const camOnly = [];
+// ---------------------------------------------------------------- feature hooks (shared by the feature blocks)
+// FX: a shared namespace the feature blocks can put things in, e.g. FX.salen = {...}.
+// HOOKS.frame: (dt, t) => {}   called every frame after the animals are updated.
+// HOOKS.ride:  (dt) => true    called at the start of updPlayer; return true if the hook moved the player itself this frame.
+// HOOKS.key:   (e) => {}       called on keydown while walking (not paused).
+// HOOKS.found: (animal) => {}  called when an animal is found.
+// HOOKS.start: () => {}        called once when the walk starts.
+const FX = {};
+const HOOKS = { frame: [], ride: [], key: [], found: [], start: [] };
 const LOCKED = []; // locked doors: { x, z, y, n } // roofs the camera must stay under: { x0, x1, z0, z1, bot, top }
 const mapItems = [];
 function colBox(x0, x1, z0, z1, top) { cols.push({ t: 'b', x0, x1, z0, z1, top }); }
@@ -1249,6 +1262,7 @@ const YB = brickBlock({ x: 33.5, z: 11.75, w: 9, d: 19.5, h: 7.6, rise: 3.2, wal
     for (const [za, zb] of [[-4.6, -0.4], [0.9, 4.6]]) { box(0.5, 0.08, zb - za, M.deck, ix1 - 0.6, 0.45, (za + zb) / 2, { edges: true }); box(0.42, 0.33, zb - za - 0.3, M.steel, ix1 - 0.6, FL, (za + zb) / 2, { cast: false }); C(ix1 - 0.85, ix1, za, zb, 0.53); }
     for (let z = iz0 + 0.9; z < iz1 - 0.8; z += 0.7) if (rand() < 0.6) box(0.24, 0.1, 0.12, toon(pick(jc)), ix1 - 0.95, FL, z + rr(-0.1, 0.1), { cast: false });
 
+    // >>> WING FIRST FLOOR (the first floor of the wide yellow wing: slab, corridor, rooms, doors)
     // ---------------- first floor
     const slab = (x0, x1, z0, z1) => { box(x1 - x0, F1 - 0.02 - CEIL, z1 - z0, plaster, (x0 + x1) / 2, CEIL, (z0 + z1) / 2, { cast: false }); box(x1 - x0, 0.02, z1 - z0, lino, (x0 + x1) / 2, F1 - 0.02, (z0 + z1) / 2, { cast: false }); C(x0, x1, z0, z1, F1, CEIL); };
     slab(ix0, 20.8, iz0, iz1); slab(24.15, ix1, iz0, iz1); slab(20.8, 24.15, SZ0, iz1);
@@ -1274,6 +1288,7 @@ const YB = brickBlock({ x: 33.5, z: 11.75, w: 9, d: 19.5, h: 7.6, rise: 3.2, wal
     addWin('doorGreen', ix1 - WOFF, F1 + 1.1, 0.25, -Math.PI / 2, 1.0, 2.2, 0);
     sign('Lærerværelset', 0.8, 0.2, ix1 - 0.03, F1 + 2.45, 0.25, -Math.PI / 2, '#f5f2ea', 28);
     LOCKED.push({ x: ix1 - 0.45, z: 0.25, y: F1, n: 'Lærerværelset' });
+    // <<< WING FIRST FLOOR
   }
   bayWindow(38, 5.4, -10, 'E'); bayWindow(38, 5.4, 6.25, 'E'); bayWindow(38, 5.4, 14.6, 'E');
   { const b = YA; const run = (b.w + 2 * b.over) / 2; const a = Math.atan2(b.rise, run); const xc = b.x - run * 0.5; const y = hipSurf(b, xc, -8) + 0.08;
@@ -1609,6 +1624,10 @@ apartment(62, 78, -92, -34, 5); apartment(62, 78, -28, 30, 5); apartment(62, 78,
 for (const z of [-80, -55, -30, -5, 20, 45, 70, 95]) tree(56.2, z, 'round', 0.85);
 for (const x of [-90, -25, 5, 25, 72]) tree(x, -108.2, 'round', 0.85);
 for (const z of [-80, -55, -30, -5, 20, 45, 70]) tree(-53.6, z, 'round', 0.85);
+
+// ======================================================================== FEATURE WORLD BLOCKS (static geometry, built before the world is merged)
+// (feature world blocks go here)
+// ======================================================================== END FEATURE WORLD BLOCKS
 
 // ---------------- tall grass in the green strips
 if (GRASS_TUFTS.length) {
@@ -2362,7 +2381,7 @@ function openIntro(help) {
 goBtn.addEventListener('click', () => {
   audio();
   intro.hidden = true; hud.hidden = false; paused = false;
-  if (!started) { started = true; startBlend = 0; shadowExtent(60); }
+  if (!started) { started = true; startBlend = 0; shadowExtent(60); for (const h of HOOKS.start) h(); }
   canvas.focus();
 });
 if (isTouch) { $('keysDesk').hidden = true; $('keysTouch').hidden = false; $('jump').hidden = false; $('touchHint').hidden = false; }
@@ -2378,6 +2397,8 @@ window.addEventListener('keydown', e => {
   if (e.code === 'KeyM' && !e.repeat) setMapVisible(!showMap);
   if (e.code === 'KeyP' && !e.repeat) toggleUmbrella();
   if (e.code === 'KeyV' && !e.repeat) showWay();
+  if (e.code === 'KeyE' && !e.repeat) runAction();
+  for (const h of HOOKS.key) h(e);
   if (e.code === 'KeyS' && !e.repeat && BALL.held) { kickBall(); sHold = true; }
 });
 window.addEventListener('keyup', e => { keys.delete(e.code); if (e.code === 'KeyS') sHold = false; });
@@ -2411,6 +2432,7 @@ $('jump').addEventListener('pointerdown', e => { e.preventDefault(); jumpReq = t
 $('umb').addEventListener('click', () => { toggleUmbrella(); $('c').focus(); });
 $('kickBtn').addEventListener('pointerdown', e => { e.preventDefault(); kickBall(); });
 $('findBtn').addEventListener('click', () => { showWay(); $('c').focus(); });
+$('actBtn').addEventListener('click', () => { runAction(); $('c').focus(); });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 
 // ======================================================================== PHYSICS
@@ -2437,6 +2459,7 @@ function resolve(p) {
 function updPlayer(dt) {
   if (P.swing) { updSwing(dt); updUmbrella(dt); return; }
   if (P.ride) { updRide(dt); updUmbrella(dt); return; }
+  for (const h of HOOKS.ride) if (h(dt)) { updUmbrella(dt); return; }
   let fwd = 0, turn = 0;
   if (!paused) {
     if (keys.has('KeyW') || keys.has('ArrowUp')) fwd += 1;
@@ -2447,10 +2470,11 @@ function updPlayer(dt) {
   }
   fwd = Math.max(-1, Math.min(1, fwd)); turn = Math.max(-1, Math.min(1, turn)); turnIn = turn;
   const run = keys.has('ShiftLeft') || keys.has('ShiftRight') || (joy.id !== null && -joy.y > 0.92);
-  const speed = fwd > 0 ? (run ? 9.5 : 5.2) * fwd : 2.8 * fwd;
-  P.face += turn * (run && fwd > 0 ? 2.0 : 2.5) * dt;
+  const PM = P.mod || {};
+  const speed = (fwd > 0 ? (run ? 9.5 : 5.2) * fwd : 2.8 * fwd) * (PM.speed ?? 1);
+  P.face += turn * (run && fwd > 0 ? 2.0 : 2.5) * dt * (PM.turn ?? 1);
   const fx = Math.sin(P.face), fz = Math.cos(P.face);
-  const acc = P.onGround ? 12 : 5;
+  const acc = (P.onGround ? 12 : 5) * (PM.acc ?? 1);
   P.vel.x += (fx * speed - P.vel.x) * Math.min(1, acc * dt); P.vel.z += (fz * speed - P.vel.z) * Math.min(1, acc * dt);
   P.pos.x += P.vel.x * dt; P.pos.z += P.vel.z * dt;
   if (P.swingCd > 0) P.swingCd -= dt;
@@ -2686,7 +2710,7 @@ const ANIM = {
   skildpadde: (a, t) => { a.head.position.z = 0.24 + (Math.sin(t * 0.6) * 0.5 + 0.5) * 0.06; walkLegs(a, t, 0.45); },
 };
 function discover(a) {
-  found.add(a.id); save(); updCounter(); renderChips();
+  found.add(a.id); save(); updCounter(); renderChips(); for (const h of HOOKS.found) h(a);
   a.happy = HAPPY; a.state = 'idle'; a.t = 2;
   const snd = SOUNDS[a.k]; if (snd) snd(); sparkleSound();
   popLabel(a.def.n + '!', a.g.position, a.def.s); burst(a.g.position);
@@ -3220,6 +3244,27 @@ function renderSwatches() {
   mk('swUmb', UMBS, umbCol, c => { umbCol = c; });
 }
 
+// ======================================================================== ACTION BUTTON
+// A feature calls offerAction({ id, label, run, prio }) every frame while the player can do something there.
+// The best offer is shown as a big button ("E  Dans") and read aloud once; E or a click runs it.
+const ACT = { offers: [], cur: null, said: new Map() };
+function offerAction(o) { ACT.offers.push(o); }
+function runAction() { if (!started || paused || !ACT.cur) return; const c = ACT.cur; c.run(); ACT.shownId = null; }
+function updActions() {
+  let best = null; for (const o of ACT.offers) if (!best || (o.prio || 0) > (best.prio || 0)) best = o;
+  ACT.offers.length = 0; if (!started || paused || P.ride || P.swing) best = null;
+  ACT.cur = best;
+  const el = $('actBtn');
+  if (!best) { if (!el.hidden) el.hidden = true; ACT.shownId = null; return; }
+  if (ACT.shownId !== best.id + '|' + best.label) {
+    ACT.shownId = best.id + '|' + best.label; $('actTxt').textContent = best.label; el.hidden = false;
+    const last = ACT.said.get(best.label) ?? -999; if (clockT - last > 45 && clockT - toastSaidAt > 2.5) { ACT.said.set(best.label, clockT); say(best.label); }
+  }
+}
+// ======================================================================== FEATURE LOGIC BLOCKS
+// (feature logic blocks go here)
+// ======================================================================== END FEATURE LOGIC BLOCKS
+
 // ======================================================================== MAIN LOOP
 let last = performance.now(), clockT = 0, poiT = 0, mapT = 0, clockTick = 0;
 function updClock() { const d = new Date(); const m = d.getMinutes() + d.getSeconds() / 60, h = (d.getHours() % 12) + m / 60; const H = window.__clockHands; if (!H) return; H.mh.rotation.z = -m / 60 * Math.PI * 2; H.hh.rotation.z = -h / 12 * Math.PI * 2; H.mh.updateMatrix(); H.hh.updateMatrix(); H.mh.parent.updateMatrixWorld(true); }
@@ -3232,6 +3277,8 @@ function frame(now) {
   updCamera(dt, clockT);
   updAnimals(dt, clockT);
   updParade(dt, clockT); updLeafPiles(dt); updPuddles(dt); updVoice(); updSwingsIdle(dt, clockT); updTrail(dt, clockT);
+  for (const h of HOOKS.frame) h(dt, clockT);
+  updActions();
   updEffects(dt);
   const fxz = started ? P.pos : orbitC;
   updLeaves(dt, clockT, started ? P.pos.x : camera.position.x * 0.3, started ? P.pos.z : camera.position.z * 0.3);
