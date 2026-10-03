@@ -130,7 +130,7 @@ body.touch #poi{bottom:calc(118px + env(safe-area-inset-bottom,0px))}
   <div class="card sticker">
     <div class="eyebrow">Dyrejagten er slut</div>
     <h2>Alle 12 dyr er fundet!</h2>
-    <p class="lead">Godt gået. Du har mødt alle dyrene på Skolen på Duevej, fra duen ved porten til uglen oppe på ståltrappen.</p>
+    <p class="lead">Godt gået. Du har mødt alle dyrene på Skolen på Duevej, fra duen på Duevej til uglen oppe på ståltrappen.</p>
     <button class="go" id="finOk" type="button">Gå videre rundt</button>
     <button class="go alt" id="finAgain" type="button">Gem dyrene igen</button>
   </div>
@@ -240,6 +240,11 @@ TX.wood = ctex(256, 256, (g, w, h) => {
   g.fillStyle = '#5c4636'; g.fillRect(0, 0, w, h);
   for (let x = 0; x < w; x += 8) for (const [y0, y1, k] of bands) { g.fillStyle = k ? jit('#dcc8a6', 0.06) : jit('#bb8c60', 0.08); g.fillRect(x + 1, y0, 6, y1 - y0); }
 }, { rep: 0.25 });
+TX.planks = ctex(128, 128, (g, w, h) => {
+  g.fillStyle = '#4a3324'; g.fillRect(0, 0, w, h);
+  for (let x = 0; x < w; x += 8) { g.fillStyle = jit('#9c6b43', 0.1); g.fillRect(x + 1, 0, 7, h); g.fillStyle = 'rgba(60,35,20,.18)'; for (let k = 0; k < 3; k++) g.fillRect(x + 2 + rand() * 4, 0, 1, h); }
+  g.fillStyle = 'rgba(40,25,15,.35)'; g.fillRect(0, 22, w, 4); g.fillRect(0, 102, w, 4);
+}, { rep: 0.5 });
 TX.deck = ctex(128, 128, (g, w, h) => { g.fillStyle = '#6c4e35'; g.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 16) { g.fillStyle = jit('#b48559', 0.1); g.fillRect(0, y + 1, w, 14); } }, { rep: 0.5 });
 TX.asphalt = ctex(256, 256, (g, w, h) => { g.fillStyle = '#b5afa4'; g.fillRect(0, 0, w, h); speckle(g, w, h, 2400, 0.09, 2); }, { rep: 1 / 8 });
 TX.road = ctex(256, 256, (g, w, h) => { g.fillStyle = '#76777c'; g.fillRect(0, 0, w, h); speckle(g, w, h, 2400, 0.08, 2); }, { rep: 1 / 8 });
@@ -350,6 +355,7 @@ const M = {
   metal: toon('#fff', { map: TX.metal }),
   tile: toon('#fff', { map: TX.tile }),
   wood: toon('#fff', { map: TX.wood }),
+  planks: toon('#fff', { map: TX.planks }),
   deck: toon('#fff', { map: TX.deck }),
   log: toon('#a97d55'),
   concrete: toon('#d3cfc7'),
@@ -712,6 +718,20 @@ function fenceSeg(x0, z0, x1, z1, h = 2.4, low = false) {
 }
 function wallSeg(x0, x1, z0, z1, h = 2.2) { box(x1 - x0, h, z1 - z0, M.brick, (x0 + x1) / 2, 0, (z0 + z1) / 2, { edges: true, col: true }); box(x1 - x0 + 0.15, 0.14, z1 - z0 + 0.15, M.stone, (x0 + x1) / 2, h, (z0 + z1) / 2, { cast: false }); mapItems.push({ k: 'r', x0, x1, z0, z1, fill: '#8a4a38' }); }
 function hedgeBox(x0, x1, z0, z1, h = 1.2) { box(x1 - x0, h, z1 - z0, M.hedge, (x0 + x1) / 2, 0, (z0 + z1) / 2, { col: true }); mapItems.push({ k: 'r', x0, x1, z0, z1, fill: '#5d8c45' }); }
+function plankFence(x0, x1, z0, z1, h = 1.9) {
+  box(x1 - x0, h, z1 - z0, M.planks, (x0 + x1) / 2, 0, (z0 + z1) / 2, { col: true, edges: true });
+  const along = x1 - x0 > z1 - z0, len = along ? x1 - x0 : z1 - z0;
+  box(along ? len + 0.06 : 0.16, 0.07, along ? 0.16 : len + 0.06, M.planks, (x0 + x1) / 2, h, (z0 + z1) / 2, { cast: false });
+  mapItems.push({ k: 'r', x0, x1, z0, z1, fill: '#8a5f3a' });
+}
+const GRASS_TUFTS = [];
+function greenStrip(x0, x1, z0, z1, trees = true) {
+  rectG(x0, x1, z0, z1, M.grass, 0.025, '#7fae55');
+  colBox(x0, x1, z0, z1, 0.9);
+  for (let z = z0 + 0.15; z < z1 - 0.1; z += 0.22) for (let k = 0; k < 2; k++) GRASS_TUFTS.push([rr(x0 + 0.1, x1 - 0.1), z + rr(-0.1, 0.1), rr(0.55, 1.15)]);
+  for (let z = z0 + 2.5; z < z1 - 1; z += rr(4.5, 6.5)) bush((x0 + x1) / 2 + rr(-0.15, 0.15), z, rr(0.5, 0.62));
+  if (trees) for (let z = z0 + 6; z < z1 - 3; z += rr(10, 14)) tree((x0 + x1) / 2, z + rr(-1, 1), pick(['birch', 'tall']), rr(0.55, 0.7));
+}
 function pillar(x, z) { box(0.8, 2.6, 0.8, M.brick, x, 0, z, { edges: true, col: true }); box(0.95, 0.16, 0.95, M.stone, x, 2.6, z, { cast: false }); mesh(new THREE.SphereGeometry(0.34, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), toon('#86a397'), x, 2.76, z, { edges: 50 }); }
 
 // ---------------- 1: Hovedbygningen (the tall red school house)
@@ -852,11 +872,7 @@ fenceSeg(-7.5, -76.5, 39.6, -76.5, 2.2);
 fenceSeg(39.6, -92, 39.6, -76.5, 2.2);
 wallSeg(36, 39.6, -92.5, -92); wallSeg(PX0, -6.5, -92.5, -92);
 wallSeg(-38, PX0, -92, -22);
-{
-  const low = (z0, z1) => fenceSeg(39.6, z0, 39.6, z1, 1.2, true);
-  low(-76.5, -61); low(-54, -23); low(-16, 11.5); low(15, 37); low(42, 58);
-  for (const z of [-61, -54, -23, -16, 11.5, 15, 37, 42]) pillar(39.9, z + (z === -61 || z === -23 || z === 11.5 || z === 37 ? -0.4 : 0.4));
-}
+greenStrip(38.8, 40, -76.5, -61); greenStrip(38.8, 40, -54, 13); greenStrip(39.05, 40, 13, 41.8, false);
 // ---------------- big football field
 {
   const fx0 = -36.5, fx1 = -7.5, fz0 = -86, fz1 = -35.5;
@@ -902,7 +918,7 @@ wallSeg(-38, PX0, -92, -22);
   discG(12, 12, 1.6, M.grass, 0.4); colCirc(12, 12, 2.4, 0.45); mapItems.push({ k: 'c', x: 12, z: 12, r: 2.4, fill: '#b48559' });
   const hp = new THREE.PlaneGeometry(1.4, 4.4); hp.rotateX(-Math.PI / 2); mesh(hp, M.chalk, 24, 0.05, -18, { cast: false });
   // hedges toward the small houses with gardens
-  hedgeBox(-7, -6, -22, 58.5, 1.4); hedgeBox(PX0, -7, -22.5, -21.5, 1.4);
+  plankFence(-6.6, -6.5, -22, 58); plankFence(PX0, -6.6, -22.05, -21.95);
   // rubber mounds with stone animals
   for (const m of [{ x: 0, z: 22, r: 5, h: 1.5 }, { x: 12, z: 26, r: 4.2, h: 1.2 }]) {
     mounds.push(m);
@@ -926,15 +942,18 @@ wallSeg(-38, PX0, -92, -22);
 }
 // ---------------- red brick wall with a lean-to roof toward the gardens in the south
 {
-  const x0 = -7, x1 = 39.6, z0 = 58.0, z1 = 58.6, h = 2.9, dz = 2.3, hp = 2.4, zp = z0 - dz + 0.2;
+  const x0 = -6.5, x1 = 16, z0 = 58.0, z1 = 58.6, h = 2.9, dz = 2.3, hp = 2.4, zp = z0 - dz + 0.2;
   wallSeg(x0, x1, z0, z1, h);
   const run = dz + 0.2, a = Math.atan2(h - hp, run), L = Math.hypot(run, h - hp) + 0.3;
   const roof = mesh(boxGeo(x1 - x0 + 0.4, 0.12, L), M.metal, (x0 + x1) / 2, (h + hp) / 2 + 0.1, z0 - run / 2 - 0.1, { edges: 20 }); roof.rotation.x = -a;
   box(x1 - x0 - 0.2, 0.2, 0.16, M.dark, (x0 + x1) / 2, hp - 0.2, zp, { cast: false });
-  for (const x of [-5.6, -1, 3.5, 8, 13, 18, 23, 28, 33, 39]) { mesh(new THREE.CylinderGeometry(0.08, 0.08, hp, 8), M.dark, x, hp / 2, zp); colCirc(x, zp, 0.12, 99); }
+  for (const x of [-5.6, -1, 3.5, 8, 12, 15.6]) { mesh(new THREE.CylinderGeometry(0.08, 0.08, hp, 8), M.dark, x, hp / 2, zp); colCirc(x, zp, 0.12, 99); }
   camOnly.push({ x0, x1, z0: z0 - run - 0.3, z1, bot: hp - 0.25, top: h + 0.3 });
   mapItems.push({ k: 'r', x0, x1, z0: z0 - run, z1: z0, fill: '#7d838a' });
-  bench(-2.8, 57.3, 0); bench(17.5, 57.3, 0);
+  bench(-2.8, 57.3, 0); bench(10.2, 57.3, 0);
+  // further east: a plank fence, with the gardens' trees right behind it
+  plankFence(16, 39.6, 58.0, 58.12);
+  for (const [x, z, k] of [[21, 60.6, 'round'], [26.6, 60.3, 'birch'], [32, 60.8, 'round'], [37.2, 60.5, 'tall']]) tree(x, z, k, 0.8);
 }
 // ---------------- small green football pitch + trampolines in a raised rubber bed
 const TRAMPS = [];
@@ -958,24 +977,20 @@ const TRAMPS = [];
     mapItems.push({ k: 'c', x, z, r: 1.05, fill: rimCols[i] });
   });
 }
-// ---------------- play bars (climbing frames, nets and stumps) by Duevej
+// ---------------- low bars to swing on, sunburst and sandbox by Duevej
 {
   polyG([[25, 44], [38.5, 43], [39, 52], [37.5, 57], [27, 57], [24.5, 50.5]], M.sand, 0.03, '#ead197');
   const post = (x, z, h, r = 0.13) => { mesh(new THREE.CylinderGeometry(r, r * 1.1, h, 8), M.log, x, h / 2, z, { edges: 40 }); colCirc(x, z, r + 0.05, 99); };
   const beam = (x0, y0, z0, x1, y1, z1) => { const a = new THREE.Vector3(x0, y0, z0), b = new THREE.Vector3(x1, y1, z1); const len = a.distanceTo(b); const m = mesh(new THREE.CylinderGeometry(0.1, 0.1, len, 8), M.log, (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize()); };
-  for (const [x, z, h] of [[30.5, 46, 2.4], [33, 46, 3.0], [35.5, 46, 2.2], [30.5, 49, 2.6], [33, 49, 2.2], [35.5, 49, 2.9]]) post(x, z, h);
-  beam(30.5, 2.3, 46, 35.5, 2.15, 46); beam(30.5, 2.2, 49, 35.5, 2.2, 49); beam(33, 2.4, 46, 33, 2.15, 49);
-  for (const zz of [46, 49]) mesh(mplane(5, 1.8), M.net, 33, 1.25, zz, { cast: false });
-  colBox(30.5, 35.5, 45.95, 46.05, 2.2); colBox(30.5, 35.5, 48.95, 49.05, 2.2);
-  post(28.6, 47.5, 1.4, 0.11); post(37.4, 47.8, 1.9, 0.11);
-  for (const ax of [31, 35]) { beam(ax, 0, 52.4, ax, 2.7, 54); beam(ax, 0, 55.6, ax, 2.7, 54); colCirc(ax, 52.4, 0.2, 99); colCirc(ax, 55.6, 0.2, 99); }
-  beam(30.8, 2.7, 54, 35.2, 2.7, 54);
-  { const n = mesh(mplane(4, 3.2), M.net, 33, 1.35, 53.0, { cast: false }); n.rotation.x = -1.03; }
-  for (const [x, z, h] of [[26.6, 45.2, 0.35], [27.7, 46.5, 0.55], [26.5, 47.8, 0.75], [27.7, 49.1, 0.5], [26.6, 50.5, 0.9], [27.7, 51.9, 0.65], [26.8, 53.3, 0.4]]) {
-    mesh(new THREE.CylinderGeometry(0.3, 0.33, h, 10), M.log, x, h / 2, z, { edges: 40 });
-    mesh(new THREE.CircleGeometry(0.29, 10), toon('#d8b285'), x, h + 0.005, z, { rx: -Math.PI / 2, cast: false });
-    colCirc(x, z, 0.3, h);
-  }
+  // low steel bars to swing on, at hip height for a grown-up
+  const Y = new THREE.Vector3(0, 1, 0);
+  const swingBar = (x0, x1, z, h) => {
+    for (const x of [x0, x1]) { mesh(new THREE.CylinderGeometry(0.05, 0.055, h + 0.04, 10), M.steel, x, (h + 0.04) / 2, z); colCirc(x, z, 0.08, 99); }
+    const m = mesh(new THREE.CylinderGeometry(0.035, 0.035, x1 - x0 + 0.06, 10), M.steel, (x0 + x1) / 2, h, z); m.quaternion.setFromUnitVectors(Y, new THREE.Vector3(1, 0, 0));
+    colBox(x0, x1, z - 0.05, z + 0.05, h);
+    mapItems.push({ k: 'l', x0, z0: z, x1, z1: z, stroke: '#5f656c' });
+  };
+  for (const [x0, z, h] of [[27, 46, 0.8], [30.4, 46, 1.0], [33.8, 46, 0.9], [28.6, 49, 1.05], [32, 49, 0.8], [35.4, 49, 0.95], [27, 52, 0.9], [30.4, 52, 1.05], [33.8, 52, 0.8], [29.2, 55, 0.85], [32.6, 55, 1.0]]) swingBar(x0, x0 + 2.4, z, h);
   mesh(new THREE.CylinderGeometry(2.8, 2.8, 0.14, 40), M.sunburst, 20.5, 0.07, 46, { cast: false });
   colCirc(20.5, 46, 2.8, 0.14); mapItems.push({ k: 'c', x: 20.5, z: 46, r: 2.8, fill: '#b48559' });
   { const outer = new THREE.Shape(); outer.absarc(-1.6, 0, 1.7, Math.PI / 2, Math.PI * 1.5, false); outer.absarc(1.6, 0, 1.7, -Math.PI / 2, Math.PI / 2, false);
@@ -1019,7 +1034,7 @@ const TRAMPS = [];
   { let z0 = -21.5; for (const z of zsA) { hedgeBox(PX0, PX0 + 0.9, z0, z - 1.1, 1.0); z0 = z + 1.1; } hedgeBox(PX0, PX0 + 0.9, z0, 91, 1.0); }
   { let x0 = PX0 + 0.9; for (const x of xsB) { hedgeBox(x0, x - 1.1, 90.1, 91, 1.0); x0 = x + 1.1; } hedgeBox(x0, 39.6, 90.1, 91, 1.0); }
   hedgeBox(39.1, 39.6, 58.5, 90.1, 1.0);
-  for (let i = 0; i < zsA.length - 1; i++) { const zm = (zsA[i] + zsA[i + 1]) / 2; hedgeBox(PX0 + 0.9, -7, zm - 0.25, zm + 0.25, 0.85); }
+  for (let i = 0; i < zsA.length - 1; i++) { const zm = (zsA[i] + zsA[i + 1]) / 2; hedgeBox(PX0 + 0.9, -6.6, zm - 0.25, zm + 0.25, 0.85); }
   hedgeBox(-6, -5.5, 58.5, 90.1, 0.85);
   for (let i = 0; i < xsB.length - 1; i++) { const xm = (xsB[i] + xsB[i + 1]) / 2; hedgeBox(xm - 0.25, xm + 0.25, 58.5, 90.1, 0.85); }
   // garden paths, trees and bushes
@@ -1049,7 +1064,7 @@ const TRAMPS = [];
 }
 apartment(-140, -60, -132, -114, 5); apartment(-34, 36, -132, -114, 5); apartment(62, 140, -132, -114, 5);
 apartment(62, 78, -92, -34, 5); apartment(62, 78, -28, 30, 5); apartment(62, 78, 36, 88, 5); apartment(62, 78, 104, 160, 5);
-apartment(-80, -60, -92, -34, 6); apartment(-80, -60, -28, 30, 5); apartment(-80, -60, 36, 88, 4); apartment(-80, -60, 115, 160, 5);
+apartment(-80, -60, -92, -34, 6); apartment(-80, -60, -28, 30, 5);  apartment(-80, -60, 115, 160, 5);
 apartment(-36, -4, 115, 133, 4); apartment(2, 38, 115, 133, 4);
 // ---------------- yard trees, street trees
 [[6, -36, 'round', 1], [-3, -6, 'round', 1.05], [18, -6, 'tall', 0.95], [24, 9, 'round', 0.9], [12, 12, 'big', 1.1], [-2, 40, 'tall', 0.95], [16, 40, 'round', 0.85],
@@ -1058,6 +1073,16 @@ apartment(-36, -4, 115, 133, 4); apartment(2, 38, 115, 133, 4);
 for (const z of [-80, -55, -30, -5, 20, 45, 70, 95]) tree(56.2, z, 'round', 0.85);
 for (const x of [-90, -25, 5, 25, 72]) tree(x, -108.2, 'round', 0.85);
 for (const z of [-80, -55, -30, -5, 20, 45, 70]) tree(-53.6, z, 'round', 0.85);
+for (const [x, z, k] of [[-64, 42, 'round'], [-72, 50, 'big'], [-63, 61, 'birch'], [-74, 70, 'round'], [-65, 80, 'tall'], [-76, 86, 'round']]) tree(x, z, k, 0.95);
+
+// ---------------- tall grass in the green strips
+if (GRASS_TUFTS.length) {
+  const g = new THREE.ConeGeometry(0.07, 1, 4); g.translate(0, 0.5, 0);
+  const im = new THREE.InstancedMesh(g, toon('#ffffff'), GRASS_TUFTS.length);
+  const d = new THREE.Object3D(), col = new THREE.Color();
+  GRASS_TUFTS.forEach(([x, z, s], i) => { d.position.set(x, 0.02, z); d.rotation.set(rr(-0.25, 0.25), rand() * 6.28, rr(-0.25, 0.25)); d.scale.set(1, s, 1); d.updateMatrix(); im.setMatrixAt(i, d.matrix); col.set(pick(['#9db54b', '#b9b35a', '#7fa54a', '#cdbd6c', '#8fae4f'])); im.setColorAt(i, col); });
+  im.castShadow = true; im.receiveShadow = true; im.frustumCulled = false; world.add(im);
+}
 
 // ---------------- windows → instanced meshes
 const winPlane = new THREE.PlaneGeometry(1, 1);
@@ -1555,7 +1580,7 @@ const POIS = [
   { n: 'Huset med fiskeskælstaget', t: 'Et rødt hus formet som et T. Taget er lagt med skifer, der ligner fiskeskæl.', x: 28, z: -38, r: 11 },
   { n: 'De gule huse', t: 'To gule huse med røde striber, bundet sammen af et trappetårn i glas. En vindeltrappe snor sig op til en dør på første sal.', x: 30, z: -1, r: 10 },
   { n: 'Gangen mellem husene', t: 'En lukket gang af glas på første sal. Her kan man gå tørskoet fra de gule huse over i huset med fiskeskælstaget.', x: 35.7, z: -19.5, r: 5 },
-  { n: 'Muren med halvtaget', t: 'En rød mur ind mod haverne med et halvtag, hvor man kan sidde i læ, når det regner.', area: [-7, 39.6, 55.6, 58.6], s: 0.5 },
+  { n: 'Muren med halvtaget', t: 'En rød mur ind mod haverne med et halvtag, hvor man kan sidde i læ, når det regner.', area: [-7, 16, 55.6, 58.6], s: 0.5 },
   { n: 'Den nye træbygning', t: 'En stor bygning klædt i træribber med en stueetage af glas. Gå op ad ståltrappen og kig ud over skolegården.', x: 29, z: 27.5, r: 15 },
   { n: 'Den store fodboldbane', t: 'Kunstgræs, hvide streger og to store mål. Det høje hegn holder bolden inde. Indgangen er i den ende, der vender mod cykelskuret.', x: -22, z: -60, r: 18 },
   { n: 'Cykelskuret', t: 'Et langt tag med plads til mange cykler. Her parkerer man, når man cykler i skole.', x: -22, z: -31, r: 8 },
@@ -1563,12 +1588,12 @@ const POIS = [
   { n: 'Stendyrene', t: 'Bløde grønne bakker. På toppen hviler en odder og en bjørn, der er hugget i sten.', x: 5, z: 24, r: 9 },
   { n: 'Den lille fodboldbane', t: 'En lille grøn bane med to små mål. Perfekt til en hurtig kamp i frikvarteret.', x: 7.5, z: 41.5, r: 8 },
   { n: 'Trampolinerne', t: 'Fire trampoliner gravet ned i et bed af blødt gummi. Gå ud på dem, så hopper du af dig selv. Tryk på hop for at komme helt højt op.', x: 7.5, z: 53.2, r: 7 },
-  { n: 'Legepladsen', t: 'Klatrestativer af træstammer med net, balancestubbe og masser af sand. Prøv at hoppe fra stub til stub.', x: 31, z: 50, r: 9 },
+  { n: 'Rørene', t: 'Lave stålrør i hoftehøjde for en voksen. Her kan man svinge sig rundt og hænge med hovedet nedad.', x: 31, z: 50, r: 9 },
   { n: 'Naboens røde hus', t: 'Det store røde hus ud mod Mariendalsvej. Det hører ikke til skolen.', x: 15, z: -85, r: 13 },
   { n: 'Husene med haver', t: 'Små huse med hver sin have. Her bor der nogen, så de hører ikke til skolen.', area: [-37.5, -6, -21.5, 91] },
   { n: 'Husene med haver', t: 'Små huse med hver sin have. Her bor der nogen, så de hører ikke til skolen.', area: [-6, 40, 58.5, 91] },
   { n: 'Egernvej', t: 'Vejen syd for skolen. Den løber langs stien med træerne og fortsætter lige ud mod vest. Cyklisterne kører her, så kig dig for.', area: [-200, 44, 98, 113.5] },
-  { n: 'Duevej', t: 'Vejen, der har givet skolen sit navn. Bilerne holder parkeret i en lang række under træerne, og cyklisterne suser forbi. Fodgængerovergangen ligger mellem det lille røde hus og huset med fiskeskælstaget.', area: [40, 60, -96, 200] },
+  { n: 'Duevej', t: 'Vejen, der har givet skolen sit navn. Bilerne holder parkeret i en lang række under træerne, og cyklisterne suser forbi. Fodgængerovergangen ligger mellem det lille røde hus og huset med fiskeskælstaget. Langs skolen er der et grønt bælte med højt græs og små træer.', area: [40, 60, -96, 200] },
   { n: 'Mariendalsvej', t: 'Den store vej på nordsiden af skolen. Kig dig for, før du går over.', area: [-200, 200, -200, -92] },
   { n: 'Vejen bag haverne', t: 'Her kan du gå hele vejen rundt om skolen. Cyklisterne kører i begge retninger, så kig dig for, før du går over.', area: [-60, -37.5, -92, 200] },
   { n: 'Stien med træerne', t: 'En sti med træer på begge sider. Lige ved siden af løber Egernvej.', area: [-37.5, 40, 91, 98] },
