@@ -811,11 +811,12 @@ const YB = brickBlock({ x: 33.5, z: 6.25, w: 9, d: 8.5, h: 7.6, rise: 3.2, wall:
   box(9.4, 0.35, 4.9, M.dark, 33.5, 9.4, -0.25, { edges: true });
   // the long, low wing toward the schoolyard: yellow brick like the rest, with a double door in the corner
   const WG = brickBlock({ x: 20.5, z: -0.25, w: 17, d: 4.5, h: 7.0, rise: 1.9, wall: M.yellow, bands: [[3.35, 0.45], [6.55, 0.22]], roofMat: M.metal, corniceMat: M.dark, mapFill: '#e2c57e' });
-  facadeWins('yellow', WG, 'N', [1.9, 5.2], 6, 1.3, 1.6, { margin: 1.4 }); facadeWins('yellow', WG, 'S', [1.9, 5.2], 6, 1.3, 1.6, { margin: 1.4 });
-  addWin('yellow', 12 - WOFF, 5.2, -0.25, -Math.PI / 2, 1.3, 1.6);
-  for (const zz of [-1.75, -0.6]) addWin('doorModern', 12 - WOFF, 1.15, zz, -Math.PI / 2, 1.1, 2.3, 0.4);
-  box(1.2, 0.14, 2.8, M.stone, 11.4, 0, -1.15, { col: true, cast: false });
-  box(1.5, 0.12, 2.9, M.dark, 11.3, 2.55, -1.15, { edges: true });
+  facadeWins('yellow', WG, 'N', [1.9, 5.2], 6, 1.3, 1.6, { margin: 1.4 });
+  facadeWins('yellow', WG, 'S', [5.2], 6, 1.3, 1.6, { margin: 1.4 }); facadeWins('yellow', WG, 'S', [1.9], 6, 1.3, 1.6, { margin: 1.4, skip: x => x > 23 });
+  for (const y of [1.9, 5.2]) addWin('yellow', 12 - WOFF, y, -0.25, -Math.PI / 2, 1.3, 1.6);
+  // the entrance with two doors, on the yard side near the glass tower
+  for (const xx of [24.7, 25.85]) addWin('doorModern', xx, 1.15, 2.0 + WOFF, 0, 1.1, 2.3, 0.4);
+  box(2.8, 0.14, 1.1, M.stone, 25.3, 0, 2.55, { col: true, cast: false });
   bayWindow(38, 5.4, -10, 'E'); bayWindow(38, 5.4, 6.25, 'E');
   { const b = YA; const run = (b.w + 2 * b.over) / 2; const a = Math.atan2(b.rise, run); const xc = b.x - run * 0.5; const y = hipSurf(b, xc, -8) + 0.08;
     const pm = mesh(new THREE.PlaneGeometry(2.4, 4.5), M.solar, xc, y, -8, { cast: false }); pm.rotation.set(-(Math.PI / 2 - a), -Math.PI / 2, 0, 'YXZ'); }
