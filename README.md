@@ -26,4 +26,5 @@ Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, h
 - Kameraet følger altid bag pigen, så man ser derhen, hvor hun går.
 - Et par gange undervejs kommer der en regnbyge i et minut. Så kan pigen slå sin paraply op.
 - Går man lige ind i et af de lave stålrør, svinger pigen sig rundt om røret og går videre.
+- Man kan gå ind i de gule huse gennem glastårnet. Til venstre ligger salen, trappen fører op til 1. sal med klasselokaler, og til højre er garderoben.
 - Fundne dyr, dag/aften og lyd huskes i browseren.
