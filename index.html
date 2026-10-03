@@ -64,6 +64,11 @@ kbd{display:inline-block;min-width:1.6em;text-align:center;padding:1px 6px;borde
 .err{background:#ffe0d6;border:2px solid var(--ink);border-radius:10px;padding:8px 12px;font-size:13.5px;margin:0 0 12px}
 #joy{position:fixed;width:112px;height:112px;margin:-56px 0 0 -56px;border-radius:50%;border:2.5px solid var(--ink);background:rgba(255,250,240,.55);pointer-events:none}
 #knob{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:var(--paper);border:2.5px solid var(--ink);box-shadow:2px 3px 0 var(--ink)}
+#findBtn{position:fixed;left:14px;top:calc(84px + env(safe-area-inset-top,0px));background:#fff1b8;font-size:14px;padding:8px 13px}
+#findBtn svg{width:20px;height:20px}
+.sw{width:34px;height:34px;border-radius:50%;border:3px solid var(--ink);cursor:pointer;padding:0}
+.sw[aria-pressed="true"]{box-shadow:0 0 0 3px #fff,0 0 0 6px var(--ink);transform:scale(1.08)}
+.swatches{display:flex;flex-wrap:wrap;gap:10px;margin:2px 0 16px;padding-left:3px}
 #kickHint{position:fixed;left:50%;top:13%;transform:translateX(-50%);padding:8px 14px;font:700 17px var(--display);background:#fff1d8;animation:pop .3s ease-out}
 #kickHint kbd{display:inline-block;min-width:1.4em;padding:1px 6px;margin-right:4px;border:2px solid var(--ink);border-radius:6px;background:#fff;font:800 15px var(--body);text-align:center}
 #kickBtn{position:fixed;right:112px;bottom:calc(30px + env(safe-area-inset-bottom,0px));width:70px;height:70px;border-radius:50%;font:800 16px var(--display);color:var(--ink);background:#ffd27a;touch-action:none}
@@ -104,6 +109,7 @@ body.touch #poi{bottom:calc(118px + env(safe-area-inset-bottom,0px))}
   <div id="touchHint" hidden>Træk her<br>for at gå</div>
   <div id="joy" hidden><div id="knob"></div></div>
   <button id="jump" class="sticker" type="button" hidden>Hop</button>
+  <button id="findBtn" class="sticker btn" type="button" title="Vis vej til det nærmeste dyr (V)"><svg viewBox="0 0 24 24" fill="#ffd34d" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 2.8l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.6l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"/></svg><span>Vis vej</span></button>
   <div id="kickHint" class="sticker" hidden><kbd>S</kbd> for spark</div>
   <button id="kickBtn" class="sticker" type="button" hidden>Spark</button>
   <button id="umb" class="sticker btn" type="button" aria-pressed="false" title="Paraply (P)" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"><path d="M2.5 12a9.5 8 0 0119 0c-1.6-1.3-3.2-1.3-4.75 0-1.6-1.3-3.2-1.3-4.75 0-1.6-1.3-3.2-1.3-4.75 0-1.6-1.3-3.2-1.3-4.75 0z"/><path d="M12 12v7a2 2 0 01-4 0"/></svg><span id="umbTxt">Paraply</span></button>
@@ -117,6 +123,10 @@ body.touch #poi{bottom:calc(118px + env(safe-area-inset-bottom,0px))}
     <p class="err" id="loadErr" hidden>3D-motoren kunne ikke hentes. Tjek internetforbindelsen og genindlæs siden.</p>
     <p class="chipsHead">Dyrene, du skal finde</p>
     <div class="chips" id="chips"></div>
+    <p class="chipsHead">Vælg farve på jakken</p>
+    <div class="swatches" id="swJacket"></div>
+    <p class="chipsHead">Og på paraplyen</p>
+    <div class="swatches" id="swUmb"></div>
     <div class="keys" id="keysDesk">
       <span><kbd>W</kbd> <kbd>↑</kbd></span><span>Gå frem (<kbd>S</kbd> går baglæns)</span>
       <span><kbd>A</kbd><kbd>D</kbd> <kbd>←</kbd><kbd>→</kbd></span><span>Drej</span>
@@ -125,6 +135,7 @@ body.touch #poi{bottom:calc(118px + env(safe-area-inset-bottom,0px))}
       <span><kbd>S</kbd> med bolden</span><span>Spark bolden (bolden ligger på den store fodboldbane)</span>
       <span>Træk med musen</span><span>Kig dig omkring (rul for at zoome)</span>
       <span><kbd>N</kbd> <kbd>M</kbd></span><span>Dag eller aften · vis eller skjul kortet</span>
+      <span><kbd>V</kbd></span><span>Vis vej: stjerner viser vejen til det nærmeste dyr</span>
       <span><kbd>P</kbd></span><span>Slå paraplyen op eller ned, når det regner</span>
       <span>Læs op-knappen</span><span>Teksterne bliver læst højt (tryk for at slå fra)</span>
     </div>
@@ -132,6 +143,7 @@ body.touch #poi{bottom:calc(118px + env(safe-area-inset-bottom,0px))}
       <span>Venstre tommel</span><span>Skub op for at gå, til siden for at dreje</span>
       <span>Højre tommel</span><span>Træk for at kigge dig omkring</span>
       <span>Hop-knappen</span><span>Hop op på bænke og stubbe</span>
+      <span>Vis vej-knappen</span><span>Stjerner viser vejen til det nærmeste dyr</span>
       <span>Paraply-knappen</span><span>Kommer frem, når det regner</span>
       <span>Læs op-knappen</span><span>Teksterne bliver læst højt</span>
     </div>
@@ -1361,7 +1373,7 @@ greenStrip(38.8, 40, -76.5, -61); greenStrip(38.8, 40, -54, 13); greenStrip(39.0
   colCirc(12, -22.5, 0.15, 99);
   deck(0, -30, 3.6); deck(20, -52, 3.0);
   ttTable(-1, -12, 0); ttTable(16, -26, 0);
-  bench(-3, -40, Math.PI / 2); bench(4, 2, 0.3); bench(22, -60, 0); bench(5, 33, 0.4); bench(-3.5, 52, Math.PI / 2);
+  bench(-3, -40, Math.PI / 2); bench(4, 2, 0.3); bench(22, -60, 0); bench(-3.5, 35, 0.4); bench(-3.5, 52, Math.PI / 2);
   lamp(-2, -20); lamp(14, -44); lamp(-3, 8); lamp(18, 36); lamp(14, -72); lamp(31.5, -20.5); lamp(22, -68);
   bin(10.4, -42.5); bin(27.5, -75.8); bin(38.4, 57); bin(-5.6, -26);
   const rb = new THREE.CylinderGeometry(2.4, 2.4, 0.45, 32, 1, true); mesh(rb, M.deck, 12, 0.225, 12, { cast: false });
@@ -1442,6 +1454,35 @@ shiftBlock(14, () => {
     const sg = new THREE.ShapeGeometry(sh); sg.rotateX(-Math.PI / 2); mesh(sg, M.sand, 20.5, 0.27, 53.5, { cast: false });
     colBox(17.2, 23.8, 51.8, 55.2, 0.3); mapItems.push({ k: 'r', x0: 17.2, x1: 23.8, z0: 51.8, z1: 55.2, fill: '#ead197' }); }
 }, [BARS]);
+// ---------------- swings and a slide in the middle of the yard (the moving parts are made later)
+const SWINGS = [], SLIDE = { x: 12, zb: 33.6, z0: 35.0, z1: 40.3, top: 2.0 };
+{
+  const red = toon('#d9473b'), steel = M.steel, Y = new THREE.Vector3(0, 1, 0);
+  const rod = (a, b, r, mat) => { const m = mesh(new THREE.CylinderGeometry(r, r, a.distanceTo(b), 8), mat, (a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2, { edges: 40 }); m.quaternion.setFromUnitVectors(Y, b.clone().sub(a).normalize()); return m; };
+  const V = (x, y, z) => new THREE.Vector3(x, y, z);
+  // swing frame: two A-frames joined by a top bar at 2.6 m
+  const zc = 31.5, xa = -1.5, xb = 5.5, H = 2.6;
+  for (const x of [xa, xb]) for (const dz of [-0.95, 0.95]) { rod(V(x, 0, zc + dz), V(x, H, zc), 0.07, red); colCirc(x, zc + dz, 0.12, 99); }
+  rod(V(xa - 0.1, H, zc), V(xb + 0.1, H, zc), 0.07, red);
+  mapItems.push({ k: 'l', x0: xa, z0: zc, x1: xb, z1: zc, stroke: '#d9473b' });
+  for (const x of [0.8, 3.2]) SWINGS.push({ x, z: zc, py: H, L: 2.05, th: 0, busy: false });
+  // the slide: a ladder at the back, a small platform and a yellow chute down toward the south
+  const S = SLIDE, yel = toon('#f2b233'), x = S.x;
+  for (const dx of [-0.42, 0.42]) { rod(V(x + dx, 0, S.zb + 0.25), V(x + dx, S.top + 0.9, S.z0 - 0.15), 0.04, steel); colCirc(x + dx, S.zb + 0.3, 0.08, 99); }
+  for (let i = 1; i <= 6; i++) { const f = i / 7; rod(V(x - 0.42, f * S.top, S.zb + 0.25 + f * (S.z0 - 0.4 - S.zb)), V(x + 0.42, f * S.top, S.zb + 0.25 + f * (S.z0 - 0.4 - S.zb)), 0.03, steel); }
+  box(1.1, 0.1, 0.8, M.deck, x, S.top - 0.1, S.z0 - 0.1, { edges: true });
+  for (const dx of [-0.5, 0.5]) { rod(V(x + dx, 0, S.z0 + 0.2), V(x + dx, S.top, S.z0 + 0.2), 0.05, steel); rod(V(x + dx, S.top, S.z0 - 0.4), V(x + dx, S.top + 0.75, S.z0 - 0.4), 0.03, steel); }
+  const prof = []; for (let i = 0; i <= 16; i++) { const s = i / 16, z = S.z0 + (S.z1 - S.z0) * s, y = 0.35 + (S.top - 0.35) * Math.pow(1 - s, 1.5); prof.push([z, y]); }
+  prof.push([S.z1 + 0.6, 0.33]);
+  for (let i = 0; i < prof.length - 1; i++) {
+    const [za, ya] = prof[i], [zb, yb] = prof[i + 1], len = Math.hypot(zb - za, yb - ya), ang = Math.atan2(ya - yb, zb - za);
+    const m = mesh(boxGeo(0.9, 0.06, len + 0.02), yel, x, (ya + yb) / 2, (za + zb) / 2, { edges: 30 }); m.rotation.x = ang;
+    for (const dx of [-0.48, 0.48]) { const sd = mesh(boxGeo(0.06, 0.22, len + 0.02), yel, x + dx, (ya + yb) / 2 + 0.1, (za + zb) / 2); sd.rotation.x = ang; }
+  }
+  rod(V(x - 0.4, 0, S.z1 - 0.2), V(x - 0.4, 0.42, S.z1 - 0.2), 0.04, steel); rod(V(x + 0.4, 0, S.z1 - 0.2), V(x + 0.4, 0.42, S.z1 - 0.2), 0.04, steel);
+  colBox(x - 0.55, x + 0.55, S.z0 - 0.5, S.z1, 2.3);
+  mapItems.push({ k: 'r', x0: x - 0.5, x1: x + 0.5, z0: S.zb, z1: S.z1 + 0.6, fill: '#f2b233' });
+}
 // ---------------- small houses with gardens (not part of the school)
 {
   const WALLS = [M.brick, M.yellow, toon('#f0e9dd'), toon('#e8d6c0'), M.brick];
@@ -1712,7 +1753,7 @@ function buildKid() {
     sh.rotation.z = s * 0.12; arms.push(sh);
   }
   const root = new THREE.Group(); g.scale.setScalar(0.92); root.add(g);
-  return { root, g, head, legs, arms };
+  return { root, g, head, legs, arms, coat };
 }
 const kid = buildKid(); dyn.add(kid.root);
 
@@ -2135,6 +2176,8 @@ const POIS = [
   { n: 'Cykelskuret', t: 'Et langt tag med plads til mange cykler. For enden af cykelskuret kan man gå direkte ud på vejen bag haverne.', x: -22, z: -31, r: 8 },
   { n: 'Træet med den runde bænk', t: 'Et stort træ med en rund bænk omkring. Et godt sted at sidde og se bladene falde.', x: 12, z: 12, r: 5 },
   { n: 'Stendyrene', t: 'Bløde grønne bakker. På toppen hviler en odder og en bjørn, der er hugget i sten.', x: 5, z: 24, r: 9 },
+  { n: 'Gyngerne', t: 'Gå hen til en gynge, så sætter hun sig og gynger. Tryk på W, når hun skal hoppe af.', x: 2, z: 31.5, r: 3.6 },
+  { n: 'Rutsjebanen', t: 'Gå hen til stigen bag rutsjebanen, så klatrer hun op og rutsjer ned.', x: 12, z: 37, r: 3.6 },
   { n: 'Den lille fodboldbane', t: 'En lille grøn bane med to små mål. Perfekt til en hurtig kamp i frikvarteret.', x: 7.5, z: 55.5, r: 8 },
   { n: 'Trampolinerne', t: 'Fire trampoliner gravet ned i et bed af blødt gummi. Gå ud på dem, så hopper du af dig selv. Tryk på hop for at komme helt højt op.', x: 7.5, z: 67.2, r: 7 },
   { n: 'Rørene', t: 'Lave stålrør i hoftehøjde for en voksen. Gå lige ind i et af rørene, så svinger hun sig rundt om det og går videre.', x: 31, z: 64, r: 9 },
@@ -2172,7 +2215,7 @@ function nearestName(x, z) {
 const found = new Set();
 let soundOn = true, started = false, paused = true, showMap = !isTouch || window.innerWidth > 700;
 const SKEY = 'duevej3d-dyr';
-function save() { try { localStorage.setItem(SKEY, JSON.stringify({ found: [...found], ev: evening, sound: soundOn, map: showMap, voice: typeof voiceOn === 'boolean' ? voiceOn : true })); } catch (e) {} }
+function save() { try { localStorage.setItem(SKEY, JSON.stringify({ found: [...found], ev: evening, sound: soundOn, map: showMap, voice: typeof voiceOn === 'boolean' ? voiceOn : true, jacket: typeof jacketCol === 'string' ? jacketCol : undefined, umb: typeof umbCol === 'string' ? umbCol : undefined })); } catch (e) {} }
 function load() { try { return JSON.parse(localStorage.getItem(SKEY) || '{}') || {}; } catch (e) { return {}; } }
 
 // ======================================================================== SOUND
@@ -2334,6 +2377,7 @@ window.addEventListener('keydown', e => {
   if (e.code === 'KeyN' && !e.repeat) setEvening(!evening);
   if (e.code === 'KeyM' && !e.repeat) setMapVisible(!showMap);
   if (e.code === 'KeyP' && !e.repeat) toggleUmbrella();
+  if (e.code === 'KeyV' && !e.repeat) showWay();
   if (e.code === 'KeyS' && !e.repeat && BALL.held) { kickBall(); sHold = true; }
 });
 window.addEventListener('keyup', e => { keys.delete(e.code); if (e.code === 'KeyS') sHold = false; });
@@ -2366,6 +2410,7 @@ canvas.addEventListener('wheel', e => { if (!started) return; e.preventDefault()
 $('jump').addEventListener('pointerdown', e => { e.preventDefault(); jumpReq = true; });
 $('umb').addEventListener('click', () => { toggleUmbrella(); $('c').focus(); });
 $('kickBtn').addEventListener('pointerdown', e => { e.preventDefault(); kickBall(); });
+$('findBtn').addEventListener('click', () => { showWay(); $('c').focus(); });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 
 // ======================================================================== PHYSICS
@@ -2391,6 +2436,7 @@ function resolve(p) {
 }
 function updPlayer(dt) {
   if (P.swing) { updSwing(dt); updUmbrella(dt); return; }
+  if (P.ride) { updRide(dt); updUmbrella(dt); return; }
   let fwd = 0, turn = 0;
   if (!paused) {
     if (keys.has('KeyW') || keys.has('ArrowUp')) fwd += 1;
@@ -2409,6 +2455,7 @@ function updPlayer(dt) {
   P.pos.x += P.vel.x * dt; P.pos.z += P.vel.z * dt;
   if (P.swingCd > 0) P.swingCd -= dt;
   else if (P.onGround && fwd > 0.3 && !paused) { const hit = barHit(); if (hit) { startSwing(hit); return; } }
+  if (rideCheck()) { updRide(0); return; }
   resolve(P.pos); pushFromCyclists(P.pos);
   P.pos.x = Math.min(BOUNDS[1], Math.max(BOUNDS[0], P.pos.x)); P.pos.z = Math.min(BOUNDS[3], Math.max(BOUNDS[2], P.pos.z));
   const tr = trampAt(P.pos.x, P.pos.z);
@@ -2534,7 +2581,7 @@ function updBall(dt) {
   if (B.cd > 0) B.cd -= dt;
   const before = B.pos.clone();
   if (B.held) {
-    if (P.swing || !started) { B.held = false; B.cd = 0.8; }
+    if (P.swing || P.ride || !started) { B.held = false; B.cd = 0.8; }
     else {
       const sp = Math.hypot(P.vel.x, P.vel.z), lead = 0.5 + Math.min(0.25, sp * 0.03) + Math.sin(P.walkT * 0.5) * 0.04 * Math.min(1, sp / 3);
       const side = 0.3; // a little to her right, so the ball can be seen from behind
@@ -2706,7 +2753,7 @@ const UMB = (() => {
   }
   canopy.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(rim), ink));
   const tip = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 6), shaftM); tip.position.y = 0.06; canopy.add(tip);
-  return { root, canopy, open: false, k: 0 };
+  return { root, canopy, open: false, k: 0, mats };
 })();
 function updUmbBtn() {
   const b = $('umb'); b.hidden = !(started && (WEATHER.raining || UMB.open));
@@ -2997,6 +3044,182 @@ function setVoice(v) {
   if (!v) { try { speechSynthesis.cancel(); } catch (e) {} } save();
 }
 
+// ---------------- riding the swings and the slide
+for (const s of SWINGS) {
+  const g = new THREE.Group(); g.position.set(s.x, s.py, s.z); dyn.add(g); s.g = g;
+  const chain = toon('#3b3f46');
+  for (const dx of [-0.24, 0.24]) { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, s.L, 5), chain); c.position.set(dx, -s.L / 2, 0); g.add(c); }
+  const seat = new THREE.Mesh(boxGeo(0.56, 0.06, 0.24), toon('#2b2d31')); seat.position.set(0, -s.L, 0); seat.castShadow = true; g.add(seat); edges(seat);
+}
+function seatPos(s, out) { out.set(s.x, s.py - s.L * Math.cos(s.th), s.z - s.L * Math.sin(s.th)); return out; }
+const _sp = new THREE.Vector3();
+function rideCheck() {
+  if (P.ride || P.swing || P.rideCd > 0 || !P.onGround || paused) return false;
+  for (const s of SWINGS) if (Math.hypot(P.pos.x - s.x, P.pos.z - s.z) < 0.7 && P.pos.y < 0.4) { P.ride = { kind: 'swing', s, t: 0, last: 0 }; s.busy = true; P.face = 0; P.vel.set(0, 0, 0); tone(500, 700, 0, 0.1, 0.04, 'triangle'); return true; }
+  if (Math.abs(P.pos.x - SLIDE.x) < 0.5 && P.pos.z > SLIDE.zb - 0.8 && P.pos.z < SLIDE.zb + 0.2 && P.pos.y < 0.4) { P.ride = { kind: 'slide', t: 0 }; P.face = 0; P.vel.set(0, 0, 0); return true; }
+  return false;
+}
+function sitPose(knee) {
+  const L = kid.legs, A = kid.arms;
+  for (const l of L) { l.hip.rotation.x = -1.45; l.knee.rotation.x = knee; l.shoe.rotation.x = 0.2; }
+  A[0].rotation.x = -2.5; A[1].rotation.x = -2.5; A[0].rotation.z = -0.25; A[1].rotation.z = 0.25;
+  kid.g.position.y = 0;
+}
+function endRide(vel) {
+  if (P.ride && P.ride.s) { P.ride.s.busy = false; }
+  P.ride = null; P.rideCd = 1.3; kid.root.rotation.x = 0; kid.root.rotation.z = 0;
+  P.vel.copy(vel); P.onGround = vel.y <= 0;
+}
+function updRide(dt) {
+  const R = P.ride; R.t += dt;
+  const moveKey = keys.has('KeyW') || keys.has('ArrowUp') || keys.has('KeyS') || keys.has('ArrowDown') || (joy.id !== null && Math.abs(joy.y) > 0.5);
+  if (!moveKey) R.released = true;
+  const wantsOff = R.t > 1.2 && R.released && moveKey && !paused;
+  if (R.kind === 'swing') {
+    const s = R.s, w = Math.sqrt(22 / s.L) * 0.62, A = Math.min(0.95, 0.12 + R.t * 0.16), ph = R.t * w;
+    s.th = A * Math.sin(ph);
+    const dth = A * w * Math.cos(ph);
+    if (Math.sign(dth) !== Math.sign(R.last) && A > 0.4) tone(1100, 900, 0, 0.1, 0.012, 'triangle');
+    if (A > 0.6 && Math.abs(s.th) < 0.05 && R.t - (R.whee || 0) > 2) { R.whee = R.t; tone(520, 980, 0, 0.35, 0.03); }
+    R.last = dth;
+    seatPos(s, _sp);
+    const h = 0.48;
+    P.pos.set(_sp.x, _sp.y - h * Math.cos(s.th) + 0.03, _sp.z - h * Math.sin(s.th));
+    kid.root.position.copy(P.pos); kid.root.rotation.y = 0; kid.root.rotation.x = s.th;
+    sitPose(0.9 + 0.55 * Math.cos(ph));
+    if (wantsOff || R.t > 14) {
+      const vz = -s.L * dth * Math.cos(s.th);
+      P.pos.y = Math.max(groundAt(P.pos.x, P.pos.z, P.pos.y + 0.5), _sp.y - 0.4);
+      endRide(new THREE.Vector3(0, 3.5, Math.max(1.5, Math.min(4, vz))));
+      hop();
+    }
+    return;
+  }
+  // slide: climb the ladder, sit down at the top, then whoosh down
+  const S = SLIDE, sm = t => t * t * (3 - 2 * t);
+  const L = kid.legs, A = kid.arms;
+  if (R.t < 1.1) {
+    const f = R.t / 1.1;
+    P.pos.set(S.x, f * (S.top - 0.05), S.zb - 0.1 + f * (S.z0 - 0.35 - S.zb));
+    const c = Math.sin(R.t * 12);
+    L[0].hip.rotation.x = -0.6 - 0.4 * c; L[1].hip.rotation.x = -0.6 + 0.4 * c; L[0].knee.rotation.x = 0.9 + 0.4 * c; L[1].knee.rotation.x = 0.9 - 0.4 * c;
+    A[0].rotation.x = -2.4 + 0.3 * c; A[1].rotation.x = -2.4 - 0.3 * c; A[0].rotation.z = -0.1; A[1].rotation.z = 0.1;
+    for (const l of L) l.shoe.rotation.x = 0;
+  } else if (R.t < 1.45) {
+    P.pos.set(S.x, S.top - 0.38, S.z0 - 0.1); sitPose(0.5);
+    if (!R.go) { R.go = true; }
+  } else {
+    if (!R.whoosh) { R.whoosh = true; noise(1.1, 'bandpass', 1400, 0.08); tone(700, 1100, 0, 0.5, 0.03); }
+    const f = Math.min(1, (R.t - 1.45) / 1.1), s = f * f, z = S.z0 + (S.z1 + 0.5 - S.z0) * s;
+    const ss = Math.min(1, (z - S.z0) / (S.z1 - S.z0)), y = 0.35 + (S.top - 0.35) * Math.pow(1 - ss, 1.5);
+    P.pos.set(S.x, y - 0.38, z);
+    kid.root.rotation.x = -0.25 * (1 - f);
+    sitPose(0.25); A[0].rotation.x = -1.0; A[1].rotation.x = -1.0; A[0].rotation.z = -1.0; A[1].rotation.z = 1.0;
+    if (f >= 1) { P.pos.set(S.x, groundAt(S.x, S.z1 + 1.0, 0.6), S.z1 + 1.0); endRide(new THREE.Vector3(0, 0, 3)); hop(); kid.root.position.copy(P.pos); return; }
+  }
+  kid.root.position.copy(P.pos); kid.root.rotation.y = 0;
+}
+function updSwingsIdle(dt, t) {
+  for (const s of SWINGS) { if (s.busy) { s.g.rotation.x = s.th; continue; } s.th += (Math.sin(t * 0.9 + s.x) * 0.06 - s.th) * Math.min(1, dt * 2); s.g.rotation.x = s.th; }
+  if (P.rideCd > 0) P.rideCd -= dt;
+}
+
+// ---------------- "vis vej": a trail of twinkling stars to the nearest animal she hasn't found yet
+const NAV = { x0: -57, z0: -111, nx: 118, nz: 226, blocked: null };
+function buildNav() {
+  const { x0, z0, nx, nz } = NAV, b = new Uint8Array(nx * nz), inf = 0.45;
+  for (const c of cols) {
+    if (c.t === 'r' || c.top <= 0.55 || (c.bot !== undefined && c.bot > 1.8)) continue;
+    let ax, bx, az, bz;
+    if (c.t === 'c') { ax = c.x - c.r - inf; bx = c.x + c.r + inf; az = c.z - c.r - inf; bz = c.z + c.r + inf; }
+    else { ax = c.x0 - inf; bx = c.x1 + inf; az = c.z0 - inf; bz = c.z1 + inf; }
+    const i0 = Math.max(0, Math.ceil(ax - x0 - 0.5)), i1 = Math.min(nx - 1, Math.floor(bx - x0 - 0.5));
+    const j0 = Math.max(0, Math.ceil(az - z0 - 0.5)), j1 = Math.min(nz - 1, Math.floor(bz - z0 - 0.5));
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+      if (c.t === 'c') { const cx = x0 + 0.5 + i, cz = z0 + 0.5 + j; if (Math.hypot(cx - c.x, cz - c.z) > c.r + inf) continue; }
+      b[j * nx + i] = 1;
+    }
+  }
+  NAV.blocked = b;
+}
+function navPath(sx, sz, targets) {
+  if (!NAV.blocked) buildNav();
+  const { x0, z0, nx, nz } = NAV, B = NAV.blocked.slice();
+  const cell = (x, z) => { const i = Math.floor(x - x0), j = Math.floor(z - z0); return (i < 0 || j < 0 || i >= nx || j >= nz) ? -1 : j * nx + i; };
+  const goal = new Map();
+  targets.forEach((t, k) => { const c = cell(t.x, t.z); if (c < 0) return; goal.set(c, k); B[c] = 0; for (const d of [-1, 1, -nx, nx]) if (B[c + d] !== undefined) B[c + d] = 0; });
+  let start = cell(sx, sz); if (start < 0) return null;
+  if (B[start]) { let best = -1, bd = 9; const si = start % nx, sj = (start / nx) | 0; for (let dj = -2; dj <= 2; dj++) for (let di = -2; di <= 2; di++) { const c = (sj + dj) * nx + si + di; if (c >= 0 && c < B.length && !B[c] && Math.hypot(di, dj) < bd) { bd = Math.hypot(di, dj); best = c; } } if (best < 0) return null; start = best; }
+  const dist = new Float64Array(nx * nz).fill(1e9), prev = new Int32Array(nx * nz).fill(-1), heap = [];
+  const push = (c, d) => { heap.push([d, c]); let i = heap.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; } };
+  const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let i = 0; for (;;) { const l = 2 * i + 1, r = l + 1; let m = i; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return top; };
+  dist[start] = 0; push(start, 0);
+  while (heap.length) {
+    const [d, c] = pop(); if (d > dist[c]) continue;
+    if (goal.has(c)) { const path = []; for (let k = c; k >= 0; k = prev[k]) path.push(k); path.reverse(); return { target: goal.get(c), pts: path.map(k => ({ x: x0 + 0.5 + (k % nx), z: z0 + 0.5 + ((k / nx) | 0) })) }; }
+    const i = c % nx, j = (c / nx) | 0;
+    for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+      if (!di && !dj) continue; const ii = i + di, jj = j + dj; if (ii < 0 || jj < 0 || ii >= nx || jj >= nz) continue;
+      const n = jj * nx + ii; if (B[n]) continue;
+      if (di && dj && (B[j * nx + ii] || B[jj * nx + i])) continue;
+      const nd = d + (di && dj ? 1.414 : 1); if (nd < dist[n]) { dist[n] = nd; prev[n] = c; push(n, nd); }
+    }
+  }
+  return null;
+}
+const TRAILFX = { sprites: [], t: 0, life: 14 };
+TX.star = ctex(128, 128, (g, w, h) => {
+  const gr = g.createRadialGradient(64, 64, 10, 64, 64, 62); gr.addColorStop(0, 'rgba(255,240,170,.85)'); gr.addColorStop(1, 'rgba(255,240,170,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  g.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 19 : 44; g.lineTo(64 + Math.cos(a) * r, 66 + Math.sin(a) * r); } g.closePath();
+  g.fillStyle = '#ffd23f'; g.fill(); g.lineWidth = 6; g.strokeStyle = '#2a2238'; g.lineJoin = 'round'; g.stroke();
+}, { wrap: false });
+const starMat = new THREE.SpriteMaterial({ map: TX.star, transparent: true, depthWrite: false, opacity: 0 });
+function clearTrail() { for (const s of TRAILFX.sprites) dyn.remove(s); TRAILFX.sprites.length = 0; }
+function showWay() {
+  if (!started || paused) return;
+  const todo = animals.filter(a => !found.has(a.id));
+  if (!todo.length) { toast('Du har fundet alle dyrene!'); return; }
+  const res = navPath(P.pos.x, P.pos.z, todo.map(a => ({ x: a.g.position.x, z: a.g.position.z })));
+  if (!res) { toast('Jeg kan ikke finde vejen lige nu. Prøv et andet sted.'); return; }
+  const a = todo[res.target]; clearTrail();
+  // smooth the path a little, then put a star every 0.9 m
+  const p = res.pts; p[0] = { x: P.pos.x, z: P.pos.z }; p[p.length - 1] = { x: a.g.position.x, z: a.g.position.z };
+  for (let it = 0; it < 2; it++) for (let i = 1; i < p.length - 1; i++) p[i] = { x: (p[i - 1].x + 2 * p[i].x + p[i + 1].x) / 4, z: (p[i - 1].z + 2 * p[i].z + p[i + 1].z) / 4 };
+  let acc = 0.9;
+  for (let i = 1; i < p.length; i++) {
+    const dx = p[i].x - p[i - 1].x, dz = p[i].z - p[i - 1].z, l = Math.hypot(dx, dz);
+    while (acc <= l) { const f = acc / l, x = p[i - 1].x + dx * f, z = p[i - 1].z + dz * f; const s = new THREE.Sprite(starMat); s.position.set(x, groundAt(x, z, P.pos.y + 0.6) + 0.45, z); s.scale.setScalar(0.55); s.userData.k = TRAILFX.sprites.length; dyn.add(s); TRAILFX.sprites.push(s); acc += 0.9; }
+    acc -= l;
+  }
+  const big = new THREE.Sprite(starMat); big.position.set(a.g.position.x, a.g.position.y + 1.6, a.g.position.z); big.scale.setScalar(1.6); big.userData.big = true; dyn.add(big); TRAILFX.sprites.push(big);
+  TRAILFX.t = 0;
+  [880, 1175, 1568].forEach((f, i) => tone(f, f * 1.02, i * 0.09, 0.25, 0.04));
+  toast(`Følg stjernerne hen til ${a.def.d}!`);
+}
+function updTrail(dt, t) {
+  if (!TRAILFX.sprites.length) return;
+  TRAILFX.t += dt; const k = TRAILFX.t / TRAILFX.life;
+  starMat.opacity = k < 0.02 ? k / 0.02 : Math.max(0, 1 - Math.max(0, k - 0.75) / 0.25);
+  const n = TRAILFX.sprites.length;
+  for (const s of TRAILFX.sprites) {
+    if (s.userData.big) { s.scale.setScalar(1.4 + Math.sin(t * 5) * 0.3); continue; }
+    const wave = Math.max(0, Math.sin(s.userData.k * 0.35 - t * 6));
+    s.scale.setScalar(0.5 + wave * 0.3);
+  }
+  if (k >= 1) clearTrail();
+}
+
+// ---------------- choosing colours for her jacket and umbrella
+const JACKETS = [['#f3c531', 'gul'], ['#e2483c', 'rød'], ['#f29bb8', 'lyserød'], ['#9b6bd1', 'lilla'], ['#4a90d9', 'blå'], ['#5fae6a', 'grøn'], ['#f08a3c', 'orange']];
+const UMBS = [['#e2483c', 'rød'], ['#f29bb8', 'lyserød'], ['#f3c531', 'gul'], ['#4a90d9', 'blå'], ['#5fae6a', 'grøn'], ['#9b6bd1', 'lilla']];
+let jacketCol = '#f3c531', umbCol = '#e2483c';
+function applyColours() { kid.coat.color.set(jacketCol); UMB.mats[0].color.set(umbCol); renderSwatches(); }
+function renderSwatches() {
+  const mk = (id, list, cur, set) => { const el = $(id); if (!el) return; el.innerHTML = list.map(([c, n]) => `<button type="button" class="sw" style="background:${c}" aria-label="${n}" aria-pressed="${c === cur}"></button>`).join(''); [...el.children].forEach((b, i) => b.addEventListener('click', () => { set(list[i][0]); applyColours(); save(); tone(660, 880, 0, 0.1, 0.04, 'triangle'); })); };
+  mk('swJacket', JACKETS, jacketCol, c => { jacketCol = c; });
+  mk('swUmb', UMBS, umbCol, c => { umbCol = c; });
+}
+
 // ======================================================================== MAIN LOOP
 let last = performance.now(), clockT = 0, poiT = 0, mapT = 0, clockTick = 0;
 function updClock() { const d = new Date(); const m = d.getMinutes() + d.getSeconds() / 60, h = (d.getHours() % 12) + m / 60; const H = window.__clockHands; if (!H) return; H.mh.rotation.z = -m / 60 * Math.PI * 2; H.hh.rotation.z = -h / 12 * Math.PI * 2; H.mh.updateMatrix(); H.hh.updateMatrix(); H.mh.parent.updateMatrixWorld(true); }
@@ -3008,7 +3231,7 @@ function frame(now) {
   updCyclists(dt);
   updCamera(dt, clockT);
   updAnimals(dt, clockT);
-  updParade(dt, clockT); updLeafPiles(dt); updPuddles(dt); updVoice();
+  updParade(dt, clockT); updLeafPiles(dt); updPuddles(dt); updVoice(); updSwingsIdle(dt, clockT); updTrail(dt, clockT);
   updEffects(dt);
   const fxz = started ? P.pos : orbitC;
   updLeaves(dt, clockT, started ? P.pos.x : camera.position.x * 0.3, started ? P.pos.z : camera.position.z * 0.3);
@@ -3035,6 +3258,7 @@ function boot(data) {
   (data.found || st.found || []).forEach(i => found.add(i));
   animals.forEach(a => { if (found.has(a.id)) joinParade(a); });
   if (typeof st.voice === 'boolean') setVoice(st.voice); else setVoice(true);
+  if (JACKETS.some(j => j[0] === st.jacket)) jacketCol = st.jacket; if (UMBS.some(u => u[0] === st.umb)) umbCol = st.umb; applyColours();
   if (typeof st.sound === 'boolean') setSound(st.sound); else setSound(true);
   if (typeof st.map === 'boolean') showMap = st.map;
   setEvening(typeof data.evening === 'boolean' ? data.evening : !!st.ev); ev = evening ? 1 : 0;
@@ -3047,7 +3271,7 @@ function boot(data) {
   requestAnimationFrame(t => { last = t; frame(t); });
 }
 window.claude?.hot?.snapshot?.(() => ({ found: [...found], pos: P.pos.toArray(), face: P.face, started, evening }));
-window.__duevej = { PARADE, PILES, PUDDLES, BALL, BARS, WEATHER, UMB, toggleUmbrella, P, cam, kid, setEvening, start: () => goBtn.click(), animals, cyclists, renderer, peek: (y) => { cam.yaw = y; lastDragEnd = clockT + 30; }, snap: (e) => { camInit = false; startBlend = 1; if (typeof e === 'number') { evening = e > 0.5; ev = e; } } };
+window.__duevej = { SWINGS, showWay, PARADE, PILES, PUDDLES, BALL, BARS, WEATHER, UMB, toggleUmbrella, P, cam, kid, setEvening, start: () => goBtn.click(), animals, cyclists, renderer, peek: (y) => { cam.yaw = y; lastDragEnd = clockT + 30; }, snap: (e) => { camInit = false; startBlend = 1; if (typeof e === 'number') { evening = e > 0.5; ev = e; } } };
 if (window.claude?.hot?.ready) window.claude.hot.ready(boot); else boot(window.claude?.hot?.data ?? {});
 </script>
 </body>

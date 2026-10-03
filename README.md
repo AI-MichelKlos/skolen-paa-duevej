@@ -18,6 +18,7 @@ Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, h
 | Træk med musen: kig dig omkring, rul for at zoome | |
 | N: dag eller aften · M: vis eller skjul kortet | |
 | P: slå paraplyen op eller ned | Paraply-knappen: kommer frem, når det regner |
+| V: vis vej til det nærmeste dyr | Vis vej-knappen |
 
 ## Om spillet
 
@@ -30,6 +31,9 @@ Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, h
 - Når et dyr er fundet, hopper det glad og følger efter pigen, så hun til sidst går rundt med en hel dyreparade.
 - Under træerne ligger bunker af efterårsblade. Løber eller hopper man ind i dem, flyver bladene til alle sider.
 - Når det regner, kommer der vandpytter, som giver et stort plask, når man hopper eller løber i dem.
+- Vis vej-knappen lægger et spor af stjerner hen til det nærmeste dyr, man ikke har fundet endnu.
+- Midt i skolegården står gynger og en rutsjebane. Gå hen til en gynge eller stigen, så gynger eller rutsjer pigen af sig selv.
+- På startkortet kan man vælge farve på pigens jakke og paraply.
 - Teksterne bliver læst højt på dansk. Det kan slås fra med Læs op-knappen.
 - Der ligger en bold midt på den store fodboldbane. Går man hen til den, følger den med pigens fødder, og S sparker den væk. Ryger den i mål, står der MÅL!
 - Man kan gå ind i de gule huse gennem glastårnet. Til venstre ligger salen, trappen fører op til 1. sal med klasselokaler, og til højre er garderoben.
