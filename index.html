@@ -95,6 +95,7 @@ body.touch #poi{bottom:calc(118px + env(safe-area-inset-bottom,0px))}
     <button id="bMap" class="sticker btn" type="button" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg><span>Kort</span></button>
     <button id="bNight" class="sticker btn" type="button" aria-pressed="false"><svg id="iNight" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/></svg><span id="tNight">Aften</span></button>
     <button id="bSound" class="sticker btn" type="button" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path id="iWave" d="M16.5 9a4 4 0 010 6M19 6.5a7.5 7.5 0 010 11"/></svg><span>Lyd</span></button>
+    <button id="bVoice" class="sticker btn" type="button" aria-pressed="true" title="Læs teksterne højt"><svg id="iVoice" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"><path d="M4 5h16v10H10l-4 4v-4H4z"/><path d="M8 9h8M8 12h5"/></svg><span>Læs op</span></button>
     <button id="bHelp" class="sticker btn" type="button" aria-label="Hjælp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 114 2c-1 .7-1.6 1.2-1.6 2.4"/><circle cx="12" cy="17.2" r=".6" fill="currentColor"/></svg><span>Hjælp</span></button>
   </div>
   <canvas id="map" class="sticker" aria-label="Kort over skolen"></canvas>
@@ -125,12 +126,14 @@ body.touch #poi{bottom:calc(118px + env(safe-area-inset-bottom,0px))}
       <span>Træk med musen</span><span>Kig dig omkring (rul for at zoome)</span>
       <span><kbd>N</kbd> <kbd>M</kbd></span><span>Dag eller aften · vis eller skjul kortet</span>
       <span><kbd>P</kbd></span><span>Slå paraplyen op eller ned, når det regner</span>
+      <span>Læs op-knappen</span><span>Teksterne bliver læst højt (tryk for at slå fra)</span>
     </div>
     <div class="keys" id="keysTouch" hidden>
       <span>Venstre tommel</span><span>Skub op for at gå, til siden for at dreje</span>
       <span>Højre tommel</span><span>Træk for at kigge dig omkring</span>
       <span>Hop-knappen</span><span>Hop op på bænke og stubbe</span>
       <span>Paraply-knappen</span><span>Kommer frem, når det regner</span>
+      <span>Læs op-knappen</span><span>Teksterne bliver læst højt</span>
     </div>
     <button class="go" id="goBtn" type="button" disabled>Henter skolen …</button>
     <p class="foot">Tegnet frit efter fotos af Skolen på Duevej og en håndtegnet plan af skolen. Placeringer og detaljer er forenklede.</p>
@@ -2169,7 +2172,7 @@ function nearestName(x, z) {
 const found = new Set();
 let soundOn = true, started = false, paused = true, showMap = !isTouch || window.innerWidth > 700;
 const SKEY = 'duevej3d-dyr';
-function save() { try { localStorage.setItem(SKEY, JSON.stringify({ found: [...found], ev: evening, sound: soundOn, map: showMap })); } catch (e) {} }
+function save() { try { localStorage.setItem(SKEY, JSON.stringify({ found: [...found], ev: evening, sound: soundOn, map: showMap, voice: typeof voiceOn === 'boolean' ? voiceOn : true })); } catch (e) {} }
 function load() { try { return JSON.parse(localStorage.getItem(SKEY) || '{}') || {}; } catch (e) { return {}; } }
 
 // ======================================================================== SOUND
@@ -2296,16 +2299,17 @@ function setSound(v) { soundOn = v; $('bSound').setAttribute('aria-pressed', Str
 function updCounter() { $('cnt').textContent = `${found.size} af 12`; }
 function renderChips() { $('chips').innerHTML = ANIMAL_DEFS.map((d, i) => `<span class="chip${found.has(i) ? ' on' : ''}">${found.has(i) ? '✓ ' : ''}${d.n}</span>`).join(''); }
 let toastTimer = 0;
-function toast(msg) { const t = $('toast'); t.hidden = true; void t.offsetWidth; t.textContent = msg; t.hidden = false; toastTimer = 3.4; }
+function toast(msg) { sayToast(msg); const t = $('toast'); t.hidden = true; void t.offsetWidth; t.textContent = msg; t.hidden = false; toastTimer = 3.4; }
 let curPoi = null;
-function showPoi(p) { if (p === curPoi) return; curPoi = p; const el = $('poi'); if (!p) { el.hidden = true; return; } $('poiName').textContent = p.n; $('poiText').textContent = p.t; el.hidden = true; void el.offsetWidth; el.hidden = false; }
+function showPoi(p) { if (p === curPoi) return; curPoi = p; const el = $('poi'); if (!p) { el.hidden = true; return; } sayPoi(p); $('poiName').textContent = p.n; $('poiText').textContent = p.t; el.hidden = true; void el.offsetWidth; el.hidden = false; }
 
 $('bMap').addEventListener('click', () => setMapVisible(!showMap));
+$('bVoice').addEventListener('click', () => setVoice(!voiceOn));
 $('bNight').addEventListener('click', () => setEvening(!evening));
 $('bSound').addEventListener('click', () => { setSound(!soundOn); if (soundOn) SOUNDS.kat(); });
 $('bHelp').addEventListener('click', () => openIntro(true));
 $('finOk').addEventListener('click', () => { $('finale').hidden = true; paused = false; canvas.focus(); });
-$('finAgain').addEventListener('click', () => { found.clear(); updCounter(); renderChips(); save(); $('finale').hidden = true; paused = false; canvas.focus(); });
+$('finAgain').addEventListener('click', () => { leaveParade(); found.clear(); updCounter(); renderChips(); save(); $('finale').hidden = true; paused = false; canvas.focus(); });
 
 function openIntro(help) {
   paused = true; keys.clear(); renderChips();
@@ -2558,7 +2562,7 @@ function updBall(dt) {
     if (B.goalT > 0) { B.goalT -= dt; if (B.goalT <= 0) { B.pos.copy(B.home); B.vel.set(0, 0, 0); } }
     // she picks it up when she walks into it
     const dx = B.pos.x - P.pos.x, dz = B.pos.z - P.pos.z;
-    if (started && !paused && B.cd <= 0 && B.goalT <= 0 && !P.swing && Math.hypot(dx, dz) < 0.8 && Math.abs(B.pos.y - P.pos.y) < 0.6 && Math.hypot(B.vel.x, B.vel.z) < 5) { B.held = true; tone(330, 440, 0, 0.08, 0.04, 'triangle'); updKickHint(); }
+    if (started && !paused && B.cd <= 0 && B.goalT <= 0 && !P.swing && Math.hypot(dx, dz) < 0.8 && Math.abs(B.pos.y - P.pos.y) < 0.6 && Math.hypot(B.vel.x, B.vel.z) < 5) { B.held = true; tone(330, 440, 0, 0.08, 0.04, 'triangle'); updKickHint(); B.hinted = (B.hinted || 0) + 1; if (B.hinted <= 3) say(isTouch ? 'Tryk på Spark for at sparke' : 'Tryk på S for at sparke'); }
   }
   // roll the ball
   const mx = B.pos.x - before.x, mz = B.pos.z - before.z, dist = Math.hypot(mx, mz);
@@ -2646,6 +2650,7 @@ function updAnimals(dt, t) {
   for (const a of animals) {
     const gp = a.g.position;
     if (started && !paused && !found.has(a.id) && Math.hypot(P.pos.x - gp.x, P.pos.z - gp.z) < 3.3 && Math.abs(P.pos.y - gp.y) < 2.4) discover(a);
+    if (a.follow) continue;
     const far = Math.hypot(camera.position.x - gp.x, camera.position.z - gp.z) > 95; a.g.visible = !far || a.happy > 0;
     if (a.happy <= 0 && far) continue;
     a.ph += dt;
@@ -2654,7 +2659,7 @@ function updAnimals(dt, t) {
       gp.y = a.gy + Math.abs(Math.sin(k * Math.PI * 3)) * 0.42 * (1 - k * 0.4);
       if (k < 0.5) a.g.rotation.y += dt * 9;
       else a.g.rotation.y += angDiff(Math.atan2(P.pos.x - gp.x, P.pos.z - gp.z), a.g.rotation.y) * Math.min(1, dt * 8);
-      if (a.happy <= 0) gp.y = a.gy;
+      if (a.happy <= 0) { gp.y = a.gy; joinParade(a); }
       ANIM[a.k](a, t, dt); continue;
     }
     if (a.def.wander && !a.elevated) {
@@ -2798,6 +2803,200 @@ function updRain(dt) {
   splash.visible = anyS; if (anyS) splash.instanceMatrix.needsUpdate = true;
 }
 
+// ======================================================================== FUN FOR SMALL CHILDREN
+// The animals she has found follow her in a little parade, piles of leaves fly up when she runs into them,
+// puddles appear when it rains (plask!), and the texts are read aloud in Danish.
+
+// ---------------- animal parade
+const PARADE = [], TRAIL = [], _tp = { x: 0, y: 0, z: 0 };
+function joinParade(a) { if (a.follow) return; a.follow = true; a.state = 'idle'; a.happy = 0; a.idleHop = rr(1, 3); a.hopK = 0; PARADE.push(a); }
+function leaveParade() {
+  for (const a of PARADE) { a.follow = false; a.state = 'idle'; a.happy = 0; a.gy = a.baseY; a.g.position.set(a.home[0], a.baseY, a.home[1]); }
+  PARADE.length = 0;
+}
+function trailPoint(dist, out) {
+  let acc = 0, px = P.pos.x, py = TRAIL.length ? TRAIL[0].y : P.pos.y, pz = P.pos.z;
+  for (const q of TRAIL) {
+    const d = Math.hypot(q.x - px, q.z - pz);
+    if (acc + d >= dist && d > 1e-6) { const f = (dist - acc) / d; out.x = px + (q.x - px) * f; out.y = py + (q.y - py) * f; out.z = pz + (q.z - pz) * f; return; }
+    acc += d; px = q.x; py = q.y; pz = q.z;
+  }
+  out.x = px; out.y = py; out.z = pz;
+}
+function updParade(dt, t) {
+  if (!started) return;
+  // her footsteps on the ground (not her jumps)
+  const head = TRAIL[0], gy = (P.onGround && !P.swing) ? P.pos.y : (head ? head.y : P.pos.y);
+  if (!head || Math.hypot(P.pos.x - head.x, P.pos.z - head.z) > 0.25) { TRAIL.unshift({ x: P.pos.x, y: gy, z: P.pos.z }); if (TRAIL.length > 300) TRAIL.pop(); }
+  PARADE.forEach((a, i) => {
+    const gp = a.g.position;
+    trailPoint(1.5 + i * 1.3, _tp);
+    const dx = _tp.x - gp.x, dz = _tp.z - gp.z, l = Math.hypot(dx, dz);
+    if (l > 28) { gp.set(_tp.x, _tp.y, _tp.z); a.gy = _tp.y; burst(gp); }
+    const moving = l > 0.2;
+    if (moving) {
+      const st = Math.min(l, Math.min(l * 4, 13) * dt); gp.x += dx / l * st; gp.z += dz / l * st;
+      a.g.rotation.y += angDiff(Math.atan2(dx, dz), a.g.rotation.y) * Math.min(1, dt * 8);
+      a.state = 'walk';
+    } else {
+      a.state = 'idle';
+      a.g.rotation.y += angDiff(Math.atan2(P.pos.x - gp.x, P.pos.z - gp.z), a.g.rotation.y) * Math.min(1, dt * 3);
+    }
+    a.gy += (_tp.y - a.gy) * Math.min(1, dt * 10);
+    // happy hops: little hops while walking, and a big jump now and then while waiting
+    let hop = 0;
+    if (moving) hop = Math.abs(Math.sin(t * 8 + i * 0.9)) * 0.26;
+    else { a.idleHop -= dt; if (a.idleHop < 0) { a.hopK = 1; a.idleHop = rr(1.5, 4.5); } }
+    if (a.hopK > 0) { a.hopK = Math.max(0, a.hopK - dt * 2.2); hop = Math.max(hop, Math.sin((1 - a.hopK) * Math.PI) * 0.45); if (!moving) a.g.rotation.y += dt * 6 * Math.sin((1 - a.hopK) * Math.PI); }
+    gp.y = a.gy + hop;
+    a.g.visible = true;
+    ANIM[a.k](a, t, dt);
+  });
+}
+
+// ---------------- piles of leaves
+const PILES = [];
+const pileIM = (() => {
+  const spots = [[3.5, -37.5], [-1.5, -9.5], [16, -7.5], [25.5, -47], [8.5, 31], [17, 33], [-1, 61], [-15, 94.5], [29, 94.5], [-30, -25.5]];
+  const per = isTouch ? 70 : 110, N = spots.length * per;
+  const g = new THREE.PlaneGeometry(0.26, 0.18); g.rotateX(-Math.PI / 2);
+  const im = new THREE.InstancedMesh(g, toon('#ffffff', { side: THREE.DoubleSide }), N);
+  const col = new THREE.Color(); let n = 0;
+  for (const [x, z] of spots) {
+    const y0 = groundAt(x, z, 0.5), pile = { x, z, y0, r: 1.15, h: 0.55, state: 0, t: 0, i0: n, leaves: [] };
+    for (let k = 0; k < per; k++) {
+      const a = rand() * Math.PI * 2, d = Math.sqrt(rand()) * pile.r, hy = y0 + 0.03 + pile.h * (1 - (d / pile.r) ** 2) * rr(0.35, 1);
+      const L = { hx: x + Math.cos(a) * d, hy, hz: z + Math.sin(a) * d, ry: rand() * 6.28, rx: rr(-0.5, 0.5), x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, spin: 0, sx: 0, sy: 0, sz: 0 };
+      L.x = L.hx; L.y = L.hy; L.z = L.hz; pile.leaves.push(L);
+      col.set(pick(LEAF_COLS)); im.setColorAt(n, col); n++;
+    }
+    PILES.push(pile); mapItems.push({ k: 'c', x, z, r: 1.2, fill: '#d98a36', tree: true });
+  }
+  im.castShadow = true; im.receiveShadow = true; im.frustumCulled = false; dyn.add(im);
+  return im;
+})();
+const _pd = new THREE.Object3D();
+function writePile(p) {
+  p.leaves.forEach((L, k) => { _pd.position.set(L.x, L.y, L.z); _pd.rotation.set(L.rx, L.ry, 0); _pd.updateMatrix(); pileIM.setMatrixAt(p.i0 + k, _pd.matrix); });
+  pileIM.instanceMatrix.needsUpdate = true;
+}
+PILES.forEach(writePile);
+let noiseBuf = null;
+function noise(dur, type, freq, vol) {
+  const a = audio(); if (!a || !soundOn) return;
+  if (!noiseBuf) { noiseBuf = a.createBuffer(1, a.sampleRate, a.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+  const s = a.createBufferSource(); s.buffer = noiseBuf; const f = a.createBiquadFilter(); f.type = type; f.frequency.value = freq; const g = a.createGain(); const t = a.currentTime;
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); s.connect(f); f.connect(g); g.connect(a.destination); s.start(t); s.stop(t + dur + 0.05);
+}
+function explodePile(p, big) {
+  p.state = 1; p.t = 0;
+  for (const L of p.leaves) {
+    const a = Math.atan2(L.hz - p.z, L.hx - p.x) + rr(-0.5, 0.5), out = rr(1.0, big ? 4.2 : 3.2);
+    L.vx = Math.cos(a) * out + P.vel.x * 0.35; L.vz = Math.sin(a) * out + P.vel.z * 0.35; L.vy = rr(2.2, big ? 7.5 : 5.2); L.spin = rr(-9, 9);
+  }
+  noise(0.7, 'highpass', 2200, 0.16); noise(0.4, 'bandpass', 900, 0.08); tone(500, 900, 0.05, 0.18, 0.03, 'triangle');
+}
+function updLeafPiles(dt) {
+  const sp = Math.hypot(P.vel.x, P.vel.z), landing = !P.onGround && P.vel.y < -2;
+  for (const p of PILES) {
+    if (p.state === 0) {
+      if (started && !paused && Math.hypot(P.pos.x - p.x, P.pos.z - p.z) < p.r + 0.3 && P.pos.y < p.y0 + 1.6 && (sp > 1.2 || landing)) explodePile(p, landing);
+      else continue;
+    }
+    p.t += dt;
+    if (p.state === 1) {
+      const fr = Math.exp(-dt * 1.3);
+      for (const L of p.leaves) {
+        if (L.y <= p.y0 + 0.025 && L.vy <= 0) { L.y = p.y0 + 0.025; L.vx = 0; L.vz = 0; L.rx *= 0.9; continue; }
+        L.vy = Math.max(L.vy - 7 * dt, -1.3); L.vx *= fr; L.vz *= fr;
+        L.x += L.vx * dt + Math.sin(p.t * 3 + L.ry) * 0.3 * dt; L.y += L.vy * dt; L.z += L.vz * dt;
+        L.ry += L.spin * dt; L.rx = Math.sin(p.t * 4 + L.spin) * 0.8;
+        if (L.y < p.y0 + 0.025) L.y = p.y0 + 0.025;
+      }
+      if (p.t > 6.5) { p.state = 2; p.t = 0; for (const L of p.leaves) { L.sx = L.x; L.sy = L.y; L.sz = L.z; } }
+    } else if (p.state === 2) {
+      const f = Math.min(1, p.t / 2.5), e = f * f * (3 - 2 * f);
+      for (const L of p.leaves) { L.x = L.sx + (L.hx - L.sx) * e; L.z = L.sz + (L.hz - L.sz) * e; L.y = L.sy + (L.hy - L.sy) * e + Math.sin(e * Math.PI) * 0.5; L.rx *= 0.95; }
+      if (f >= 1) p.state = 0;
+    }
+    writePile(p);
+  }
+}
+
+// ---------------- puddles when it rains
+const PUDDLES = [];
+const pudMat = new THREE.MeshBasicMaterial({ color: '#86a6bf', transparent: true, opacity: 0, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -8, polygonOffsetUnits: -16 });
+const pudHl = new THREE.MeshBasicMaterial({ color: '#d2e3ef', transparent: true, opacity: 0, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -9, polygonOffsetUnits: -18 });
+{
+  const g = new THREE.CircleGeometry(1, 28); g.rotateX(-Math.PI / 2);
+  for (const [x, z, rx, rz] of [[4, -25, 1.6, 1.0], [22, -28, 1.3, 0.9], [11, -31, 1.4, 1.1], [-2, 14, 1.5, 1.0], [17, 29, 1.6, 1.1], [5, 42, 1.3, 0.9], [-20, -26, 1.7, 1.0], [42, -35, 1.3, 0.8], [42, 30, 1.2, 0.8], [5, 94.5, 1.6, 1.0], [-25, 94.5, 1.4, 0.9], [26.8, -9, 1.2, 0.8]]) {
+    const y = groundAt(x, z, 0.3) + 0.014, ry = rand() * Math.PI;
+    const m = new THREE.Mesh(g, pudMat); m.position.set(x, y, z); m.rotation.y = ry; m.scale.set(rx, 1, rz); m.visible = false; m.renderOrder = 2; dyn.add(m);
+    const h = new THREE.Mesh(g, pudHl); h.position.set(x + rx * 0.2, y + 0.002, z - rz * 0.15); h.rotation.y = ry + 0.3; h.scale.set(rx * 0.35, 1, rz * 0.18); h.visible = false; h.renderOrder = 3; dyn.add(h);
+    PUDDLES.push({ x, z, rx, rz, ry, y, m, h });
+  }
+}
+const RINGS = [];
+{ const g = new THREE.RingGeometry(0.7, 1, 24); g.rotateX(-Math.PI / 2); for (let i = 0; i < 6; i++) { const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: '#e8f2f8', transparent: true, opacity: 0, depthWrite: false })); m.visible = false; dyn.add(m); RINGS.push({ m, t: 1 }); } }
+let pud = 0, pudCd = 0, wasGround = true, ringI = 0;
+function plask(p, big) {
+  for (let i = 0; i < (big ? 18 : 9); i++) {
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.glow, color: pick(['#cfe6f7', '#ffffff', '#a9cbe4']), transparent: true, depthWrite: false }));
+    sp.scale.setScalar(rr(0.18, 0.32)); sp.position.set(P.pos.x, p.y + 0.1, P.pos.z); dyn.add(sp);
+    const a = rand() * 6.28, v = rr(1.2, big ? 3.4 : 2.2);
+    effects.push({ sp, t: 0, life: rr(0.5, 0.8), vx: Math.cos(a) * v, vz: Math.sin(a) * v, vy: rr(2, big ? 4.5 : 3) });
+  }
+  const r = RINGS[ringI = (ringI + 1) % RINGS.length]; r.t = 0; r.big = big; r.m.position.set(P.pos.x, p.y + 0.01, P.pos.z); r.m.visible = true;
+  noise(big ? 0.35 : 0.22, 'lowpass', 1300, big ? 0.22 : 0.12); tone(big ? 420 : 520, 180, 0, 0.16, 0.05);
+}
+function updPuddles(dt) {
+  pud += ((WEATHER.raining ? 1 : 0) - pud) * Math.min(1, dt * (WEATHER.raining ? 0.15 : 0.012));
+  const on = pud > 0.02; pudMat.opacity = Math.min(0.78, pud * 1.1); pudHl.opacity = Math.min(0.5, pud * 0.7);
+  const s = 0.55 + 0.45 * Math.min(1, pud * 1.4);
+  for (const p of PUDDLES) { p.m.visible = p.h.visible = on; p.m.scale.set(p.rx * s, 1, p.rz * s); }
+  for (const r of RINGS) { if (r.t >= 1) continue; r.t = Math.min(1, r.t + dt * 1.8); const sc = 0.2 + r.t * (r.big ? 1.5 : 0.9); r.m.scale.set(sc, 1, sc); r.m.material.opacity = 0.8 * (1 - r.t); if (r.t >= 1) r.m.visible = false; }
+  pudCd -= dt;
+  const landed = P.onGround && !wasGround; wasGround = P.onGround;
+  if (!started || paused || pud < 0.3) return;
+  const sp = Math.hypot(P.vel.x, P.vel.z);
+  for (const p of PUDDLES) {
+    if (Math.abs(P.pos.y - p.y) > 0.3) continue;
+    const dx = P.pos.x - p.x, dz = P.pos.z - p.z, c = Math.cos(p.ry), sn = Math.sin(p.ry);
+    const lx = c * dx - sn * dz, lz = sn * dx + c * dz;
+    if ((lx / (p.rx * s)) ** 2 + (lz / (p.rz * s)) ** 2 > 1) continue;
+    if (landed) { plask(p, true); pudCd = 0.3; }
+    else if (sp > 2.4 && pudCd <= 0) { plask(p, false); pudCd = 0.32; }
+    break;
+  }
+}
+
+// ---------------- reading the texts aloud in Danish
+let voiceOn = true, daVoice = null, toastSaidAt = -99, pendingPoi = null;
+const lastPoiSaid = new Map();
+function pickVoice() { try { const vs = speechSynthesis.getVoices(); daVoice = vs.find(v => /^da/i.test(v.lang)) || null; } catch (e) { daVoice = null; } }
+if ('speechSynthesis' in window) { pickVoice(); try { speechSynthesis.addEventListener('voiceschanged', pickVoice); } catch (e) {} }
+function say(text) {
+  if (!voiceOn || !('speechSynthesis' in window)) return;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text.replace(/·/g, ',').replace(/MÅL!/g, 'Mål!').replace(/\bS\b/g, 'S'));
+    u.lang = 'da-DK'; if (daVoice) u.voice = daVoice; u.rate = 0.95; u.pitch = 1.1;
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
+function sayToast(msg) { if (!started) return; toastSaidAt = clockT; say(msg); }
+function sayPoi(p) {
+  if (!p || !started) return;
+  if (clockT - toastSaidAt < 3.5) { pendingPoi = p; return; }
+  const last = lastPoiSaid.get(p.n) ?? -999; if (clockT - last < 90) return;
+  lastPoiSaid.set(p.n, clockT); say(`${p.n}. ${p.t}`);
+}
+function updVoice() { if (pendingPoi && clockT - toastSaidAt >= 3.5) { const p = pendingPoi; pendingPoi = null; if (p === curPoi) sayPoi(p); } }
+function setVoice(v) {
+  voiceOn = v; $('bVoice').setAttribute('aria-pressed', String(v)); $('iVoice').style.opacity = v ? 1 : 0.35;
+  if (!v) { try { speechSynthesis.cancel(); } catch (e) {} } save();
+}
+
 // ======================================================================== MAIN LOOP
 let last = performance.now(), clockT = 0, poiT = 0, mapT = 0, clockTick = 0;
 function updClock() { const d = new Date(); const m = d.getMinutes() + d.getSeconds() / 60, h = (d.getHours() % 12) + m / 60; const H = window.__clockHands; if (!H) return; H.mh.rotation.z = -m / 60 * Math.PI * 2; H.hh.rotation.z = -h / 12 * Math.PI * 2; H.mh.updateMatrix(); H.hh.updateMatrix(); H.mh.parent.updateMatrixWorld(true); }
@@ -2809,6 +3008,7 @@ function frame(now) {
   updCyclists(dt);
   updCamera(dt, clockT);
   updAnimals(dt, clockT);
+  updParade(dt, clockT); updLeafPiles(dt); updPuddles(dt); updVoice();
   updEffects(dt);
   const fxz = started ? P.pos : orbitC;
   updLeaves(dt, clockT, started ? P.pos.x : camera.position.x * 0.3, started ? P.pos.z : camera.position.z * 0.3);
@@ -2833,6 +3033,8 @@ function boot(data) {
   data = data || {};
   const st = load();
   (data.found || st.found || []).forEach(i => found.add(i));
+  animals.forEach(a => { if (found.has(a.id)) joinParade(a); });
+  if (typeof st.voice === 'boolean') setVoice(st.voice); else setVoice(true);
   if (typeof st.sound === 'boolean') setSound(st.sound); else setSound(true);
   if (typeof st.map === 'boolean') showMap = st.map;
   setEvening(typeof data.evening === 'boolean' ? data.evening : !!st.ev); ev = evening ? 1 : 0;
@@ -2845,7 +3047,7 @@ function boot(data) {
   requestAnimationFrame(t => { last = t; frame(t); });
 }
 window.claude?.hot?.snapshot?.(() => ({ found: [...found], pos: P.pos.toArray(), face: P.face, started, evening }));
-window.__duevej = { BALL, BARS, WEATHER, UMB, toggleUmbrella, P, cam, kid, setEvening, start: () => goBtn.click(), animals, cyclists, renderer, peek: (y) => { cam.yaw = y; lastDragEnd = clockT + 30; }, snap: (e) => { camInit = false; startBlend = 1; if (typeof e === 'number') { evening = e > 0.5; ev = e; } } };
+window.__duevej = { PARADE, PILES, PUDDLES, BALL, BARS, WEATHER, UMB, toggleUmbrella, P, cam, kid, setEvening, start: () => goBtn.click(), animals, cyclists, renderer, peek: (y) => { cam.yaw = y; lastDragEnd = clockT + 30; }, snap: (e) => { camInit = false; startBlend = 1; if (typeof e === 'number') { evening = e > 0.5; ev = e; } } };
 if (window.claude?.hot?.ready) window.claude.hot.ready(boot); else boot(window.claude?.hot?.data ?? {});
 </script>
 </body>
