@@ -131,6 +131,10 @@ body.touch #poi{bottom:calc(118px + env(safe-area-inset-bottom,0px))}
     <div class="swatches" id="swJacket"></div>
     <p class="chipsHead">Og på paraplyen</p>
     <div class="swatches" id="swUmb"></div>
+    <p class="chipsHead">Og på håret</p>
+    <div class="swatches" id="swHair"></div>
+    <p class="chipsHead">Og på bukserne</p>
+    <div class="swatches" id="swPants"></div>
     <div class="keys" id="keysDesk">
       <span><kbd>W</kbd> <kbd>↑</kbd></span><span>Gå frem (<kbd>S</kbd> går baglæns)</span>
       <span><kbd>A</kbd><kbd>D</kbd> <kbd>←</kbd><kbd>→</kbd></span><span>Drej</span>
@@ -2269,11 +2273,13 @@ const flag = new THREE.Mesh(flagGeo, M.flag); flag.position.set(12.05, 11.1, -22
 function updFlag(t) { const p = flagGeo.attributes.position; for (let i = 0; i < p.count; i++) { const x = flagBase[i * 3]; p.setZ(i, Math.sin(x * 2.2 - t * 4.5) * 0.18 * (x / 2.4)); p.setY(i, flagBase[i * 3 + 1] - x * 0.04); } p.needsUpdate = true; flagGeo.computeVertexNormals(); }
 
 // ======================================================================== PLAYER (kid)
-TX.dots = ctex(64, 64, (g, w, h) => { g.fillStyle = '#2f6f73'; g.fillRect(0, 0, w, h); g.fillStyle = '#e9f3ef'; for (const [x, y] of [[8, 8], [40, 8], [24, 24], [56, 24], [8, 40], [40, 40], [24, 56], [56, 56]]) { g.beginPath(); g.arc(x, y, 3.2, 0, Math.PI * 2); g.fill(); } }, {});
+const KIDCOL = { hair: '#7b4527', pants: '#2f6f73' };   // her hair and trousers (chosen on the start card)
+function drawDots(g, w, h) { g.fillStyle = KIDCOL.pants; g.fillRect(0, 0, w, h); g.fillStyle = '#e9f3ef'; for (const [x, y] of [[8, 8], [40, 8], [24, 24], [56, 24], [8, 40], [40, 40], [24, 56], [56, 56]]) { g.beginPath(); g.arc(x, y, 3.2, 0, Math.PI * 2); g.fill(); } }
+TX.dots = ctex(64, 64, drawDots, {});
 TX.dots.repeat.set(3, 2);
 function buildKid() {
   const g = new THREE.Group();
-  const coat = toon('#f3c531'), skin = toon('#f6cfb0'), hair = toon('#7b4527'), bag = toon('#4e8c6b'), eye = new THREE.MeshBasicMaterial({ color: '#231a22' }), cheek = toon('#f19c8f');
+  const coat = toon('#f3c531'), skin = toon('#f6cfb0'), hair = toon(KIDCOL.hair), bag = toon('#4e8c6b'), eye = new THREE.MeshBasicMaterial({ color: '#231a22' }), cheek = toon('#f19c8f');
   const leggings = toon('#ffffff', { map: TX.dots }), sock = toon('#f6f3ec'), shoeM = toon('#e0483c'), sole = toon('#f8f6f0'), lace = toon('#ffffff');
   const outline = new THREE.MeshBasicMaterial({ color: '#231a22', side: THREE.BackSide });
   const part = (geo, mat, parent, x, y, z, ol = 1.06) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; parent.add(m); if (ol) { const o = new THREE.Mesh(geo, outline); o.scale.setScalar(ol); m.add(o); } return m; };
@@ -2309,7 +2315,7 @@ function buildKid() {
     sh.rotation.z = s * 0.12; arms.push(sh);
   }
   const root = new THREE.Group(); g.scale.setScalar(0.92); root.add(g);
-  return { root, g, head, legs, arms, coat };
+  return { root, g, head, legs, arms, coat, hair, leggings };
 }
 const kid = buildKid(); dyn.add(kid.root);
 
@@ -2775,7 +2781,7 @@ function nearestName(x, z) {
 const found = new Set();
 let soundOn = true, started = false, paused = true, showMap = !isTouch || window.innerWidth > 700;
 const SKEY = 'duevej3d-dyr';
-function save() { try { localStorage.setItem(SKEY, JSON.stringify({ found: [...found], ev: evening, sound: soundOn, map: showMap, voice: typeof voiceOn === 'boolean' ? voiceOn : true, jacket: typeof jacketCol === 'string' ? jacketCol : undefined, umb: typeof umbCol === 'string' ? umbCol : undefined })); } catch (e) {} }
+function save() { try { localStorage.setItem(SKEY, JSON.stringify({ found: [...found], ev: evening, sound: soundOn, map: showMap, voice: typeof voiceOn === 'boolean' ? voiceOn : true, jacket: typeof jacketCol === 'string' ? jacketCol : undefined, umb: typeof umbCol === 'string' ? umbCol : undefined, hair: KIDCOL.hair, pants: KIDCOL.pants })); } catch (e) {} }
 function load() { try { return JSON.parse(localStorage.getItem(SKEY) || '{}') || {}; } catch (e) { return {}; } }
 
 // ======================================================================== SOUND
@@ -3778,12 +3784,20 @@ function updTrail(dt, t) {
 // ---------------- choosing colours for her jacket and umbrella
 const JACKETS = [['#f3c531', 'gul'], ['#e2483c', 'rød'], ['#f29bb8', 'lyserød'], ['#9b6bd1', 'lilla'], ['#4a90d9', 'blå'], ['#5fae6a', 'grøn'], ['#f08a3c', 'orange']];
 const UMBS = [['#e2483c', 'rød'], ['#f29bb8', 'lyserød'], ['#f3c531', 'gul'], ['#4a90d9', 'blå'], ['#5fae6a', 'grøn'], ['#9b6bd1', 'lilla']];
-let jacketCol = '#f3c531', umbCol = '#e2483c';
-function applyColours() { kid.coat.color.set(jacketCol); UMB.mats[0].color.set(umbCol); renderSwatches(); }
+const HAIRS = [['#7b4527', 'brun'], ['#3e2a22', 'mørkebrun'], ['#26212a', 'sort'], ['#c08040', 'lysebrun'], ['#ecc66e', 'lys'], ['#c4562d', 'rød']];
+const PANTS = [['#2f6f73', 'grøn'], ['#3d5fa8', 'blå'], ['#e07fa6', 'lyserød'], ['#7d5bb0', 'lilla'], ['#c9483c', 'rød'], ['#e3a83a', 'gul'], ['#33353b', 'sort']];
+let jacketCol = '#f3c531', umbCol = '#e2483c', pantsDrawn = KIDCOL.pants;
+function applyColours() {
+  kid.coat.color.set(jacketCol); UMB.mats[0].color.set(umbCol); kid.hair.color.set(KIDCOL.hair);
+  if (pantsDrawn !== KIDCOL.pants) { pantsDrawn = KIDCOL.pants; const cv = TX.dots.image; drawDots(cv.getContext('2d'), cv.width, cv.height); TX.dots.needsUpdate = true; }
+  renderSwatches();
+}
 function renderSwatches() {
   const mk = (id, list, cur, set) => { const el = $(id); if (!el) return; el.innerHTML = list.map(([c, n]) => `<button type="button" class="sw" style="background:${c}" aria-label="${n}" aria-pressed="${c === cur}"></button>`).join(''); [...el.children].forEach((b, i) => b.addEventListener('click', () => { set(list[i][0]); applyColours(); save(); tone(660, 880, 0, 0.1, 0.04, 'triangle'); })); };
   mk('swJacket', JACKETS, jacketCol, c => { jacketCol = c; });
   mk('swUmb', UMBS, umbCol, c => { umbCol = c; });
+  mk('swHair', HAIRS, KIDCOL.hair, c => { KIDCOL.hair = c; });
+  mk('swPants', PANTS, KIDCOL.pants, c => { KIDCOL.pants = c; });
 }
 
 // ======================================================================== ACTION BUTTON
@@ -5474,6 +5488,178 @@ function updActions() {
     updSnowfall(dt, t); updPrints(dt); updWear(dt); updSnowmen(dt, t); updHeaps(dt);
   });
 }
+// ---- feature: smaa (small things: the animals hide again, start over, stars and moon, footsteps, soft music)
+{
+  // ---------------- 1. "Gem dyrene igen": the 12 animals hide in new places (and stay there after a reload)
+  const HKEY = 'duevej3d-gemmesteder';
+  const SPOTS = [[12, -14], [5.2, -38.6], [24, -18], [-15, -45], [-28, -70], [-22, -26], [8, 30], [-4, 20], [16, 26], [7.5, 55], [20.5, 60],
+    [20.5, 67.5], [34, 62], [16, -28], [-1, -15], [25, -75], [15, -60], [-30, -90], [12, 45], [-2, 52]];   // only outdoors, so Vis vej can always find them
+  const regular = () => animals.filter(a => a.id < 12);
+  function place(a, x, z, own) {
+    const y = groundAt(x, z, own ? 4.0 : (inWing(x, z, 0) ? 1.0 : 1.2));
+    a.home = [x, z]; a.baseY = a.gy = y; a.elevated = y > 0.5; a.state = 'idle'; a.target = null; a.t = rr(0.5, 3);
+    if (!a.follow) a.g.position.set(x, y, z);
+  }
+  function hideAgain() {
+    const pool = SPOTS.slice();
+    for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
+    const keep = {};
+    for (const a of regular()) {
+      let k = pool.findIndex(p => Math.hypot(p[0] - a.home[0], p[1] - a.home[1]) > 8); if (k < 0) k = 0;
+      const [x, z] = pool.splice(k, 1)[0]; place(a, x, z, false); keep[a.id] = [x, z];
+    }
+    try { localStorage.setItem(HKEY, JSON.stringify(keep)); } catch (e) {}
+  }
+  function homeAgain() {
+    for (const a of regular()) place(a, a.def.x, a.def.z, true);
+    try { localStorage.removeItem(HKEY); } catch (e) {}
+  }
+  try {
+    const kept = JSON.parse(localStorage.getItem(HKEY) || 'null');
+    if (kept) for (const a of regular()) { const p = kept[a.id]; if (Array.isArray(p) && SPOTS.some(q => q[0] === p[0] && q[1] === p[1])) place(a, p[0], p[1], false); }
+  } catch (e) {}
+  $('finAgain').addEventListener('click', () => { hideAgain(); setTimeout(() => toast('Dyrene har gemt sig nye steder. Kan du finde dem?'), 300); });
+
+  // ---------------- 2. "Start forfra" on the help card (tap twice, so it doesn't happen by accident)
+  const css = document.createElement('style');
+  css.textContent = '#restartBtn{margin-top:10px}#musicRow{display:flex;justify-content:flex-start;margin:0 0 14px}#musicBtn{font-size:14px}';
+  document.head.appendChild(css);
+  const rb = document.createElement('button'); rb.id = 'restartBtn'; rb.className = 'go alt'; rb.type = 'button'; rb.textContent = 'Start forfra'; rb.hidden = true;
+  goBtn.insertAdjacentElement('afterend', rb);
+  let armed = false;
+  const disarm = () => { armed = false; rb.textContent = 'Start forfra'; };
+  rb.addEventListener('click', () => {
+    if (!armed) { armed = true; rb.textContent = 'Tryk igen, så starter du forfra'; tone(520, 440, 0, 0.12, 0.05, 'triangle'); return; }
+    disarm(); startOver();
+  });
+  HOOKS.frame.push(() => { const show = started && !intro.hidden; if (rb.hidden === show) { rb.hidden = !show; if (!show) disarm(); } });
+  function startOver() {
+    leaveParade(); found.clear(); homeAgain(); updCounter(); renderChips(); save();
+    if (P.ride) { if (P.ride.s) P.ride.s.busy = false; P.ride = null; }
+    P.swing = null; BALL.held = false; updKickHint();
+    kid.g.rotation.set(0, 0, 0); kid.g.position.set(0, 0, 0); kid.root.rotation.set(0, 0, 0);
+    P.pos.set(42, 0.12, -57.5); P.vel.set(0, 0, 0); P.face = -Math.PI / 2; P.onGround = true; cam.yaw = P.face + Math.PI; camInit = false;
+    kid.root.position.copy(P.pos); TRAIL.length = 0;
+    $('finale').hidden = true;
+    goBtn.click();
+    fanfare(); setTimeout(() => toast('Nu starter vi forfra. Kan du finde alle 12 dyr?'), 300);
+  }
+
+  // ---------------- 3. soft music (follows the Lyd button, and can be turned off on the help card)
+  const MKEY = 'duevej3d-musik';
+  let musicOn = true; try { if (localStorage.getItem(MKEY) === '0') musicOn = false; } catch (e) {}
+  const mrow = document.createElement('div'); mrow.id = 'musicRow';
+  const mbtn = document.createElement('button'); mbtn.id = 'musicBtn'; mbtn.className = 'sticker btn'; mbtn.type = 'button';
+  const setMusicBtn = () => { mbtn.setAttribute('aria-pressed', String(musicOn)); mbtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></svg><span style="display:inline">${musicOn ? 'Musik: til' : 'Musik: fra'}</span>`; };
+  setMusicBtn(); mrow.appendChild(mbtn); goBtn.insertAdjacentElement('beforebegin', mrow);
+  mbtn.addEventListener('click', () => { musicOn = !musicOn; setMusicBtn(); try { localStorage.setItem(MKEY, musicOn ? '1' : '0'); } catch (e) {} });
+
+  const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+  // an easy little tune in C major, 8 bars of 4 beats: [beat, note, beats long]
+  const MEL = [[0, 76, 1], [1, 79, 1], [2, 81, 1], [3, 79, 1], [4, 76, 1], [5, 74, 1], [6, 72, 2], [8, 74, 1], [9, 76, 1], [10, 79, 1], [11, 76, 1], [12, 74, 3],
+    [16, 72, 1], [17, 76, 1], [18, 79, 1], [19, 81, 1], [20, 84, 2], [22, 81, 1], [23, 79, 1], [24, 81, 1], [25, 79, 1], [26, 76, 1], [27, 74, 1], [28, 72, 3]];
+  const ROOTS = [48, 45, 41, 43, 48, 41, 43, 48];   // C, A, F, G, C, F, G, C
+  const BY = new Map(); for (const n of MEL) { if (!BY.has(n[0])) BY.set(n[0], []); BY.get(n[0]).push(n); }
+  let mg = null, mTarget = -1, nextT = 0, beat = 0, bellBuf = null;
+  function note(t, f, len, vol, type) {
+    const o = actx.createOscillator(), g = actx.createGain(); o.type = type; o.frequency.setValueAtTime(f, t);
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    o.connect(g); g.connect(mg); o.start(t); o.stop(t + len + 0.05);
+  }
+  function jingle(t) {   // sleigh bells in winter
+    if (!bellBuf) { bellBuf = actx.createBuffer(1, actx.sampleRate * 0.2, actx.sampleRate); const d = bellBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (actx.sampleRate * 0.045)); }
+    const s = actx.createBufferSource(), f = actx.createBiquadFilter(), g = actx.createGain(); s.buffer = bellBuf; f.type = 'highpass'; f.frequency.value = 5500; g.gain.value = 0.5;
+    s.connect(f); f.connect(g); g.connect(mg); s.start(t);
+  }
+  function playBeat(b, t, spb) {
+    for (const [, m, len] of BY.get(b) || []) { note(t, mtof(m), len * spb + 0.5, 0.5, 'triangle'); note(t, mtof(m + 12), len * spb * 0.6 + 0.2, 0.12, 'sine'); }
+    const bar = (b / 4) | 0, inBar = b % 4;
+    if (inBar === 0) note(t, mtof(ROOTS[bar]), spb * 2, 0.45, 'sine');
+    if (inBar === 2) note(t, mtof(ROOTS[bar] + 7), spb * 2, 0.35, 'sine');
+    if (FX.vinter && FX.vinter.on && (b % 2 === 1)) jingle(t);
+  }
+  const inMusicRoom = () => P.pos.y > 3 && P.pos.x > 12.3 && P.pos.x < 16.45 && P.pos.z < -1.05 && P.pos.z > -5.95;
+  HOOKS.frame.push(() => {
+    if (!actx) return;
+    const want = musicOn && soundOn && started && actx.state === 'running';
+    let target = 0;
+    if (want) {
+      const S = FX.salen && FX.salen.api, R = FX.rum && FX.rum.api, U = FX.ude;
+      const busy = (S && S.DANCE && S.DANCE.on) || (R && R.Q && R.Q.length) || (U && U.SHOW && U.SHOW.on) || (U && U.SB && U.SB.ring > 0) || inMusicRoom();
+      target = busy ? 0.01 : (paused ? 0.03 : 0.05);
+    }
+    if (!mg) { if (!want) return; mg = actx.createGain(); mg.gain.value = 0; mg.connect(actx.destination); }
+    if (Math.abs(target - mTarget) > 1e-4) { mTarget = target; mg.gain.setTargetAtTime(target, actx.currentTime, 0.5); }
+    if (!want) { nextT = 0; return; }
+    const now = actx.currentTime, spb = 60 / (ev > 0.5 ? 72 : 88);
+    if (nextT < now) nextT = now + 0.1;
+    while (nextT < now + 0.5) { playBeat(beat, nextT, spb); beat = (beat + 1) % 32; nextT += spb; }
+  });
+
+  // ---------------- 4. footsteps that sound like what she walks on
+  const GRASS = [[-37.5, -6.5, -92, -86], [-6.5, 39.6, -92, -76.5], [-37.5, -6.5, -22, 91], [-6.5, 40, 58, 91], [-36.5, -7.5, -86, -35.5], [1.5, 13.5, 46.5, 64.5]];
+  const inR = (r, x, z) => x >= r[0] && x <= r[1] && z >= r[2] && z <= r[3];
+  function ground() {
+    const x = P.pos.x, z = P.pos.z, y = P.pos.y;
+    if (inWing(x, z, 0)) return x < 20.6 && y < 1.5 ? 'wood' : 'floor';
+    if (y > 0.6) return 'metal';
+    if (FX.vinter && FX.vinter.on) return 'snow';
+    if (Math.hypot(x - 12, z + 14) < 6.3 || inR([17.2, 23.8, 65.8, 69.2], x, z) || inR([25, 39, 57.5, 71], x, z)) return 'sand';
+    if (Math.hypot(x, z - 22) < 5 || Math.hypot(x - 12, z - 26) < 4.2 || inR([0.5, 14.5, 64.9, 69.5], x, z)) return 'soft';
+    if (Math.hypot(x, z + 30) < 3.6 || Math.hypot(x - 20, z + 52) < 3 || Math.hypot(x - 12, z - 12) < 2.4) return 'wood';
+    for (const r of GRASS) if (inR(r, x, z)) return 'grass';
+    return 'hard';
+  }
+  function step(run) {
+    const v = run ? 0.05 : 0.035;
+    switch (ground()) {
+      case 'grass': noise(0.09, 'bandpass', 3400, v * 0.7); break;
+      case 'snow': noise(0.13, 'bandpass', 1100, v * 1.3); noise(0.06, 'highpass', 4200, v * 0.4); break;
+      case 'sand': noise(0.1, 'lowpass', 900, v * 1.1); break;
+      case 'soft': tone(130, 95, 0, 0.06, v * 0.9, 'sine'); break;
+      case 'wood': tone(190, 125, 0, 0.07, v * 1.5, 'triangle'); noise(0.03, 'bandpass', 1300, v * 0.6); break;
+      case 'metal': tone(560, 500, 0, 0.09, v * 0.6, 'triangle'); noise(0.04, 'highpass', 3200, v * 0.5); break;
+      case 'floor': noise(0.045, 'bandpass', 1600, v * 0.8); break;
+      default: noise(0.05, 'highpass', 1900, v);
+    }
+  }
+  let lastStep = 0;
+  HOOKS.frame.push(() => {
+    const s = Math.floor(P.walkT / Math.PI);
+    const skates = FX.salen && FX.salen.api && FX.salen.api.SK && FX.salen.api.SK.on;
+    if (!started || paused || P.ride || P.swing || !P.onGround || skates) { lastStep = s; return; }
+    if (s !== lastStep) { lastStep = s; const sp = Math.hypot(P.vel.x, P.vel.z); if (sp > 0.8) step(sp > 7); }
+  });
+
+  // ---------------- 5. stars and a moon in the evening sky
+  const NS = isTouch ? 260 : 520, pr = renderer.getPixelRatio();
+  const mkStars = (n, size) => {
+    const pos = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) { const y = 0.1 + Math.random() * 0.9, a = Math.random() * Math.PI * 2, r = Math.sqrt(1 - y * y); pos[i * 3] = Math.cos(a) * r * 440; pos[i * 3 + 1] = y * 440; pos[i * 3 + 2] = Math.sin(a) * r * 440; }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    const p = new THREE.Points(g, new THREE.PointsMaterial({ map: TX.glow, color: '#fff6dc', size: size * pr, sizeAttenuation: false, transparent: true, opacity: 0, depthWrite: false, fog: false }));
+    p.frustumCulled = false; p.visible = false; sky.add(p); return p;
+  };
+  const starsA = mkStars(NS * 0.6 | 0, 5), starsB = mkStars(NS * 0.4 | 0, 8);
+  const moonTex = ctex(128, 128, g => {
+    const gr = g.createRadialGradient(64, 64, 22, 64, 64, 64); gr.addColorStop(0, 'rgba(255,246,214,.5)'); gr.addColorStop(1, 'rgba(255,246,214,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+    g.fillStyle = '#fff4d2'; g.beginPath(); g.arc(64, 64, 28, 0, Math.PI * 2); g.fill();
+    g.fillStyle = 'rgba(205,190,150,.5)'; for (const [x, y, r] of [[55, 57, 6], [73, 69, 5], [67, 50, 4], [57, 74, 3.5]]) { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); }
+  }, { wrap: false });
+  const moon = new THREE.Sprite(new THREE.SpriteMaterial({ map: moonTex, transparent: true, opacity: 0, depthWrite: false, fog: false }));
+  moon.position.set(0.5, 0.5, -0.7).normalize().multiplyScalar(420); moon.scale.setScalar(64); moon.visible = false; sky.add(moon);
+  HOOKS.frame.push((dt, t) => {
+    const k = Math.max(0, Math.min(1, (ev - 0.35) / 0.6)) * (1 - wet);
+    const on = k > 0.01;
+    if (starsA.visible !== on) starsA.visible = starsB.visible = moon.visible = on;
+    if (!on) return;
+    starsA.material.opacity = k * (0.8 + 0.2 * Math.sin(t * 1.7));
+    starsB.material.opacity = k * (0.75 + 0.25 * Math.sin(t * 2.3 + 1.5));
+    moon.material.opacity = k;
+  });
+
+  FX.smaa = { hideAgain, homeAgain, startOver, SPOTS, ground, music: () => ({ musicOn, mTarget, beat }) };
+}
 // (feature logic blocks go here)
 // ---- core: the inside of the yellow wing is only drawn when the camera (or the girl) is near the wing
 {
@@ -5535,7 +5721,8 @@ function boot(data) {
   (data.found || st.found || []).forEach(i => found.add(i));
   animals.forEach(a => { if (found.has(a.id)) joinParade(a); });
   if (typeof st.voice === 'boolean') setVoice(st.voice); else setVoice(true);
-  if (JACKETS.some(j => j[0] === st.jacket)) jacketCol = st.jacket; if (UMBS.some(u => u[0] === st.umb)) umbCol = st.umb; applyColours();
+  if (JACKETS.some(j => j[0] === st.jacket)) jacketCol = st.jacket; if (UMBS.some(u => u[0] === st.umb)) umbCol = st.umb;
+  if (HAIRS.some(h => h[0] === st.hair)) KIDCOL.hair = st.hair; if (PANTS.some(b => b[0] === st.pants)) KIDCOL.pants = st.pants; applyColours();
   if (typeof st.sound === 'boolean') setSound(st.sound); else setSound(true);
   if (typeof st.map === 'boolean') showMap = st.map;
   setEvening(typeof data.evening === 'boolean' ? data.evening : !!st.ev); ev = evening ? 1 : 0;

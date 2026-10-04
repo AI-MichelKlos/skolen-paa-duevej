@@ -36,7 +36,7 @@ Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, h
 - Når det regner, kommer der vandpytter, som giver et stort plask, når man hopper eller løber i dem.
 - Vis vej-knappen lægger et spor af stjerner hen til det nærmeste dyr, man ikke har fundet endnu.
 - Midt i skolegården står gynger og en rutsjebane. Gå hen til en gynge eller stigen, så gynger eller rutsjer pigen af sig selv.
-- På startkortet kan man vælge farve på pigens jakke og paraply.
+- På startkortet kan man vælge farve på pigens jakke, paraply, hår og bukser.
 - Teksterne bliver læst højt på dansk. Det kan slås fra med Læs op-knappen.
 - Der ligger en bold midt på den store fodboldbane. Går man hen til den, følger den med pigens fødder, og S sparker den væk. Ryger den i mål, står der MÅL!
 - Man kan gå ind i de gule huse gennem glastårnet. Til venstre ligger salen, trappen fører op til 1. sal med klasselokaler, og til højre er garderoben.
@@ -46,4 +46,9 @@ Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, h
 - Dyr, hun har fundet, kan hun klappe. Når alle 12 dyr er fundet, kommer der fyrværkeri og konfetti.
 - Skoleklokken ringer hvert 4. minut, og uret på hovedbygningen slår hvert kvarter og hver hele time.
 - Vinter-knappen giver sne på jorden, tagene og træerne, hue og halstørklæde på pigen, fodspor i sneen og tre steder at bygge en snemand.
-- Fundne dyr, dag/aften, vinter, tegningen og lyd huskes i browseren.
+- Når alle 12 dyr er fundet, kan man trykke "Gem dyrene igen". Så gemmer dyrene sig nye steder i skolegården.
+- Vil man starte helt forfra, trykker man på Hjælp og så to gange på "Start forfra". Så er alle dyr væk igen, og man begynder ved Duevej.
+- Om aftenen kommer der stjerner og en måne på himlen.
+- Man kan høre pigens skridt, og de lyder forskelligt på asfalt, græs, sand, trægulv og sne.
+- Der spiller en blid melodi i baggrunden. Den slås fra med Lyd-knappen eller med "Musik" på Hjælp-kortet.
+- Fundne dyr, gemmestederne, farverne, dag/aften, vinter, tegningen, musik og lyd huskes i browseren.
