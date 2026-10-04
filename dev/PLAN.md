@@ -10,7 +10,9 @@ Spillet er til en pige på 5 år. Alt skal være enkelt, tydeligt og kunne forst
 - Hver del laves af sin egen underagent i sin egen testkopi (lav dem med `dev/make_test_copies.py`). Fælles regler og alle detaljer om koordinater og hjælpefunktioner står i `dev/BRIEF.md`.
 - Hovedagenten sætter delene sammen, får en separat agent til at teste, retter fejl og lægger det på GitHub, før næste opgave.
 
-## Opgave 1: Indendørs og udendørs sjov (fem underagenter)
+## Opgave 1: Indendørs og udendørs sjov (fem underagenter) - FÆRDIG 4. oktober 2026
+Alle fem dele er bygget, sat sammen og testet af en separat agent. Indersiden af salen og 1. sal tegnes kun, når kameraet er tæt på de gule huse (grupperne `WING_IN` og `WING_DYN`), så spillet ikke bliver tungere udendørs. Den hemmelige mus har id 12 og tæller ikke med i "af 12" (`nFound()`).
+
 1. **salen** (stueetagen i de gule huse): rulleskøjter man kan tage på i salen, scenen med tæppe der går til side, spotlys, klapsalver og "Dans", en kurv med bløde bolde der flyver rundt, lyskontakt der slukker lyset og tænder stjerner i loftet, og garderoben hvor man kan skifte farve på jakken.
 2. **sal1** (1. sal, struktur): rigtige lokaler med vægge og døre. Dørene låses op, efterhånden som hun finder dyr (1 dyr: Musik, 2: Billedkunst, 3: Bibliotek, 4-7: klasselokalerne). Møbler i de fire klasselokaler. En hemmelig mus som 13. dyr. Leverer også `wing_floor1.js`, der erstatter afsnittet mellem `// >>> WING FIRST FLOOR` og `// <<< WING FIRST FLOOR`.
 3. **rum** (indholdet i tre lokaler på 1. sal): musiklokale med gulvklaver, tromme og xylofon, billedkunst med en tavle man kan tegne på (tegningen bliver hængende), og et bibliotek hvor der bliver læst korte historier om dyrene op.

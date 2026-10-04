@@ -19,6 +19,9 @@ Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, h
 | N: dag eller aften · M: vis eller skjul kortet | |
 | P: slå paraplyen op eller ned | Paraply-knappen: kommer frem, når det regner |
 | V: vis vej til det nærmeste dyr | Vis vej-knappen |
+| E: gør det, der står på den store knap (fx Dans eller Klap hunden) | Tryk på den store knap |
+| B: sæbebobler | Bobler-knappen |
+| O: vinter eller efterår | Vinter-knappen |
 
 ## Om spillet
 
@@ -37,4 +40,10 @@ Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, h
 - Teksterne bliver læst højt på dansk. Det kan slås fra med Læs op-knappen.
 - Der ligger en bold midt på den store fodboldbane. Går man hen til den, følger den med pigens fødder, og S sparker den væk. Ryger den i mål, står der MÅL!
 - Man kan gå ind i de gule huse gennem glastårnet. Til venstre ligger salen, trappen fører op til 1. sal med klasselokaler, og til højre er garderoben.
-- Fundne dyr, dag/aften og lyd huskes i browseren.
+- I salen kan pigen tage rulleskøjter på, danse på scenen i spotlys, kaste bløde bolde rundt og slukke lyset, så der kommer stjerner i loftet. I garderoben kan hun skifte farve på jakken.
+- På 1. sal åbner en ny dør, hver gang hun finder et dyr: først musiklokalet, så billedkunst, så biblioteket og til sidst klasselokalerne. Et sted på 1. sal gemmer der sig en hemmelig mus.
+- I musiklokalet kan hun spille klaver, tromme og xylofon. I billedkunst kan hun tegne på tavlen, og tegningen bliver hængende. I biblioteket bliver der læst små historier om dyrene op.
+- Dyr, hun har fundet, kan hun klappe. Når alle 12 dyr er fundet, kommer der fyrværkeri og konfetti.
+- Skoleklokken ringer hvert 4. minut, og uret på hovedbygningen slår hvert kvarter og hver hele time.
+- Vinter-knappen giver sne på jorden, tagene og træerne, hue og halstørklæde på pigen, fodspor i sneen og tre steder at bygge en snemand.
+- Fundne dyr, dag/aften, vinter, tegningen og lyd huskes i browseren.
