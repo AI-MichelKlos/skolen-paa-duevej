@@ -47,7 +47,7 @@ Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, h
 - Skoleklokken ringer hvert 4. minut, og uret på hovedbygningen slår hvert kvarter og hver hele time.
 - Vinter-knappen giver sne på jorden, tagene og træerne, hue og halstørklæde på pigen, fodspor i sneen og tre steder at bygge en snemand.
 - Når alle 12 dyr er fundet, kan man trykke "Gem dyrene igen". Så gemmer dyrene sig nye steder i skolegården.
-- Vil man starte helt forfra, trykker man på Hjælp og så to gange på "Start forfra". Så er alle dyr væk igen, og man begynder ved Duevej.
+- Vil man starte helt forfra, trykker man på Hjælp og så to gange på "Start forfra". Så skal alle dyrene findes igen, og man begynder ved Duevej.
 - Om aftenen kommer der stjerner og en måne på himlen.
 - Man kan høre pigens skridt, og de lyder forskelligt på asfalt, græs, sand, trægulv og sne.
 - Der spiller en blid melodi i baggrunden. Den slås fra med Lyd-knappen eller med "Musik" på Hjælp-kortet.
