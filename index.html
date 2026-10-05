@@ -1834,7 +1834,129 @@ const SWINGS = [], SLIDE = { x: 12, zb: 33.6, z0: 35.0, z1: 40.3, top: 2.0 };
   bike(41.4, -14.5, Math.PI / 2, '#f2c14e'); bike(41.4, -13.3, Math.PI / 2 + 0.08, '#4a7bd0'); bike(41.4, 39.5, Math.PI / 2, '#d9534f');
 }
 apartment(-140, -60, -132, -114, 5); apartment(-34, 36, -132, -114, 5); apartment(62, 140, -132, -114, 5);
-apartment(62, 78, -92, -34, 5); apartment(62, 78, -28, 30, 5); apartment(62, 78, 36, 88, 5); apartment(62, 78, 104, 160, 5);
+// ---------------- Duevej homes, simplified from Google Street View (April 2025)
+// West-facing street front: five storeys, red brick, full-height projecting bays,
+// white three/four-light windows, burgundy doors, small gardens and clipped hedges.
+{
+  const savedRand = rand; rand = mulberry32(5062025);
+  const brick = toon('#fff', { map: brickTex('#9d584d', '#b99b88') });
+  const cornerBrick = toon('#fff', { map: brickTex('#b77969', '#c3a696') });
+  const plinth = toon('#704b45'), trim = toon('#a77b69');
+  const redDoor = toon('#722e3e'), hedgeRed = toon('#805052', { map: TX.hedge });
+  const balconyFront = toon('#e1dfd5');
+  // Reuse the existing instanced-window and evening-light systems.
+  for (const [kind, panes, panel] of [['due3', 3, false], ['due4', 4, false], ['due2', 2, false], ['duePanel', 2, true]]) {
+    const draw = (g, w, h, mask) => {
+      g.fillStyle = mask ? '#000' : '#f4f1e9'; g.fillRect(0, 0, w, h);
+      const bottom = panel ? h * 0.62 : h - 5;
+      const step = (w - 10) / panes;
+      for (let p = 0; p < panes; p++) {
+        g.fillStyle = mask ? '#fff' : (p % 2 ? '#718da0' : '#526f87');
+        g.fillRect(5 + p * step, 5, step - 3, bottom - 5);
+        if (!mask) { g.fillStyle = 'rgba(255,255,255,.15)'; g.fillRect(7 + p * step, 7, 3, bottom - 9); }
+      }
+      if (panel && !mask) {
+        g.fillStyle = '#9eaaa9';
+        for (let x = 6; x < w - 4; x += 6) g.fillRect(x, bottom + 3, 1, h - bottom - 5);
+      }
+    };
+    const map = ctex(128, 96, (g, w, h) => draw(g, w, h, false), { wrap: false });
+    const mask = ctex(128, 96, (g, w, h) => draw(g, w, h, true), { wrap: false, srgb: false });
+    const lit = toon('#fff', { map, alphaTest: 0.5, emissiveMap: mask, emissive: '#ffcf7a', emissiveIntensity: 0 });
+    WINMAT[kind] = { dark: toon('#fff', { map, alphaTest: 0.5 }), lit };
+    nightMats.push(lit);
+  }
+  const westWin = (kind, x, y, z, w, h = 1.65) => addWin(kind, x - WOFF, y, z, -Math.PI / 2, w, h, 0.45);
+  const rail = (x, y, z, depth, width) => {
+    box(0.06, 0.06, width, M.steel, x, y + 0.9, z, { cast: false });
+    for (const dz of [-width / 2, width / 2]) {
+      box(depth, 0.06, 0.06, M.steel, x + depth / 2, y + 0.9, z + dz, { cast: false });
+      box(0.06, 0.9, 0.06, M.steel, x, y, z + dz, { cast: false });
+    }
+    for (let dz = -width / 2 + 0.45; dz < width / 2; dz += 0.45)
+      box(0.035, 0.9, 0.035, M.steel, x, y, z + dz, { cast: false });
+  };
+  const garden = (z0, z1, entrances) => {
+    rectG(58.1, 62, z0, z1, M.grass, 0.025);
+    let start = z0 + 0.25;
+    entrances.forEach((z, i) => {
+      const end = z - 0.85;
+      if (end > start) box(0.65, 1.05, end - start, i % 2 ? M.hedge : hedgeRed, 58.55, 0, (start + end) / 2, { col: true });
+      rectG(58.1, 62.1, z - 0.8, z + 0.8, M.path, 0.035);
+      start = z + 0.85;
+    });
+    if (start < z1 - 0.25) box(0.65, 1.05, z1 - 0.25 - start, M.hedge, 58.55, 0, (start + z1 - 0.25) / 2, { col: true });
+    for (let z = z0 + 3; z < z1 - 2; z += 14) if (entrances.every(doorZ => Math.abs(z - doorZ) > 1.4)) bush(60.1, z, 0.55);
+    // Bikes stand behind the hedge, leaving the existing pavement unobstructed.
+    for (const z of entrances.filter((_, i) => i % 2 === 0)) bike(59.7, z + 1.7, Math.PI / 2, '#536b73');
+  };
+  const entrance = z => {
+    box(0.12, 2.4, 1.5, plinth, 61.92, 0, z, { cast: false });
+    box(0.14, 2.17, 1.1, redDoor, 61.8, 0.08, z, { cast: false });
+    westWin('due2', 61.7, 1.55, z, 0.78, 0.7);
+    box(0.07, 0.23, 0.045, M.steel, 61.7, 0.92, z + 0.38, { cast: false });
+    box(0.45, 0.12, 1.8, trim, 61.85, 2.42, z, { cast: false });
+  };
+  function dueBlock(z0, z1, endBalconies = false) {
+    const h = 15.6, cz = (z0 + z1) / 2, depth = z1 - z0;
+    box(16, h, depth, brick, 70, 0, cz, { edges: true, col: true, map: '#9d584d', mapLine: true });
+    box(16.15, 0.35, depth + 0.1, plinth, 70, 0, cz, { cast: false });
+    box(16.4, 0.24, depth + 0.4, trim, 70, h - 0.24, cz, { edges: true });
+    // A subdued roof behind the cornice: Street View does not show its full profile.
+    gableRoof(depth, 16, 2.2, M.tile, 70, h, cz, { ridgeZ: true, over: 0.3, gableMat: brick, capMat: trim });
+    const bays = Math.max(3, Math.round(depth / 11.5)), step = depth / bays, doors = [];
+    for (let i = 0; i < bays; i++) {
+      const z = z0 + step * (i + 0.5), dz = step * 0.32;
+      box(1.8, h, 3.6, brick, 61.1, 0, z, { edges: true, col: true });
+      box(2, 0.18, 3.85, trim, 61.1, h, z, { cast: false });
+      rail(60.12, h + 0.18, z, 1.85, 3.55);
+      for (let f = 0; f < 5; f++) {
+        const y = 1.7 + f * 3;
+        westWin('due4', 60.18, y, z, 3.14);
+        addWin('due2', 61.1, y, z - 1.8 - WOFF, Math.PI, 1.1, 1.65, 0.45);
+        addWin('due2', 61.1, y, z + 1.8 + WOFF, 0, 1.1, 1.65, 0.45);
+        westWin('due3', 62, y, z - dz, 2.7);
+        westWin(i % 2 ? 'duePanel' : 'due2', 62, y, z + dz, 1.35, i % 2 ? 2.2 : 1.65);
+      }
+      const doorZ = z + 2.25;
+      entrance(doorZ); doors.push(doorZ);
+      // Small dormer behind the terrace, with a white-framed window.
+      box(2.3, 1.3, 2.4, brick, 64.5, h + 0.45, z, { cast: false });
+      box(2.5, 0.12, 2.6, M.slate, 64.5, h + 1.75, z, { cast: false });
+      westWin('due2', 63.35, h + 1.1, z, 1.6, 0.85);
+    }
+    // End facade uses the existing white sash-window texture.
+    const b = { x: 70, z: cz, w: 16, d: depth };
+    facadeWins('rect', b, 'N', [1.7, 4.7, 7.7, 10.7, 13.7], 4, 1.4, 1.7);
+    facadeWins('rect', b, 'S', [1.7, 4.7, 7.7, 10.7, 13.7], 4, 1.4, 1.7);
+    if (endBalconies) for (let f = 1; f < 5; f++) {
+      const y = f * 3 + 0.25;
+      box(1.85, 0.16, 3.0, M.concrete, 61.1, y, z0 + 2.2);
+      box(0.12, 0.9, 3.0, balconyFront, 60.22, y + 0.16, z0 + 2.2);
+      box(1.85, 0.9, 0.12, balconyFront, 61.1, y + 0.16, z0 + 0.7);
+      box(1.85, 0.9, 0.12, balconyFront, 61.1, y + 0.16, z0 + 3.7);
+    }
+    garden(z0, z1, doors);
+  }
+  // The lighter traditional corner building is distinct from the main bay-window row.
+  const corner = brickBlock({ x: 70, z: -85, w: 16, d: 14, h: 15.6, rise: 4.2, over: 0.35, wall: cornerBrick, roofMat: M.tile, corniceMat: trim, mapFill: '#b77969' });
+  facadeWins('rect', corner, 'W', [1.8, 4.8, 7.8, 10.8, 13.8], 3, 1.4, 1.9);
+  facadeWins('rect', corner, 'N', [1.8, 4.8, 7.8, 10.8, 13.8], 4, 1.4, 1.9);
+  for (const z of [-88.5, -81.5]) {
+    roofWin(corner, 65, z, 'W', 0.9, 1.2);
+    for (let f = 1; f < 5; f++) {
+      const y = f * 3 + 0.45;
+      box(1.1, 0.14, 1.9, M.concrete, 61.45, y, z);
+      rail(60.9, y + 0.14, z, 1.1, 1.85);
+    }
+  }
+  chimney(corner, 71, -85, 1.1); entrance(-85); garden(-92, -78, [-85]);
+  dueBlock(-78, -34, true);
+  dueBlock(-28, 30);
+  dueBlock(36, 88);
+  dueBlock(104, 160);
+  rand = savedRand;
+}
 // ---------------- row houses on the far side of Egernvej, and Solsortvej
 {
   const rowBrick = toon('#fff', { map: brickTex('#c9a86e', '#8f7b5b') });
