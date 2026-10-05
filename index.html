@@ -3692,7 +3692,7 @@ function updPuddles(dt) {
 }
 
 // ---------------- reading the texts aloud in Danish
-let voiceOn = true, daVoice = null, toastSaidAt = -99, pendingPoi = null;
+let voiceOn = false, daVoice = null, toastSaidAt = -99, pendingPoi = null;
 const lastPoiSaid = new Map();
 function pickVoice() { try { const vs = speechSynthesis.getVoices(); daVoice = vs.find(v => /^da/i.test(v.lang)) || null; } catch (e) { daVoice = null; } }
 if ('speechSynthesis' in window) { pickVoice(); try { speechSynthesis.addEventListener('voiceschanged', pickVoice); } catch (e) {} }
@@ -3714,8 +3714,10 @@ function sayPoi(p) {
 }
 function updVoice() { if (pendingPoi && clockT - toastSaidAt >= 3.5) { const p = pendingPoi; pendingPoi = null; if (p === curPoi) sayPoi(p); } }
 function setVoice(v) {
-  voiceOn = v; $('bVoice').setAttribute('aria-pressed', String(v)); $('iVoice').style.opacity = v ? 1 : 0.35;
-  if (!v) { try { speechSynthesis.cancel(); } catch (e) {} } save();
+  voiceOn = false;
+  const b = $('bVoice'); if (b) b.hidden = true;
+  try { speechSynthesis.cancel(); } catch (e) {}
+  save();
 }
 
 // ---------------- riding the swings and the slide
