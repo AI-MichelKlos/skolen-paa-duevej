@@ -1332,8 +1332,8 @@ const YB = brickBlock({ x: 33.5, z: 11.75, w: 9, d: 19.5, h: 7.6, rise: 3.2, wal
       const dmy = new THREE.Object3D();
       DOORS.forEach((d, i) => {
         const za = d.north ? NZ : CZ1, zb = d.north ? CZ0 : SZ, zc = (za + zb) / 2, dep = zb - za + 0.06;
-        for (const s of [-1, 1]) box(0.09, DHT + 0.09, dep, frameM, d.x + s * (DW + 0.045), F1, zc, { edges: true, cast: false });
-        box(2 * DW + 0.18, 0.09, dep, frameM, d.x, F1 + DHT, zc, { edges: true, cast: false });
+        for (const s of [-1, 1]) box(0.09, DHT + 0.09, dep, frameM, d.x + s * (DW + 0.045), F1, zc, { cast: false });
+        box(2 * DW + 0.18, 0.09, dep, frameM, d.x, F1 + DHT, zc, { cast: false });
         box(2 * DW, 0.012, zb - za, frameM, d.x, F1, zc, { cast: false });
         const cz = d.north ? CZ0 + 0.012 : CZ1 - 0.012, ry = d.north ? 0 : Math.PI;
         sign(d.nm, 0.42, 0.24, d.x + 0.95, F1 + 1.65, cz, ry, '#f5f2ea', 40);
