@@ -78,6 +78,7 @@ kbd{display:inline-block;min-width:1.6em;text-align:center;padding:1px 6px;borde
 #umb{position:fixed;right:16px;bottom:calc(22px + env(safe-area-inset-bottom,0px));background:#cfe4f3}
 .touch #umb{bottom:calc(116px + env(safe-area-inset-bottom,0px))}
 #jump{position:fixed;right:22px;bottom:calc(26px + env(safe-area-inset-bottom,0px));width:78px;height:78px;border-radius:50%;font:800 18px var(--display);color:var(--ink);background:var(--leaf);touch-action:none}
+#poi,#toast{pointer-events:none}   /* the text cards must not block the thumbs */
 #touchHint{position:fixed;left:22px;bottom:calc(26px + env(safe-area-inset-bottom,0px));width:96px;height:96px;border-radius:50%;border:2.5px dashed rgba(42,34,56,.55);display:grid;place-items:center;font-size:11px;font-weight:600;text-align:center;color:var(--ink);background:rgba(255,250,240,.35);pointer-events:none;line-height:1.2}
 body.touch #poi{bottom:calc(118px + env(safe-area-inset-bottom,0px))}
 @media (max-width:600px){
