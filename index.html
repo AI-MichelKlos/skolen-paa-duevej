@@ -3327,7 +3327,7 @@ function updAnimals(dt, t) {
   for (const a of animals) {
     const gp = a.g.position;
     if (started && !paused && !found.has(a.id) && Math.hypot(P.pos.x - gp.x, P.pos.z - gp.z) < 3.3 && Math.abs(P.pos.y - gp.y) < 2.4) discover(a);
-    if (a.follow) continue;
+    if (a.follow || a.gather) continue;
     const far = Math.hypot(camera.position.x - gp.x, camera.position.z - gp.z) > 95; a.g.visible = !far || a.happy > 0;
     if (a.happy <= 0 && far) continue;
     a.ph += dt;
@@ -3485,11 +3485,31 @@ function updRain(dt) {
 // puddles appear when it rains (plask!), and the texts are read aloud in Danish.
 
 // ---------------- animal parade
-const PARADE = [], TRAIL = [], _tp = { x: 0, y: 0, z: 0 };
-function joinParade(a) { if (a.follow) return; a.follow = true; a.state = 'idle'; a.happy = 0; a.idleHop = rr(1, 3); a.hopK = 0; PARADE.push(a); }
+// Only the newest animal follows her. Earlier animals walk to Filipa and gather by the flagpole.
+const PARADE = [], FILIPA_ANIMALS = [], TRAIL = [], _tp = { x: 0, y: 0, z: 0 };
+const FILIPA_ANIMAL_X = 15, FILIPA_ANIMAL_Z = -21.5;
+function filipaAnimalSpot(i) {
+  const ring = Math.floor(i / 6), k = i % 6, r = 1.35 + ring * 0.85, a = -1.1 + k * (Math.PI * 2 / 6) + ring * 0.3;
+  return [FILIPA_ANIMAL_X + Math.cos(a) * r, FILIPA_ANIMAL_Z + Math.sin(a) * r];
+}
+function sendToFilipa(a) {
+  const pi = PARADE.indexOf(a); if (pi >= 0) PARADE.splice(pi, 1);
+  if (!FILIPA_ANIMALS.includes(a)) FILIPA_ANIMALS.push(a);
+  a.follow = false; a.gather = true; a.state = 'walk'; a.happy = 0; a.hopK = 0;
+  const [x, z] = filipaAnimalSpot(FILIPA_ANIMALS.indexOf(a)); a.filipaTarget = [x, z];
+}
+function joinParade(a) {
+  if (a.follow) return;
+  // the animal that was following her goes to Filipa before the new one joins
+  for (const old of [...PARADE]) if (old !== a) sendToFilipa(old);
+  const gi = FILIPA_ANIMALS.indexOf(a); if (gi >= 0) FILIPA_ANIMALS.splice(gi, 1);
+  a.gather = false; a.follow = true; a.state = 'idle'; a.happy = 0; a.idleHop = rr(1, 3); a.hopK = 0; PARADE.push(a);
+}
 function leaveParade() {
-  for (const a of PARADE) { a.follow = false; a.state = 'idle'; a.happy = 0; a.gy = a.baseY; a.g.position.set(a.home[0], a.baseY, a.home[1]); }
-  PARADE.length = 0;
+  for (const a of [...PARADE, ...FILIPA_ANIMALS]) {
+    a.follow = false; a.gather = false; a.state = 'idle'; a.happy = 0; a.gy = a.baseY; a.g.position.set(a.home[0], a.baseY, a.home[1]);
+  }
+  PARADE.length = 0; FILIPA_ANIMALS.length = 0;
 }
 function trailPoint(dist, out) {
   let acc = 0, px = P.pos.x, py = TRAIL.length ? TRAIL[0].y : P.pos.y, pz = P.pos.z;
@@ -3526,6 +3546,30 @@ function updParade(dt, t) {
     else { a.idleHop -= dt; if (a.idleHop < 0) { a.hopK = 1; a.idleHop = rr(1.5, 4.5); } }
     if (a.hopK > 0) { a.hopK = Math.max(0, a.hopK - dt * 2.2); hop = Math.max(hop, Math.sin((1 - a.hopK) * Math.PI) * 0.45); if (!moving) a.g.rotation.y += dt * 6 * Math.sin((1 - a.hopK) * Math.PI); }
     gp.y = a.gy + hop;
+    a.g.visible = true;
+    ANIM[a.k](a, t, dt);
+  });
+
+  // animals that have already followed her walk over to Filipa and wait there
+  FILIPA_ANIMALS.forEach((a, i) => {
+    const gp = a.g.position;
+    const [tx, tz] = a.filipaTarget || filipaAnimalSpot(i);
+    a.filipaTarget = [tx, tz];
+    const ty = groundAt(tx, tz, 1.2);
+    const dx = tx - gp.x, dz = tz - gp.z, l = Math.hypot(dx, dz);
+    if (l > 0.12) {
+      const speed = Math.min(5.2, 2.4 + l * 0.18), st = Math.min(l, speed * dt);
+      gp.x += dx / l * st; gp.z += dz / l * st;
+      a.g.rotation.y += angDiff(Math.atan2(dx, dz), a.g.rotation.y) * Math.min(1, dt * 7);
+      a.state = 'walk';
+      const gy = groundAt(gp.x, gp.z, Math.max(1.2, gp.y + 0.7));
+      a.gy += (gy - a.gy) * Math.min(1, dt * 8);
+      gp.y = a.gy + Math.abs(Math.sin(t * 7 + i)) * 0.13;
+    } else {
+      a.state = 'idle'; a.gy = ty; gp.set(tx, ty, tz);
+      a.g.rotation.y += angDiff(Math.atan2(FILIPA_ANIMAL_X - gp.x, FILIPA_ANIMAL_Z - gp.z), a.g.rotation.y) * Math.min(1, dt * 2.5);
+      gp.y = ty;
+    }
     a.g.visible = true;
     ANIM[a.k](a, t, dt);
   });
@@ -5939,7 +5983,13 @@ function boot(data) {
   data = data || {};
   const st = load();
   (data.found || st.found || []).forEach(i => found.add(i));
-  animals.forEach(a => { if (found.has(a.id)) joinParade(a); });
+  {
+    const savedFound = animals.filter(a => found.has(a.id));
+    savedFound.forEach((a, i) => {
+      if (i === savedFound.length - 1) joinParade(a);
+      else sendToFilipa(a);
+    });
+  }
   if (typeof st.voice === 'boolean') setVoice(st.voice); else setVoice(true);
   if (JACKETS.some(j => j[0] === st.jacket)) jacketCol = st.jacket; if (UMBS.some(u => u[0] === st.umb)) umbCol = st.umb;
   if (HAIRS.some(h => h[0] === st.hair)) KIDCOL.hair = st.hair; if (PANTS.some(b => b[0] === st.pants)) KIDCOL.pants = st.pants; applyColours();
