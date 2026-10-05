@@ -1140,6 +1140,21 @@ const YB = brickBlock({ x: 33.5, z: 11.75, w: 9, d: 19.5, h: 7.6, rise: 3.2, wal
     const FL = 0.12, CEIL = 3.45, F1 = 3.6, TOP = 6.55;                         // floor, ceiling, first floor, top ceiling
     const DX0 = 25.9, DX1 = 28.1, DH = 2.5;                                     // the two double doorways
     const plaster = toon('#efe7d6', { emissive: '#4a4436' }), lino = toon('#cdbf9f'), stairM = toon('#bdb5a6'), leafM = toon('#3a3e45'), glassM = toon('#86a3bc');
+    const stairEdgeM = toon('#827a6f'), stairTrimM = toon('#6f675e');
+    const stairViewTex = ctex(256, 192, (g, w, h) => {
+      const sky = g.createLinearGradient(0, 0, 0, h * 0.65); sky.addColorStop(0, '#9fc9e5'); sky.addColorStop(1, '#dfeef4');
+      g.fillStyle = sky; g.fillRect(0, 0, w, h);
+      g.fillStyle = '#9bb978'; g.fillRect(0, h * 0.62, w, h * 0.38);
+      g.fillStyle = '#a8a39a'; g.fillRect(0, h * 0.73, w, h * 0.11);
+      g.fillStyle = '#d8c17b'; g.fillRect(w * 0.03, h * 0.49, w * 0.42, h * 0.18);
+      g.fillStyle = '#a9563f'; g.fillRect(w * 0.03, h * 0.46, w * 0.42, h * 0.05);
+      for (const x of [0.12, 0.32, 0.7, 0.86]) {
+        g.fillStyle = '#685341'; g.fillRect(w * x, h * 0.34, 6, h * 0.35);
+        g.fillStyle = '#6f9155'; g.beginPath(); g.arc(w * x + 3, h * 0.31, 24, 0, Math.PI * 2); g.fill();
+      }
+      g.fillStyle = 'rgba(255,255,255,.22)'; g.beginPath(); g.moveTo(0, 0); g.lineTo(w * 0.28, 0); g.lineTo(w * 0.68, h); g.lineTo(w * 0.48, h); g.closePath(); g.fill();
+    }, { wrap: false });
+    const stairViewM = toon('#ffffff', { map: stairViewTex });
     const C = (x0, x1, z0, z1, top, bot) => cols.push(bot === undefined ? { t: 'b', x0, x1, z0, z1, top } : { t: 'b', x0, x1, z0, z1, top, bot });
     const wb = (x0, x1, y0, y1, z0, z1, mat, o = {}) => { box(x1 - x0, y1 - y0, z1 - z0, mat, (x0 + x1) / 2, y0, (z0 + z1) / 2, { edges: o.edges, cast: o.cast }); if (o.col !== false) C(x0, x1, z0, z1, y1, o.bot); };
     const plane = (w, h, mat, x, y, z, ry) => mesh(mplane(w, h), mat, x, y, z, { ry, cast: false });
@@ -1248,12 +1263,43 @@ const YB = brickBlock({ x: 33.5, z: 11.75, w: 9, d: 19.5, h: 7.6, rise: 3.2, wal
     const SX0 = 20.85, SXM0 = 22.35, SXM1 = 22.45, SX1 = 23.95, SZ0 = -0.85, SZL = -3.75, n = 12, run = (SZ0 - SZL) / n;
     const rise1 = (1.86 - FL) / n, rise2 = (F1 - 1.86) / n;
     for (let i = 0; i < n; i++) {
-      box(SXM0 - SX0, FL + (i + 1) * rise1, run, stairM, (SX0 + SXM0) / 2, 0, SZ0 - run * (i + 0.5), { cast: false });
-      box(SX1 - SXM1, 1.86 + (i + 1) * rise2, run, stairM, (SXM1 + SX1) / 2, 0, SZL + run * (i + 0.5), { cast: false });
+      const h1 = FL + (i + 1) * rise1, z1 = SZ0 - run * (i + 0.5);
+      const h2 = 1.86 + (i + 1) * rise2, z2 = SZL + run * (i + 0.5);
+      box(SXM0 - SX0, h1, run, stairM, (SX0 + SXM0) / 2, 0, z1, { cast: false });
+      box(SX1 - SXM1, h2, run, stairM, (SXM1 + SX1) / 2, 0, z2, { cast: false });
+      // mørke forkantslister giver hvert trin en tydelig kant og mere dybde
+      box(SXM0 - SX0 + 0.03, 0.045, 0.055, stairEdgeM, (SX0 + SXM0) / 2, h1 - 0.045, SZ0 - run * (i + 1) + 0.028, { cast: false });
+      box(SX1 - SXM1 + 0.03, 0.045, 0.055, stairEdgeM, (SXM1 + SX1) / 2, h2 - 0.045, SZL + run * (i + 1) - 0.028, { cast: false });
     }
     box(SX1 - SX0, 1.86, SZL - iz0, stairM, (SX0 + SX1) / 2, 0, (iz0 + SZL) / 2, { edges: true });
     colRamp(SX0, SXM0, SZL, SZ0, 1.86, FL, 'z'); C(SX0, SX1, iz0, SZL, 1.86); colRamp(SXM1, SX1 + 0.05, SZL, SZ0, 1.86, F1, 'z');
     wb(SXM0, SXM1, 0, F1 + 1.0, SZL, SZ0, plaster);                          // the wall between the two flights
+
+    // mere dybde langs trappen: sokkel/kant og rækværk på den åbne side af første løb
+    { const a = new THREE.Vector3(SX0 - 0.03, FL + 0.95, SZ0), b = new THREE.Vector3(SX0 - 0.03, 2.82, SZL);
+      const rail = mesh(new THREE.CylinderGeometry(0.035, 0.035, a.distanceTo(b), 8), M.steel, a.x, (a.y + b.y) / 2, (a.z + b.z) / 2, { cast: false });
+      rail.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize());
+      for (let i = 0; i <= 8; i++) { const k = i / 8, z = SZ0 + (SZL - SZ0) * k, y = FL + (1.86 - FL) * k;
+        box(0.045, 0.9, 0.045, M.steel, SX0 - 0.03, y, z, { cast: false });
+      }
+      box(0.055, 0.16, SZ0 - SZL, stairTrimM, SX0 + 0.025, FL, (SZ0 + SZL) / 2, { cast: false });
+    }
+
+    // vinduesnicher ved trappen. De ligger lidt foran den massive ydervæg og giver oplevelsen af dybde og udsyn.
+    {
+      const zw = iz0 + 0.055, fw = 1.34, fh = 1.62, frame = toon('#f5f2ea');
+      const stairWindows = [[21.68, 1.9], [24.05, 1.9], [21.68, 5.2], [24.05, 5.2]];
+      for (const [xw, yw] of stairWindows) {
+        mesh(new THREE.PlaneGeometry(fw - 0.12, fh - 0.12), stairViewM, xw, yw, zw + 0.018, { cast: false });
+        box(0.075, fh + 0.08, 0.12, frame, xw - fw / 2, yw - fh / 2 - 0.04, zw, { cast: false });
+        box(0.075, fh + 0.08, 0.12, frame, xw + fw / 2, yw - fh / 2 - 0.04, zw, { cast: false });
+        box(fw + 0.08, 0.075, 0.12, frame, xw, yw + fh / 2 - 0.04, zw, { cast: false });
+        box(fw + 0.08, 0.075, 0.18, frame, xw, yw - fh / 2 - 0.04, zw + 0.03, { cast: false });
+        box(0.045, fh - 0.08, 0.08, frame, xw, yw - fh / 2 + 0.02, zw + 0.045, { cast: false });
+        box(fw - 0.08, 0.045, 0.08, frame, xw, yw - 0.04, zw + 0.045, { cast: false });
+      }
+    }
+
     for (let z = iz0 + 0.15; z < SZ0; z += 0.3) { const top = z < SZL ? 1.86 : 1.86 + (z - SZL) / (SZ0 - SZL) * (F1 - 1.86); mesh(new THREE.BoxGeometry(0.04, top + 1.0, 0.04), M.steel, 24.0, (top + 1.0) / 2, z, { cast: false }); }
     { const a = new THREE.Vector3(24.0, 2.86, SZL), b = new THREE.Vector3(24.0, F1 + 1.0, SZ0); const m = mesh(new THREE.CylinderGeometry(0.035, 0.035, a.distanceTo(b), 8), M.steel, 24.0, (a.y + b.y) / 2, (a.z + b.z) / 2); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize()); }
     box(0.07, 0.07, SZL - iz0, M.steel, 24.0, 2.86, (iz0 + SZL) / 2, { cast: false });
