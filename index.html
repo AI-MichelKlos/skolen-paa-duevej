@@ -157,6 +157,7 @@ body.touch #poi{bottom:calc(118px + env(safe-area-inset-bottom,0px))}
       <span>Læs op-knappen</span><span>Teksterne bliver læst højt</span>
     </div>
     <button class="go" id="goBtn" type="button" disabled>Henter skolen …</button>
+    <button class="go alt" id="newGameBtn" type="button" hidden>Nyt spil</button>
     <p class="foot">Tegnet frit efter fotos af Skolen på Duevej og en håndtegnet plan af skolen. Placeringer og detaljer er forenklede.</p>
   </div>
 </div>
@@ -2896,7 +2897,7 @@ function updEffects(dt) {
 }
 
 // ======================================================================== UI
-const hud = $('hud'), intro = $('intro'), goBtn = $('goBtn');
+const hud = $('hud'), intro = $('intro'), goBtn = $('goBtn'), newGameBtn = $('newGameBtn');
 const mapCv = $('map'), mctx = mapCv.getContext('2d');
 let mapBase = null; const MX0 = -60, MX1 = 64, MZ0 = -112, MZ1 = 115;
 function sizeMap() {
@@ -2978,6 +2979,16 @@ goBtn.addEventListener('click', () => {
   intro.hidden = true; hud.hidden = false; paused = false;
   if (!started) { started = true; startBlend = 0; shadowExtent(60); for (const h of HOOKS.start) h(); }
   canvas.focus();
+});
+newGameBtn.addEventListener('click', () => {
+  if (!confirm('Starte et nyt spil? De dyr, du har fundet, nulstilles.')) return;
+  const st = load();
+  st.found = [];
+  try {
+    localStorage.setItem(SKEY, JSON.stringify(st));
+    localStorage.removeItem('duevej3d-gemmesteder');
+  } catch (e) {}
+  location.reload();
 });
 if (isTouch) { $('keysDesk').hidden = true; $('keysTouch').hidden = false; $('jump').hidden = false; $('touchHint').hidden = false; }
 
@@ -5940,6 +5951,7 @@ function boot(data) {
   kid.root.position.copy(P.pos); kid.root.rotation.y = P.face;
   window.__gameReady = true;
   goBtn.disabled = false; goBtn.textContent = nFound() ? `Fortsæt (${nFound()} af 12 dyr)` : 'Gå ind i skolegården';
+  newGameBtn.hidden = nFound() === 0;
   if (data.started) { intro.hidden = true; hud.hidden = false; started = true; paused = false; shadowExtent(60); startBlend = 1; }
   requestAnimationFrame(t => { last = t; frame(t); });
 }
