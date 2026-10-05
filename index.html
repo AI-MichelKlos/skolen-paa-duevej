@@ -164,7 +164,7 @@ body.touch #poi{bottom:calc(118px + env(safe-area-inset-bottom,0px))}
   <div class="card sticker">
     <div class="eyebrow">Dyrejagten er slut</div>
     <h2>Alle 12 dyr er fundet!</h2>
-    <p class="lead">Godt gået. Du har mødt alle dyrene på Skolen på Duevej, fra duen på Duevej til uglen oppe på ståltrappen.</p>
+    <p class="lead">Godt gået! Du har fundet alle dyrene på Skolen på Duevej. Gå hen til Filipa ved flagstangen. Hun har en guldstjerne til dig.</p>
     <button class="go" id="finOk" type="button">Gå videre rundt</button>
     <button class="go alt" id="finAgain" type="button">Gem dyrene igen</button>
   </div>
@@ -4998,7 +4998,7 @@ function updActions() {
     flush(FB);
   }
   HOOKS.found.push(a => { if (a.id < 12 && all12()) { startShow(true); SHOW.conf = 8; } });
-  $('finOk').addEventListener('click', () => { if (!all12()) return; startShow(true); toast('Hurra! Gå hen til flagstangen, så kommer der mere fyrværkeri.'); });
+  $('finOk').addEventListener('click', () => { if (!all12()) return; startShow(true); toast('Hurra! Gå hen til Filipa ved flagstangen. Hun har en guldstjerne til dig.'); });
   const fwOffer = { id: 'ude-fw', label: 'Fyrværkeri', prio: 1, run: () => startShow(false) };
 
   // ======================================================== 4. the school bell (every 4 minutes of play)
@@ -5659,6 +5659,168 @@ function updActions() {
   });
 
   FX.smaa = { hideAgain, homeAgain, startOver, SPOTS, ground, music: () => ({ musicOn, mTarget, beat }) };
+}
+// ---- feature: filipa (the teacher Filipa by the flagpole; she says hello and gives a gold star when all 12 animals are found)
+{
+  const FXX = 15, FZ = -21.5;                           // where she stands, a little east of the flagpole
+  const SKEYF = 'duevej3d-guldstjerner';
+  const ST = { stars: 0, awarded: false };
+  try { const s = JSON.parse(localStorage.getItem(SKEYF) || 'null'); if (s) { ST.stars = Math.max(0, s.stars | 0); ST.awarded = !!s.awarded; } } catch (e) {}
+  const saveStars = () => { try { localStorage.setItem(SKEYF, JSON.stringify(ST)); } catch (e) {} };
+  const allFound = () => { let n = 0; for (const id of found) if (id < 12) n++; return n === 12; };
+  const nReg = () => { let n = 0; for (const id of found) if (id < 12) n++; return n; };
+
+  // ---------------- her model: a grown-up in the same cartoon style as the girl
+  const ink = new THREE.MeshBasicMaterial({ color: '#231a22', side: THREE.BackSide });
+  const part = (geo, mat, parent, x, y, z, ol = 1.05) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; parent.add(m); if (ol) { const o = new THREE.Mesh(geo, ink); o.scale.setScalar(ol); m.add(o); } return m; };
+  const skin = toon('#eec3a2'), hair = toon('#1f1a1e'), cardigan = toon('#3f8f86'), shirt = toon('#f6f1e6'), jeans = toon('#3b4a6b'), shoe = toon('#f4f1ea'), dark = new THREE.MeshBasicMaterial({ color: '#231a22' }), cheek = toon('#f0a493'), lip = toon('#c95b5b');
+  const goldM = toon('#ffcf3a', { emissive: '#8a5a00', emissiveIntensity: 0.45 });
+  const root = new THREE.Group(); root.position.set(FXX, groundAt(FXX, FZ, 0.5), FZ); dyn.add(root);
+  const body = new THREE.Group(); root.add(body);
+  const legs = [];
+  for (const s of [-1, 1]) {
+    const hip = new THREE.Group(); hip.position.set(s * 0.11, 0.86, 0); body.add(hip);
+    part(new THREE.CapsuleGeometry(0.085, 0.62, 4, 12), jeans, hip, 0, -0.4, 0, 1.04);
+    const sh = part(new THREE.CapsuleGeometry(0.075, 0.12, 4, 12), shoe, hip, 0, -0.8, 0.05, 1.06); sh.rotation.x = Math.PI / 2; sh.scale.set(1.1, 1, 0.75);
+    legs.push(hip);
+  }
+  part(new THREE.CapsuleGeometry(0.21, 0.42, 6, 16), cardigan, body, 0, 1.18, 0);           // the cardigan
+  { const col = part(new THREE.TorusGeometry(0.1, 0.035, 8, 18), shirt, body, 0, 1.46, 0.01, 0); col.rotation.x = Math.PI / 2; }   // white shirt collar
+  part(new THREE.CylinderGeometry(0.2, 0.25, 0.22, 16), cardigan, body, 0, 0.9, 0, 1.04);    // hem
+  part(new THREE.CylinderGeometry(0.06, 0.07, 0.1, 10), skin, body, 0, 1.5, 0, 0);           // neck
+  const head = new THREE.Group(); head.position.set(0, 1.72, 0.01); body.add(head);
+  part(new THREE.SphereGeometry(0.2, 22, 16), skin, head, 0, 0, 0, 1.05);
+  const cap = part(new THREE.SphereGeometry(0.215, 22, 14, 0, Math.PI * 2, 0, Math.PI * 0.55), hair, head, 0, 0.015, -0.015, 1.04); cap.rotation.x = -0.32;
+  const back = part(new THREE.SphereGeometry(0.2, 18, 12), hair, head, 0, -0.12, -0.08, 1.04); back.scale.set(1.08, 1.25, 0.8);   // hair down to the shoulders
+  for (const s of [-1, 1]) { const lock = part(new THREE.CapsuleGeometry(0.06, 0.2, 4, 10), hair, head, s * 0.17, -0.13, 0.02, 1.06); lock.rotation.z = s * 0.12; }
+  const fringe = part(new THREE.SphereGeometry(0.12, 14, 10), hair, head, -0.06, 0.13, 0.12, 0); fringe.scale.set(1.3, 0.45, 0.7); fringe.rotation.z = -0.25;
+  for (const s of [-1, 1]) {
+    part(new THREE.SphereGeometry(0.026, 10, 8), dark, head, s * 0.07, 0.02, 0.18, 0);
+    const c = part(new THREE.SphereGeometry(0.035, 10, 8), cheek, head, s * 0.12, -0.05, 0.155, 0); c.scale.set(1, 0.6, 0.4);
+  }
+  const smile = part(new THREE.TorusGeometry(0.04, 0.01, 6, 14, Math.PI), lip, head, 0, -0.07, 0.185, 0); smile.rotation.z = Math.PI;
+  part(new THREE.SphereGeometry(0.022, 8, 6), skin, head, 0, -0.01, 0.2, 0);
+  const arms = [];
+  for (const s of [-1, 1]) {
+    const shd = new THREE.Group(); shd.position.set(s * 0.25, 1.42, 0); body.add(shd);
+    part(new THREE.CapsuleGeometry(0.06, 0.42, 4, 10), cardigan, shd, 0, -0.27, 0);
+    part(new THREE.SphereGeometry(0.06, 10, 8), skin, shd, 0, -0.55, 0, 0);
+    shd.rotation.z = s * 0.08; arms.push(shd);
+  }
+  // a gold star she holds up when she gives it away
+  const starShape = new THREE.Shape(); for (let i = 0; i < 10; i++) { const a = Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 0.42 : 1; i ? starShape.lineTo(Math.cos(a) * r, Math.sin(a) * r) : starShape.moveTo(Math.cos(a) * r, Math.sin(a) * r); }
+  const starGeo = new THREE.ExtrudeGeometry(starShape, { depth: 0.25, bevelEnabled: true, bevelThickness: 0.08, bevelSize: 0.06, bevelSegments: 1 }); starGeo.center();
+  const mkStar = (parent, s) => { const m = new THREE.Mesh(starGeo, goldM); m.scale.setScalar(s); m.castShadow = true; const o = new THREE.Mesh(starGeo, ink); o.scale.setScalar(1.12); m.add(o); parent.add(m); return m; };
+  const flyStar = mkStar(dyn, 0.16); flyStar.visible = false;
+  // the badge on her jacket, once she has a gold star
+  const badge = mkStar(kid.g, 0.055); badge.position.set(0.12, 1.0, 0.3); badge.visible = ST.stars > 0;
+  colCirc(FXX, FZ, 0.45, 99);
+
+  // ---------------- a gold star next to the counter in the corner
+  const css = document.createElement('style');
+  css.textContent = '#starBadge{display:flex;align-items:center;gap:1px;margin-left:2px}#starBadge svg{width:24px;height:24px}#starBadge b{font:800 18px var(--display);margin-left:3px}';
+  document.head.appendChild(css);
+  const sb = document.createElement('span'); sb.id = 'starBadge'; sb.title = 'Guldstjerner fra Filipa'; $('counter').appendChild(sb);
+  const STAR_SVG = '<svg viewBox="0 0 24 24" fill="#ffcf3a" stroke="#2a2238" stroke-width="1.8" stroke-linejoin="round"><path d="M12 2.8l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.6l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"/></svg>';
+  function renderBadge() { sb.hidden = ST.stars < 1; sb.innerHTML = STAR_SVG.repeat(Math.min(ST.stars, 3)) + (ST.stars > 3 ? `<b>${ST.stars}</b>` : ''); badge.visible = ST.stars > 0; }
+  renderBadge();
+
+  // ---------------- what she says
+  const POI = POIS.find(p => p.n === 'Sandcirklen og flagstangen'); if (POI) POI.t += ' Ved flagstangen står lærer Filipa.';
+  let met = false; try { met = localStorage.getItem('duevej3d-filipa') === '1'; } catch (e) {}
+  const starsWord = n => n === 1 ? 'en guldstjerne' : `${n} guldstjerner`;
+  function hello() {
+    const n = nReg();
+    let msg;
+    if (!met) { msg = 'Hej! Jeg hedder Filipa, og jeg er lærer her på skolen. Kan du finde alle 12 dyr?'; met = true; try { localStorage.setItem('duevej3d-filipa', '1'); } catch (e) {} }
+    else if (n === 12) msg = `Hej! Du er så dygtig. Du har ${starsWord(ST.stars)}.`;
+    else if (n === 0) msg = 'Hej igen! Kan du finde dyrene? De gemmer sig rundt omkring på skolen.';
+    else msg = `Hej igen! Du har fundet ${n} dyr. Der er ${12 - n} tilbage.`;
+    toast(msg); F.wave = 1.6;
+  }
+
+  // ---------------- giving the gold star
+  const F = { wave: 0, give: -1, near: false, helloAt: -99, look: 0 };
+  const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3();
+  function giveStar() {
+    if (F.give >= 0) return;
+    F.give = 0; ST.awarded = true; saveStars();
+    toast('Du har fundet alle 12 dyr! Her er en guldstjerne til dig.');
+    fanfare();
+  }
+  function landStar() {
+    ST.stars++; saveStars(); renderBadge();
+    sparkleSound(); burst(P.pos); popLabel('Guldstjerne!', P.pos, 1.2);
+    setTimeout(() => toast(ST.stars === 1 ? 'Sikke en flot guldstjerne!' : `Nu har du ${starsWord(ST.stars)}!`), 1600);
+  }
+
+  // "Vis vej" leads to Filipa when all the animals are found and the gold star is waiting
+  { const base = showWay;
+    showWay = function () {
+      if (started && !paused && allFound() && !ST.awarded) {
+        const fake = { id: 999, g: { position: new THREE.Vector3(FXX, 0, FZ) }, def: { d: 'Filipa' } };
+        animals.push(fake); try { base(); } finally { const i = animals.indexOf(fake); if (i >= 0) animals.splice(i, 1); }
+        return;
+      }
+      base();
+    }; }
+  // her place on the map (with a big gold star while she waits to give it)
+  { const base = drawMap;
+    drawMap = function () {
+      base();
+      if (!showMap || !mapBase) return;
+      const g = mctx, k = mapCv.width / (MX1 - MX0), x = mpx(FXX), z = mpz(FZ), r = Math.max(2.6, k * 1.5);
+      g.lineWidth = Math.max(1, k * 0.5); g.strokeStyle = '#2a2238';
+      if (allFound() && !ST.awarded) {
+        const R = r * (2.2 + 0.25 * Math.sin(clockT * 5)); g.fillStyle = '#ffcf3a'; g.beginPath();
+        for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, q = i % 2 ? R * 0.45 : R; g.lineTo(x + Math.cos(a) * q, z + Math.sin(a) * q); }
+        g.closePath(); g.fill(); g.stroke();
+      } else { g.fillStyle = '#3f8f86'; g.beginPath(); g.arc(x, z, r, 0, Math.PI * 2); g.fill(); g.stroke(); }
+    }; }
+
+  HOOKS.frame.push((dt, t) => {
+    const n = nReg();
+    if (n < 12 && ST.awarded) { ST.awarded = false; saveStars(); }      // a new round: she has a new star ready
+    const dx = P.pos.x - FXX, dz = P.pos.z - FZ, d = Math.hypot(dx, dz), level = Math.abs(P.pos.y - root.position.y) < 1.5;
+    root.visible = Math.hypot(camera.position.x - FXX, camera.position.z - FZ) < 95;
+    // turn toward her when she is close
+    const want = d < 14 && level ? Math.atan2(dx, dz) : -0.6;
+    root.rotation.y += angDiff(want, root.rotation.y) * Math.min(1, dt * 2.5);
+    head.rotation.y = Math.max(-0.5, Math.min(0.5, angDiff(want, root.rotation.y))) * 0.8;
+    body.position.y = Math.sin(t * 1.6) * 0.008; head.rotation.z = Math.sin(t * 0.9) * 0.04;
+    if (!root.visible) return;
+    // say hello when she comes close (not too often)
+    const close = started && !paused && level && d < 4.5;
+    if (close && !F.near && clockT - F.helloAt > 25 && !(allFound() && !ST.awarded)) { F.helloAt = clockT; hello(); }
+    F.near = close;
+    if (started && !paused && level && d < 2.6 && allFound() && !ST.awarded && F.give < 0) giveStar();
+    if (started && !paused && level && d < 2.8 && F.give < 0) {
+      if (allFound() && !ST.awarded) offerAction({ id: 'filipa-star', label: 'Få en guldstjerne', run: giveStar, prio: 4 });
+      else offerAction({ id: 'filipa-hej', label: 'Sig hej til Filipa', run: () => { F.helloAt = clockT; hello(); }, prio: 0.8 });
+    }
+    // arms: wave, or hold the star out to her
+    const R = arms[1], L = arms[0];
+    if (F.give >= 0) {
+      F.give += dt;
+      const g = F.give;
+      R.rotation.x += (-1.3 - R.rotation.x) * Math.min(1, dt * 8); R.rotation.z += (0.2 - R.rotation.z) * Math.min(1, dt * 8);
+      R.updateMatrixWorld(true); _a.set(0, -0.62, 0.05); R.localToWorld(_a);       // her hand
+      if (g < 1.0) { flyStar.visible = true; flyStar.position.copy(_a); flyStar.rotation.set(0, g * 6, 0); flyStar.scale.setScalar(0.16 * Math.min(1, g * 3)); }
+      else if (g < 2.3) {
+        const f = (g - 1.0) / 1.3, e = f * f * (3 - 2 * f);
+        _b.set(P.pos.x, P.pos.y + 0.95, P.pos.z); _c.lerpVectors(_a, _b, e); _c.y += Math.sin(e * Math.PI) * 1.2;
+        flyStar.position.copy(_c); flyStar.rotation.y += dt * 12; flyStar.scale.setScalar(0.16 - 0.1 * e);
+      } else { flyStar.visible = false; F.give = -1; landStar(); }
+      return;
+    }
+    if (F.wave > 0) {
+      F.wave -= dt;
+      R.rotation.z += (2.6 + Math.sin(t * 12) * 0.35 - R.rotation.z) * Math.min(1, dt * 10); R.rotation.x += (0 - R.rotation.x) * Math.min(1, dt * 8);
+    } else { R.rotation.z += (0.08 - R.rotation.z) * Math.min(1, dt * 5); R.rotation.x += (Math.sin(t * 1.3) * 0.04 - R.rotation.x) * Math.min(1, dt * 5); }
+    L.rotation.z = -0.08 - Math.sin(t * 1.3 + 1) * 0.03;
+  });
+
+  FX.filipa = { root, ST, F, giveStar, hello, pos: [FXX, FZ] };
 }
 // (feature logic blocks go here)
 // ---- core: the inside of the yellow wing is only drawn when the camera (or the girl) is near the wing

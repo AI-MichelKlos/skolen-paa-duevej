@@ -44,6 +44,7 @@ Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, h
 - På 1. sal åbner en ny dør, hver gang hun finder et dyr: først musiklokalet, så billedkunst, så biblioteket og til sidst klasselokalerne. Et sted på 1. sal gemmer der sig en hemmelig mus.
 - I musiklokalet kan hun spille klaver, tromme og xylofon. I billedkunst kan hun tegne på tavlen, og tegningen bliver hængende. I biblioteket bliver der læst små historier om dyrene op.
 - Dyr, hun har fundet, kan hun klappe. Når alle 12 dyr er fundet, kommer der fyrværkeri og konfetti.
+- Ved flagstangen står lærer Filipa. Hun siger hej, og når alle 12 dyr er fundet, giver hun pigen en guldstjerne. Guldstjernen sidder på pigens jakke og ved siden af tælleren. Hver gang man finder alle dyrene igen, får man en ny guldstjerne.
 - Skoleklokken ringer hvert 4. minut, og uret på hovedbygningen slår hvert kvarter og hver hele time.
 - Vinter-knappen giver sne på jorden, tagene og træerne, hue og halstørklæde på pigen, fodspor i sneen og tre steder at bygge en snemand.
 - Når alle 12 dyr er fundet, kan man trykke "Gem dyrene igen". Så gemmer dyrene sig nye steder i skolegården.
@@ -51,4 +52,4 @@ Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, h
 - Om aftenen kommer der stjerner og en måne på himlen.
 - Man kan høre pigens skridt, og de lyder forskelligt på asfalt, græs, sand, trægulv og sne.
 - Der spiller en blid melodi i baggrunden. Den slås fra med Lyd-knappen eller med "Musik" på Hjælp-kortet.
-- Fundne dyr, gemmestederne, farverne, dag/aften, vinter, tegningen, musik og lyd huskes i browseren.
+- Fundne dyr, guldstjerner, gemmestederne, farverne, dag/aften, vinter, tegningen, musik og lyd huskes i browseren.
