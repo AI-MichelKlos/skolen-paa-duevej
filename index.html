@@ -1324,11 +1324,12 @@ const YB = brickBlock({ x: 33.5, z: 11.75, w: 9, d: 19.5, h: 7.6, rise: 3.2, wal
       slab(ix0, 20.8, iz0, iz1); slab(24.15, ix1, iz0, iz1); slab(20.8, 24.15, SZ0, iz1);
       box(ix1 - ix0, 0.15, iz1 - iz0, plaster, (ix0 + ix1) / 2, TOP, (iz0 + iz1) / 2, { cast: false });
       const CZ0 = -0.85, CZ1 = 1.35, NZ = CZ0 - 0.2, SZ = CZ1 + 0.2;            // corridor faces; NZ / SZ = room side of the corridor walls
-      const DW = 0.55, DHT = 2.2, WY = 5.2;                                       // half door width, door height, window height
+      const DW = 0.55, DHT = 2.2, FW = 0.09, WY = 5.2;                                       // half door width, door height, window height
       // corridor walls with real doorways
       const wallDoors = (xa, xb, za, zb, doors) => {
         let x = xa;
-        for (const d of doors) { wb(x, d - DW, F1, TOP, za, zb, plaster, { bot: F1 }); wb(d - DW, d + DW, F1 + DHT, TOP, za, zb, plaster, { bot: F1 + DHT }); x = d + DW; }
+        // Leave the full frame volume out of the plaster: coincident jamb/lintel faces flicker.
+        for (const d of doors) { wb(x, d - DW - FW, F1, TOP, za, zb, plaster, { bot: F1 }); wb(d - DW - FW, d + DW + FW, F1 + DHT + FW, TOP, za, zb, plaster, { bot: F1 + DHT + FW }); x = d + DW + FW; }
         wb(x, xb, F1, TOP, za, zb, plaster, { bot: F1 });
       };
       wallDoors(ix0, 20.8, NZ, CZ0, [14.4, 18.5]); wallDoors(24.15, ix1, NZ, CZ0, [26.6]);
@@ -1379,8 +1380,13 @@ const YB = brickBlock({ x: 33.5, z: 11.75, w: 9, d: 19.5, h: 7.6, rise: 3.2, wal
       const dmy = new THREE.Object3D();
       DOORS.forEach((d, i) => {
         const za = d.north ? NZ : CZ1, zb = d.north ? CZ0 : SZ, zc = (za + zb) / 2, dep = zb - za + 0.06;
-        for (const s of [-1, 1]) box(0.09, DHT + 0.09, dep, frameM, d.x + s * (DW + 0.045), F1, zc, { cast: false });
-        box(2 * DW + 0.18, 0.09, dep, frameM, d.x, F1 + DHT, zc, { cast: false });
+        for (const s of [-1, 1]) {
+          const fx = d.x + s * (DW + FW / 2);
+          box(FW, DHT, dep, frameM, fx, F1, zc, { cast: false });
+          C(fx - FW / 2, fx + FW / 2, za, zb, F1 + DHT, F1);
+        }
+        box(2 * DW + 2 * FW, FW, dep, frameM, d.x, F1 + DHT, zc, { cast: false });
+        C(d.x - DW - FW, d.x + DW + FW, za, zb, F1 + DHT + FW, F1 + DHT);
         box(2 * DW, 0.012, zb - za, frameM, d.x, F1, zc, { cast: false });
         const cz = d.north ? CZ0 + 0.012 : CZ1 - 0.012, ry = d.north ? 0 : Math.PI;
         sign(d.nm, 0.42, 0.24, d.x + 0.95, F1 + 1.65, cz, ry, '#f5f2ea', 40);
