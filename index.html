@@ -1340,12 +1340,13 @@ const YB = brickBlock({ x: 33.5, z: 11.75, w: 9, d: 19.5, h: 7.6, rise: 3.2, wal
       box(ix1 - ix0, 0.15, iz1 - iz0, plaster, (ix0 + ix1) / 2, TOP, (iz0 + iz1) / 2, { cast: false });
       const CZ0 = -0.85, CZ1 = 1.35, NZ = CZ0 - 0.2, SZ = CZ1 + 0.2;            // corridor faces; NZ / SZ = room side of the corridor walls
       const DW = 0.55, DHT = 2.2, FW = 0.09, WY = 5.2;                                       // half door width, door height, window height
+      const corridorWhite = toon('#f3f1e9', { emissive: '#383832' });
       // corridor walls with real doorways
       const wallDoors = (xa, xb, za, zb, doors) => {
         let x = xa;
         // Leave the full frame volume out of the plaster: coincident jamb/lintel faces flicker.
-        for (const d of doors) { wb(x, d - DW - FW, F1, TOP, za, zb, plaster, { bot: F1 }); wb(d - DW - FW, d + DW + FW, F1 + DHT + FW, TOP, za, zb, plaster, { bot: F1 + DHT + FW }); x = d + DW + FW; }
-        wb(x, xb, F1, TOP, za, zb, plaster, { bot: F1 });
+        for (const d of doors) { wb(x, d - DW - FW, F1, TOP, za, zb, corridorWhite, { bot: F1 }); wb(d - DW - FW, d + DW + FW, F1 + DHT + FW, TOP, za, zb, corridorWhite, { bot: F1 + DHT + FW }); x = d + DW + FW; }
+        wb(x, xb, F1, TOP, za, zb, corridorWhite, { bot: F1 });
       };
       wallDoors(ix0, 20.8, NZ, CZ0, [14.4, 18.5]); wallDoors(24.15, ix1, NZ, CZ0, [26.6]);
       wallDoors(ix0, ix1, CZ1, SZ, [14.4, 18.5, 22.6, 26.8]);
@@ -1362,8 +1363,71 @@ const YB = brickBlock({ x: 33.5, z: 11.75, w: 9, d: 19.5, h: 7.6, rise: 3.2, wal
       box(SXM0 - 20.8 + 0.05, 0.06, 0.06, M.steel, (20.8 + SXM0) / 2, F1 + 1.0, CZ0 + 0.03, { cast: false });
       for (let x = 20.95; x < SXM0; x += 0.3) box(0.04, 1.0, 0.04, M.steel, x, F1, CZ0 + 0.03, { cast: false });
       C(20.8, SXM1, CZ0 - 0.05, CZ0 + 0.1, F1 + 1.0, F1);
-      // lamps: corridor and rooms
-      for (const x of [14, 18.5, 22.5, 26.5]) box(1.0, 0.05, 0.3, M.bulb, x, TOP - 0.05, (CZ0 + CZ1) / 2, { cast: false });
+      // >>> PHOTO CORRIDOR: wardrobe passage from Michel's photo, 6 October 2026.
+      // Looking east (+x), the existing stairs descend at the far left (-z).
+      const hallWood = toon('#cda66e'), hallEdge = toon('#e4c591'), hallMetal = toon('#8f9392');
+      const hallFloor = toon('#c9c7be'), hallBorder = toon('#596473'), hallCeiling = toon('#deddd5');
+      const hallClothes = ['#e4ad32', '#cf5d4c', '#73889f', '#ae7592', '#77826e', '#e8d9c4'].map(c => toon(c));
+      const hallInk = toon('#29343c'), hallPaper = toon('#f4f0e5');
+      const HC = (x0, x1, z0, z1, h) => C(x0, x1, z0, z1, F1 + h, F1);
+      const HB = (w, h, d, m, x, y, z, o = {}) => box(w, h, d, m, x, F1 + y, z, Object.assign({ cast: false }, o));
+      HB(ix1 - ix0 - .02, .009, CZ1 - CZ0 - .02, hallFloor, (ix0 + ix1) / 2, .003, .25);
+      for (const z of [CZ0 + .17, CZ1 - .17]) HB(ix1 - ix0 - .02, .003, .32, hallBorder, (ix0 + ix1) / 2, .012, z);
+      // Suspended acoustic tiles. One repeating texture keeps the ceiling inexpensive to render.
+      const hallTiles = ctex(128, 128, (g, w, h) => {
+        g.fillStyle = '#e9e8e0'; g.fillRect(0, 0, w, h);
+        g.strokeStyle = '#b9bbb7'; g.lineWidth = 3; g.strokeRect(1, 1, w - 2, h - 2);
+        g.fillStyle = '#d0d1c9';
+        for (let x = 10; x < w - 8; x += 18) for (let y = 10; y < h - 8; y += 18) g.fillRect(x, y, 11, 11);
+      });
+      mesh(mplane(ix1 - ix0, CZ1 - CZ0), toon('#ffffff', { map: hallTiles, side: THREE.DoubleSide }),
+        (ix0 + ix1) / 2, TOP - .012, .25, { rx: Math.PI / 2, cast: false });
+      for (const x of [13.2, 15.5, 17.8, 20.1, 22.4, 25.0, 27.4]) {
+        HB(.67, .045, .55, hallCeiling, x, TOP - F1 - .09, .25, { edges: true });
+        HB(.57, .016, .45, M.bulb, x, TOP - F1 - .11, .25);
+      }
+      // Keep every doorway, its frame and the stair approach clear. The centre aisle is 1.34 m wide.
+      const hallUnits = [[12.50, 13.52], [15.29, 17.62], [19.38, 20.48]];
+      const hallUnit = (xa, xb, north, unitId) => {
+        const dir = north ? 1 : -1, wallZ = north ? CZ0 : CZ1, z = wallZ + dir * .21;
+        const width = xb - xa, cx = (xa + xb) / 2, count = Math.max(2, Math.round(width / .48)), cellW = width / count;
+        HB(width, 1.74, .025, hallWood, cx, .10, wallZ + dir * .027);
+        for (const y of [.14, .50, 1.32, 1.87]) HB(width + .025, .045, .40, hallEdge, cx, y, z, { edges: true });
+        for (let i = 0; i <= count; i++) HB(.035, 1.42, .39, hallWood, xa + i * cellW, .14, z, { edges: true });
+        for (let i = 0; i < count; i++) {
+          const x = xa + (i + .5) * cellW, idx = i + unitId * 3 + (north ? 0 : 2), cm = hallClothes[idx % hallClothes.length];
+          // Upper baskets, labels and a folded sweater.
+          HB(cellW - .085, .19, .28, hallPaper, x, 1.39, wallZ + dir * .20, { edges: true });
+          HB(.13, .045, .008, cm, x, 1.46, wallZ + dir * .346);
+          HB(cellW * .65, .045, .23, cm, x + .03, 1.59, wallZ + dir * .19);
+          // Metal hooks and a jacket hanging below the shelves.
+          HB(.045, .12, .055, hallMetal, x, 1.18, wallZ + dir * .08);
+          HB(.22, .53, .12, cm, x, .60, wallZ + dir * .15, { edges: true });
+          for (const side of [-1, 1]) {
+            const arm = HB(.075, .36, .09, cm, x + side * .14, .71, wallZ + dir * .15); arm.rotation.z = side * .18;
+          }
+          HB(.012, .43, .009, hallPaper, x, .65, wallZ + dir * .216);
+          // A backpack, its pocket and handle, hanging in front of the lower cubby.
+          const bagM = hallClothes[(idx + 3) % hallClothes.length];
+          HB(.21, .30, .10, bagM, x + .075, .19, wallZ + dir * .29, { edges: true });
+          HB(.16, .12, .025, cm, x + .075, .22, wallZ + dir * .355, { edges: true });
+          HB(.12, .018, .02, hallInk, x + .075, .51, wallZ + dir * .29);
+          for (const dx of [-.06, .06]) HB(.07, .065, .16, hallInk, x + dx, .065, wallZ + dir * .27);
+          // Bags and small helmets on the top shelf.
+          if (i % 2 === 0) {
+            const helmet = mesh(new THREE.SphereGeometry(.14, 10, 8), idx % 3 ? hallInk : cm, x, F1 + 2.02, z, { cast: false }); helmet.scale.set(1.1, .7, 1);
+          } else HB(.26, .17, .23, cm, x, 1.92, z, { edges: true });
+        }
+        HC(xa - .025, xb + .025, Math.min(wallZ, wallZ + dir * .43), Math.max(wallZ, wallZ + dir * .43), 2.16);
+      };
+      hallUnits.forEach(([xa, xb], i) => { hallUnit(xa, xb, true, i); hallUnit(xa, xb, false, i); });
+      // Yellow opening beyond the wardrobe passage, with the staircase on its left.
+      const hallYellow = toon('#eed286');
+      for (const z of [CZ0 + .035, CZ1 - .035]) HB(.10, 2.68, .07, hallYellow, 24.38, 0, z);
+      HB(.10, .18, CZ1 - CZ0, hallYellow, 24.38, 2.55, .25);
+      sign('TRAPPE NED', .72, .20, 23.25, F1 + 2.08, CZ0 + .015, 0, '#f5f2ea', 28);
+      // <<< PHOTO CORRIDOR
+      // lamps in the rooms
       for (const x of [14.33, 18.58, 26.6]) for (const z of [-4.6, -2.3]) box(1.0, 0.05, 0.3, M.bulb, x, TOP - 0.05, z, { cast: false });
       for (const x of [14.33, 18.5, 22.6, 26.8]) for (const z of [2.9, 5.2]) box(1.0, 0.05, 0.3, M.bulb, x, TOP - 0.05, z, { cast: false });
 
@@ -1476,7 +1540,7 @@ const YB = brickBlock({ x: 33.5, z: 11.75, w: 9, d: 19.5, h: 7.6, rise: 3.2, wal
       }, { wrap: false });
       const abcM = toon('#ffffff', { map: abcTex }), artM = toon('#ffffff', { map: artTex, alphaTest: 0.5 });
       // children's drawings on the corridor walls between the doors
-      for (const [x, z, ry] of [[16.45, CZ0 + 0.012, 0], [20.55, CZ1 - 0.012, Math.PI], [24.7, CZ1 - 0.012, Math.PI]]) mesh(new THREE.PlaneGeometry(1.1, 0.42), artM, x, F1 + 1.55, z, { ry, cast: false });
+      for (const [x, z, ry] of [[16.45, CZ0 + 0.012, 0], [20.55, CZ1 - 0.012, Math.PI], [24.7, CZ1 - 0.012, Math.PI]]) mesh(new THREE.PlaneGeometry(1.1, 0.42), artM, x, F1 + 2.38, z, { ry, cast: false });
       const FLOOR = M.deck;
       const S1 = FX.sal1 = { doors: DOORS, leaves, F1, DW, rooms: [], mouse: null };
       for (const R of ROOMS) {
@@ -4186,7 +4250,7 @@ function updActions() {
     // "start over" clears the animals: take the mouse out of the list at once (before the next animal check)
     { const fa = $('finAgain'); if (fa) fa.addEventListener('click', () => { const i = animals.indexOf(mouse); if (i >= 0 && !found.has(12)) { animals.splice(i, 1); mouse.follow = false; mouse.happy = 0; mouse.g.position.set(def.x, F1, def.z); mouse.g.rotation.y = MS.ry; } }); }
     // POI texts for the corridor and the four classrooms
-    { const g = POIS.find(p => p.n === 'Gangen på 1. sal'); if (g) { g.t = 'En lang gang med lokaler på begge sider. Hver gang du finder et dyr, kan en ny dør åbne.'; g.area = [12.3, 28.85, -5.95, 1.5]; } }
+    { const g = POIS.find(p => p.n === 'Gangen på 1. sal'); if (g) { g.t = 'Mellemgangen har garderober med jakker og tasker på begge sider. For enden af garderoberne ligger trappen ned til venstre. Hver gang du finder et dyr, kan en ny dør åbne.'; g.area = [12.3, 28.85, -5.95, 1.5]; } }
     const RT = {
       '3.B': 'Små borde og stole, en tavle med tegninger og en reol med bøger. Lyt godt efter. Er der noget, der piber?',
       '4.A': 'Her sidder børnene i grupper ved store borde. På tavlen er der en regnbue.',
