@@ -1891,11 +1891,14 @@ apartment(-140, -60, -132, -114, 5); apartment(-34, 36, -132, -114, 5); apartmen
     for (const z of entrances.filter((_, i) => i % 2 === 0)) bike(59.7, z + 1.7, Math.PI / 2, '#536b73');
   };
   const entrance = z => {
-    box(0.12, 2.4, 1.5, plinth, 61.92, 0, z, { cast: false });
-    box(0.14, 2.17, 1.1, redDoor, 61.8, 0.08, z, { cast: false });
-    westWin('due2', 61.7, 1.55, z, 0.78, 0.7);
-    box(0.07, 0.23, 0.045, M.steel, 61.7, 0.92, z + 0.38, { cast: false });
-    box(0.45, 0.12, 1.8, trim, 61.85, 2.42, z, { cast: false });
+    // Recessed street entrance with a small stone stoop, so the doorway reads with real depth from the school side.
+    box(0.18, 2.5, 1.68, plinth, 61.96, 0, z, { cast: false });
+    box(0.14, 2.17, 1.1, redDoor, 61.78, 0.08, z, { cast: false });
+    westWin('due2', 61.68, 1.55, z, 0.78, 0.7);
+    box(0.07, 0.23, 0.045, M.steel, 61.66, 0.92, z + 0.38, { cast: false });
+    box(0.5, 0.12, 1.9, trim, 61.84, 2.42, z, { cast: false });
+    box(0.75, 0.12, 1.75, M.stone, 61.48, 0.02, z, { cast: false });
+    box(0.48, 0.12, 1.45, M.stone, 61.12, 0.14, z, { cast: false });
   };
   function dueBlock(z0, z1, endBalconies = false) {
     const h = 15.6, cz = (z0 + z1) / 2, depth = z1 - z0;
@@ -1908,11 +1911,15 @@ apartment(-140, -60, -132, -114, 5); apartment(-34, 36, -132, -114, 5); apartmen
     for (let i = 0; i < bays; i++) {
       const z = z0 + step * (i + 0.5), dz = step * 0.32;
       box(1.8, h, 3.6, brick, 61.1, 0, z, { edges: true, col: true });
+      box(0.08, h - 0.6, 0.11, plinth, 62.015, 0.3, z - 1.86, { cast: false });
+      box(0.08, h - 0.6, 0.11, plinth, 62.015, 0.3, z + 1.86, { cast: false });
       box(2, 0.18, 3.85, trim, 61.1, h, z, { cast: false });
       rail(60.12, h + 0.18, z, 1.85, 3.55);
       for (let f = 0; f < 5; f++) {
         const y = 1.7 + f * 3;
         westWin('due4', 60.18, y, z, 3.14);
+        // White sill and a narrow shadow line make the projecting bay read as a separate facade volume.
+        box(0.16, 0.08, 3.34, trim, 60.08, y - 0.88, z, { cast: false });
         addWin('due2', 61.1, y, z - 1.8 - WOFF, Math.PI, 1.1, 1.65, 0.45);
         addWin('due2', 61.1, y, z + 1.8 + WOFF, 0, 1.1, 1.65, 0.45);
         westWin('due3', 62, y, z - dz, 2.7);
