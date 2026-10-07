@@ -28,7 +28,8 @@ Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, h
 - Én HTML-fil med [three.js](https://threejs.org/) (hentes fra jsDelivr). Ingen billeder eller andre filer.
 - Bygningerne er tegnet frit efter fotos af skolen. Hvor husene står, følger en håndtegnet plan af skolen. Placeringer og detaljer er forenklede.
 - Trampolinerne sidder i et bed af blødt gummi. Gå ud på dem, så hopper du af dig selv. Tryk på hop for at komme helt højt op.
-- Kameraet følger altid bag den valgte spillerfigur, så man ser derhen, hvor den går.
+- Kameraet følger altid bag den valgte spillerfigur, så man ser derhen, hvor den går. Kameraet holder afstand til vægge, også når man drejer i et hjørne.
+- Figuren stopper ved vægge og kan glide langs dem eller bakke væk med det samme. Tynde vægge stopper også figuren, når man løber eller tager rulleskøjter på.
 - Et par gange undervejs kommer der en regnbyge i et minut. Så kan pigen slå sin paraply op.
 - Går man lige ind i et af de lave stålrør, svinger pigen sig rundt om røret og går videre.
 - Hvert dyr har sin egen lille handling, når det bliver fundet. Efter velkomsten går hvert fundet dyr tilbage til Filipa; fra rum eller lange afstande hjælper et lille stjernedrys det sikkert hjem.

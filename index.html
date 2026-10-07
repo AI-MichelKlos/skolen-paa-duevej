@@ -3049,7 +3049,8 @@ world.updateMatrixWorld(true);
   for (const o of singles) WING_IN.attach(o);
   world.add(WING_IN);
 }
-const camCols = [...cols.filter(c => c.t === 'b' && c.top > 3), ...camOnly];
+// Include low doors and furniture too; keep references so unlocked doors stay in sync.
+const camCols = [...cols.filter(c => c.t === 'b' && c.top > 1.7), ...camOnly];
 
 // ======================================================================== POIs
 const POIS = [
@@ -3330,19 +3331,33 @@ const TRAMP_Y = 0.3;
 function trampAt(x, z) { for (const t of TRAMPS) if ((x - t.x) ** 2 + (z - t.z) ** 2 < t.r * t.r) return t; return null; }
 const STEP = 0.5, RAD = 0.35, G = 22, BOUNDS = [-57.6, 60.6, -112, 115.3];
 const angDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
-function resolve(p) {
-  for (let it = 0; it < 2; it++) for (const c of cols) {
+function resolve(p, velocity = null) {
+  const stopInto = (nx, nz) => {
+    if (!velocity) return;
+    const inward = velocity.x * nx + velocity.z * nz;
+    if (inward < 0) { velocity.x -= inward * nx; velocity.z -= inward * nz; }
+  };
+  for (let it = 0; it < 4; it++) for (const c of cols) {
     if (c.t === 'c') { if (Math.abs(p.x - c.x) > c.r + RAD || Math.abs(p.z - c.z) > c.r + RAD) continue; }
     else if (p.x < c.x0 - RAD || p.x > c.x1 + RAD || p.z < c.z0 - RAD || p.z > c.z1 + RAD) continue;
     const top = topAt(c, p.x, p.z); if (p.y >= top - STEP || (c.bot !== undefined && p.y + 1.7 < c.bot)) continue;
-    if (c.t === 'c') { const dx = p.x - c.x, dz = p.z - c.z, d = Math.hypot(dx, dz), m = c.r + RAD; if (d < m) { if (d > 1e-6) { p.x = c.x + dx / d * m; p.z = c.z + dz / d * m; } else p.x = c.x + m; } }
+    if (c.t === 'c') { const dx = p.x - c.x, dz = p.z - c.z, d = Math.hypot(dx, dz), m = c.r + RAD; if (d < m) { if (d > 1e-6) { p.x = c.x + dx / d * m; p.z = c.z + dz / d * m; stopInto(dx / d, dz / d); } else { p.x = c.x + m; stopInto(1, 0); } } }
     else {
       const cx = Math.max(c.x0, Math.min(p.x, c.x1)), cz = Math.max(c.z0, Math.min(p.z, c.z1)); const dx = p.x - cx, dz = p.z - cz; const d2 = dx * dx + dz * dz;
       if (d2 < RAD * RAD) {
-        if (d2 > 1e-8) { const d = Math.sqrt(d2); p.x = cx + dx / d * RAD; p.z = cz + dz / d * RAD; }
-        else { const l = p.x - c.x0, r = c.x1 - p.x, b = p.z - c.z0, f = c.z1 - p.z, mn = Math.min(l, r, b, f); if (mn === l) p.x = c.x0 - RAD; else if (mn === r) p.x = c.x1 + RAD; else if (mn === b) p.z = c.z0 - RAD; else p.z = c.z1 + RAD; }
+        if (d2 > 1e-8) { const d = Math.sqrt(d2); p.x = cx + dx / d * RAD; p.z = cz + dz / d * RAD; stopInto(dx / d, dz / d); }
+        else { const l = p.x - c.x0, r = c.x1 - p.x, b = p.z - c.z0, f = c.z1 - p.z, mn = Math.min(l, r, b, f); if (mn === l) { p.x = c.x0 - RAD; stopInto(-1, 0); } else if (mn === r) { p.x = c.x1 + RAD; stopInto(1, 0); } else if (mn === b) { p.z = c.z0 - RAD; stopInto(0, -1); } else { p.z = c.z1 + RAD; stopInto(0, 1); } }
       }
     }
+  }
+}
+function movePlayerHorizontal(dt) {
+  // Small steps cannot skip thin walls, even when running or skating at a low frame rate.
+  const steps = Math.max(1, Math.ceil(Math.hypot(P.vel.x, P.vel.z) * dt / (RAD * 0.45)));
+  const stepDt = dt / steps;
+  for (let i = 0; i < steps; i++) {
+    P.pos.x += P.vel.x * stepDt; P.pos.z += P.vel.z * stepDt;
+    resolve(P.pos, P.vel);
   }
 }
 function updPlayer(dt) {
@@ -3365,11 +3380,11 @@ function updPlayer(dt) {
   const fx = Math.sin(P.face), fz = Math.cos(P.face);
   const acc = (P.onGround ? 12 : 5) * (PM.acc ?? 1);
   P.vel.x += (fx * speed - P.vel.x) * Math.min(1, acc * dt); P.vel.z += (fz * speed - P.vel.z) * Math.min(1, acc * dt);
-  P.pos.x += P.vel.x * dt; P.pos.z += P.vel.z * dt;
+  movePlayerHorizontal(dt);
   if (P.swingCd > 0) P.swingCd -= dt;
   else if (P.onGround && fwd > 0.3 && !paused) { const hit = barHit(); if (hit) { startSwing(hit); return; } }
   if (rideCheck()) { updRide(0); return; }
-  resolve(P.pos); pushFromCyclists(P.pos);
+  pushFromCyclists(P.pos); resolve(P.pos, P.vel);
   P.pos.x = Math.min(BOUNDS[1], Math.max(BOUNDS[0], P.pos.x)); P.pos.z = Math.min(BOUNDS[3], Math.max(BOUNDS[2], P.pos.z));
   const tr = trampAt(P.pos.x, P.pos.z);
   if (jumpReq && tr && !paused) P.boost = true;
@@ -3534,33 +3549,46 @@ function updKickHint() { const h = $('kickHint'); h.hidden = !(BALL.held && star
 
 // ======================================================================== CAMERA (always behind her, looking where she walks)
 const camPos = new THREE.Vector3(), camLook = new THREE.Vector3(), tmpA = new THREE.Vector3(), tmpB = new THREE.Vector3();
+const CAMERA_RADIUS = 0.22;
 function rayHit(a, b) {
   let best = 1; const dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z;
   for (const c of camCols) {
     let t0 = 0, t1 = best, ok = true;
     const slab = (o, d, mn, mx) => { if (Math.abs(d) < 1e-9) { if (o < mn || o > mx) ok = false; return; } let ta = (mn - o) / d, tb = (mx - o) / d; if (ta > tb) { const t = ta; ta = tb; tb = t; } if (ta > t0) t0 = ta; if (tb < t1) t1 = tb; if (t0 > t1) ok = false; };
-    slab(a.x, dx, c.x0 - 0.3, c.x1 + 0.3); if (ok) slab(a.z, dz, c.z0 - 0.3, c.z1 + 0.3); if (ok) slab(a.y, dy, c.bot ?? -1, c.top);
-    if (ok && t0 > 0 && t0 < best) best = t0;
+    if (c.top <= (c.bot ?? -1)) continue; // an unlocked door's disabled collider
+    slab(a.x, dx, c.x0 - CAMERA_RADIUS, c.x1 + CAMERA_RADIUS); if (ok) slab(a.z, dz, c.z0 - CAMERA_RADIUS, c.z1 + CAMERA_RADIUS); if (ok) slab(a.y, dy, (c.bot ?? -1) - CAMERA_RADIUS, c.top + CAMERA_RADIUS);
+    if (ok && t1 >= 0 && t0 < best) best = Math.max(0, t0);
   }
   return best;
 }
 let startBlend = -1;
 const orbitC = new THREE.Vector3(1, 0, -4);
 let camIn = 0;
+const cameraEye = new THREE.Vector3(), cameraDelta = new THREE.Vector3();
+function keepCameraClear(anchor, position) {
+  const hit = rayHit(anchor, position);
+  if (hit >= 1) return false;
+  cameraDelta.subVectors(position, anchor);
+  const distance = cameraDelta.length();
+  position.copy(anchor).addScaledVector(cameraDelta, Math.max(0, hit - 0.03 / Math.max(distance, 0.001)));
+  return true;
+}
 function camFollow(dt, out, look) {
   if (drag.size === 0 && clockT - lastDragEnd > 0.8) {
     const moving = Math.hypot(P.vel.x, P.vel.z) > 0.4 || Math.abs(turnIn) > 0.05;
     cam.yaw += angDiff(P.face + Math.PI, cam.yaw) * Math.min(1, dt * (moving ? 6 : 1.6));
   }
   const ahead = Math.min(1.6, Math.hypot(P.vel.x, P.vel.z) * 0.25);
-  look.set(P.pos.x + Math.sin(P.face) * ahead, P.pos.y + 1.4, P.pos.z + Math.cos(P.face) * ahead);
+  cameraEye.set(P.pos.x, P.pos.y + 1.4, P.pos.z);
+  look.set(P.pos.x + Math.sin(P.face) * ahead, cameraEye.y, P.pos.z + Math.cos(P.face) * ahead);
+  // Looking ahead must stop on this side of a wall, rather than aiming through it.
+  keepCameraClear(cameraEye, look);
   camIn += ((inWing(P.pos.x, P.pos.z, 0) ? 1 : 0) - camIn) * Math.min(1, dt * 3);
   const pit = cam.pitch * (1 - 0.55 * camIn), dst = Math.min(cam.dist, 7.5 - 4.3 * camIn);
   const cp = Math.cos(pit);
   tmpA.set(Math.sin(cam.yaw) * cp * dst, Math.sin(pit) * dst, Math.cos(cam.yaw) * cp * dst);
   tmpB.copy(look).add(tmpA);
-  const t = rayHit(look, tmpB);
-  if (t < 1) tmpB.copy(look).addScaledVector(tmpA, Math.max(0.12, t - 0.06));
+  keepCameraClear(look, tmpB);
   tmpB.y = Math.max(tmpB.y, 0.4);
   out.copy(tmpB);
 }
@@ -3573,11 +3601,15 @@ function updCamera(dt, t) {
   camFollow(dt, followPos, followLook);
   if (!camInit) { camPos.copy(followPos); camLook.copy(followLook); camInit = true; }
   camPos.lerp(followPos, 1 - Math.exp(-dt * 12)); camLook.lerp(followLook, 1 - Math.exp(-dt * 14));
+  // Smoothing can cross a wall at a corner or doorway. Pull in immediately; ease out normally.
+  keepCameraClear(cameraEye, camLook);
+  if (keepCameraClear(camLook, camPos)) camLook.copy(followLook);
   if (startBlend >= 0 && startBlend < 1) {
     startBlend = Math.min(1, startBlend + dt / 2.2); const e = startBlend * startBlend * (3 - 2 * startBlend);
     camera.position.lerpVectors(orbitPos, camPos, e); tmpA.lerpVectors(orbitC, camLook, e); camera.lookAt(tmpA);
   } else { camera.position.copy(camPos); camera.lookAt(camLook); }
-  kid.root.visible = camera.position.distanceTo(camLook) > 1.05;
+  if (startBlend >= 1) keepCameraClear(camLook, camera.position);
+  kid.root.visible = camera.position.distanceTo(camLook) > 0.65;
 }
 
 // ======================================================================== ANIMAL LOGIC

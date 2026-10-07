@@ -17,12 +17,13 @@ async function main(){
   for(const mobile of [false,true]){
     const context=await browser.newContext(mobile?{viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:1}:{viewport:{width:1280,height:900}});
     const page=await context.newPage();
+    if(process.env.DUEVEJ_THREE_PATH) await context.route('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js', route => route.fulfill({contentType:'application/javascript',body:fs.readFileSync(process.env.DUEVEJ_THREE_PATH,'utf8')}));
     await page.addInitScript(()=>{window.requestAnimationFrame=()=>0;});
-    const errors=[];page.on('pageerror',e=>errors.push(e.message));
+    const errors=[];page.on('pageerror',e=>{errors.push(e.message);console.error('Browser error:',e.message)});
     await page.goto('http://127.0.0.1:8765');
     try { await page.waitForFunction(()=>window.__gameReady,{},{timeout:45000}); }
     catch(e) { console.error('Bootstrap errors:', errors, await page.locator('#loadErr').textContent()); throw e; }
-    await page.screenshot({path:path.join(reportDir, `${mobile?'mobile':'desktop'}-start.png`)});
+    if(!process.env.DUEVEJ_SKIP_SCREENSHOTS) await page.screenshot({path:path.join(reportDir, `${mobile?'mobile':'desktop'}-start.png`)});
     for(const character of ['girl','kat','mus','hund']){
       const button=page.locator(`[data-character="${character}"]`);
       if(mobile)await button.tap();else await button.click();
@@ -41,7 +42,7 @@ async function main(){
       },character);
       assert.equal(check.character,character);assert(check.rooms.every(Boolean));assert(check.move&&check.jump&&check.independent);
       results.push(`${mobile?'mobile':'desktop'} ${character}: choice, 10 rooms, movement, jump, separate identity PASS`);
-      if(character!=='girl'){await page.evaluate(()=>window.__test.render());await page.screenshot({path:path.join(reportDir, `${mobile?'mobile':'desktop'}-${character}.png`),timeout:90000});}
+      if(character!=='girl'&&!process.env.DUEVEJ_SKIP_SCREENSHOTS){await page.evaluate(()=>window.__test.render());await page.screenshot({path:path.join(reportDir, `${mobile?'mobile':'desktop'}-${character}.png`),timeout:90000});}
       await page.locator('#bHelp').click();
     }
     await page.locator('#goBtn').click();
@@ -81,8 +82,8 @@ async function main(){
     await page.locator('#bHelp').click();
     await page.evaluate(()=>{document.getElementById('newGameBtn').hidden=false;});
     page.once('dialog',dialog=>dialog.accept());
-    await page.locator('#newGameBtn').click();
-    await page.waitForFunction(()=>window.__gameReady);
+    await Promise.all([page.waitForEvent('load'),page.locator('#newGameBtn').click()]);
+    await page.waitForFunction(()=>window.__gameReady,{},{timeout:45000});
     assert.equal(await page.evaluate(()=>window.__test.found.size),0);
     assert.equal(await page.evaluate(()=>window.__test.FILIPA_ANIMALS.length),0);
     assert.equal(await page.evaluate(()=>window.__test.character),'hund');
