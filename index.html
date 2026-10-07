@@ -166,7 +166,7 @@ body.touch #poi{bottom:calc(118px + env(safe-area-inset-bottom,0px))}
   <div class="card sticker">
     <div class="eyebrow">Dyrejagten er slut</div>
     <h2>Alle 12 dyr er fundet!</h2>
-    <p class="lead">Godt gået! Du har fundet alle dyrene på Skolen på Duevej. Gå hen til Filipa ved flagstangen. Hun har en guldstjerne til dig.</p>
+    <p class="lead">Godt gået! Alle dyrene er hos Filipa, og juletræet lyser. Du har fået en guldstjerne! Du kan lege videre og finde de fem julestjerner, hvis du har lyst.</p>
     <button class="go" id="finOk" type="button">Gå videre rundt</button>
     <button class="go alt" id="finAgain" type="button">Gem dyrene igen</button>
   </div>
@@ -3224,6 +3224,7 @@ goBtn.addEventListener('click', () => {
 });
 newGameBtn.addEventListener('click', () => {
   if (!confirm('Starte et nyt spil? De dyr, du har fundet, nulstilles.')) return;
+  if (FX.fun) FX.fun.reset();
   const st = load();
   st.found = [];
   try {
@@ -3558,17 +3559,20 @@ const ANIM = {
   skildpadde: (a, t) => { a.head.position.z = 0.24 + (Math.sin(t * 0.6) * 0.5 + 0.5) * 0.06; walkLegs(a, t, 0.45); },
 };
 function discover(a) {
+  if (found.has(a.id)) return;
   found.add(a.id); save(); updCounter(); renderChips(); for (const h of HOOKS.found) h(a);
   a.happy = HAPPY; a.state = 'idle'; a.t = 2;
   const snd = SOUNDS[a.k]; if (snd) snd(); sparkleSound();
   popLabel(a.def.n + '!', a.g.position, a.def.s); burst(a.g.position);
-  toast(nFound() === 12 ? `Du fandt ${a.def.d}! Nu har du fundet alle 12 dyr` : `Du fandt ${a.def.d} ved ${nearestName(a.home[0], a.home[1])} · ${nFound()} af 12`);
-  if (nFound() === 12) setTimeout(() => { fanfare(); for (let i = 0; i < Math.min(80, LEAFN); i++) respawnLeaf(fl[i], P.pos.x, P.pos.z, true); setTimeout(() => { paused = true; keys.clear(); $('finale').hidden = false; $('finOk').focus(); }, 1600); }, 1200);
+  toast(`Du fandt ${a.def.d}! ${FX.fun?.greetings[a.k] || ''}`);
+  // The finale now happens together with all the animals at Filipa.
 }
 function updAnimals(dt, t) {
+  if (started && paused) return;
   for (const a of animals) {
     const gp = a.g.position;
     if (started && !paused && !found.has(a.id) && Math.hypot(P.pos.x - gp.x, P.pos.z - gp.z) < 3.3 && Math.abs(P.pos.y - gp.y) < 2.4) discover(a);
+    if (FX.fun && FX.fun.updateIntro(a, dt, t)) continue;
     if (a.follow || a.gather) continue;
     const far = Math.hypot(camera.position.x - gp.x, camera.position.z - gp.z) > 95; a.g.visible = !far || a.happy > 0;
     if (a.happy <= 0 && far) continue;
@@ -3737,8 +3741,12 @@ function filipaAnimalSpot(i) {
 function sendToFilipa(a) {
   const pi = PARADE.indexOf(a); if (pi >= 0) PARADE.splice(pi, 1);
   if (!FILIPA_ANIMALS.includes(a)) FILIPA_ANIMALS.push(a);
-  a.follow = false; a.gather = true; a.state = 'walk'; a.happy = 0; a.hopK = 0;
+  a.follow = false; a.gather = true; a.state = 'walk'; a.happy = 0; a.hopK = 0; a.arrived = false; a.returnTime = 0;
   const [x, z] = filipaAnimalSpot(FILIPA_ANIMALS.indexOf(a)); a.filipaTarget = [x, z];
+  const from = a.g.position.clone(); from.y += 0.4;
+  const to = new THREE.Vector3(x, groundAt(x,z,1.2)+0.4, z);
+  a.returnShortcut = a.gy > 1.2 || inWing(from.x,from.z,0) || rayHit(from,to) < 0.98;
+  a.returnOrigin = a.g.position.clone();
 }
 function joinParade(a) {
   if (a.follow) return;
@@ -3748,10 +3756,11 @@ function joinParade(a) {
   a.gather = false; a.follow = true; a.state = 'idle'; a.happy = 0; a.idleHop = rr(1, 3); a.hopK = 0; PARADE.push(a);
 }
 function leaveParade() {
-  for (const a of [...PARADE, ...FILIPA_ANIMALS]) {
+  for (const a of animals.filter(a => a.follow || a.gather || found.has(a.id))) {
     a.follow = false; a.gather = false; a.state = 'idle'; a.happy = 0; a.gy = a.baseY; a.g.position.set(a.home[0], a.baseY, a.home[1]);
   }
-  PARADE.length = 0; FILIPA_ANIMALS.length = 0;
+  PARADE.length = 0; FILIPA_ANIMALS.length = 0; TRAIL.length = 0;
+  if (FX.fun) FX.fun.reset();
 }
 function trailPoint(dist, out) {
   let acc = 0, px = P.pos.x, py = TRAIL.length ? TRAIL[0].y : P.pos.y, pz = P.pos.z;
@@ -3763,7 +3772,7 @@ function trailPoint(dist, out) {
   out.x = px; out.y = py; out.z = pz;
 }
 function updParade(dt, t) {
-  if (!started) return;
+  if (!started || paused) return;
   // her footsteps on the ground (not her jumps)
   const head = TRAIL[0], gy = (P.onGround && !P.swing) ? P.pos.y : (head ? head.y : P.pos.y);
   if (!head || Math.hypot(P.pos.x - head.x, P.pos.z - head.z) > 0.25) { TRAIL.unshift({ x: P.pos.x, y: gy, z: P.pos.z }); if (TRAIL.length > 300) TRAIL.pop(); }
@@ -3798,6 +3807,12 @@ function updParade(dt, t) {
     const [tx, tz] = a.filipaTarget || filipaAnimalSpot(i);
     a.filipaTarget = [tx, tz];
     const ty = groundAt(tx, tz, 1.2);
+    if(a.returnShortcut && !a.arrived) {
+      const u = Math.min(1,(a.returnTime || 0)/1.2);
+      if(u < 1) { gp.copy(a.returnOrigin); if(!reduceMotion)gp.y+=Math.sin(u*Math.PI)*0.6; a.state='idle'; ANIM[a.k](a,t,dt); }
+      else {gp.set(tx,ty,tz);a.gy=ty;a.returnShortcut=false;burst(gp);}
+      return;
+    }
     const dx = tx - gp.x, dz = tz - gp.z, l = Math.hypot(dx, dz);
     if (l > 0.12) {
       const speed = Math.min(5.2, 2.4 + l * 0.18), st = Math.min(l, speed * dt);
@@ -5362,7 +5377,7 @@ function updActions() {
     flush(FB);
   }
   HOOKS.found.push(a => { if (a.id < 12 && all12()) { startShow(true); SHOW.conf = 8; } });
-  $('finOk').addEventListener('click', () => { if (!all12()) return; startShow(true); toast('Hurra! Gå hen til Filipa ved flagstangen. Hun har en guldstjerne til dig.'); });
+  $('finOk').addEventListener('click', () => { if (!all12()) return; startShow(true); toast('Hurra! Nu kan du lege videre og finde julestjerner.'); });
   const fwOffer = { id: 'ude-fw', label: 'Fyrværkeri', prio: 1, run: () => startShow(false) };
 
   // ======================================================== 4. the school bell (every 4 minutes of play)
@@ -6121,7 +6136,7 @@ function updActions() {
   // "Vis vej" leads to Filipa when all the animals are found and the gold star is waiting
   { const base = showWay;
     showWay = function () {
-      if (started && !paused && allFound() && !ST.awarded) {
+      if (started && !paused && allFound() && (!ST.awarded || (FX.fun && !FX.fun.partyDone))) {
         const fake = { id: 999, g: { position: new THREE.Vector3(FXX, 0, FZ) }, def: { d: 'Filipa' } };
         animals.push(fake); try { base(); } finally { const i = animals.indexOf(fake); if (i >= 0) animals.splice(i, 1); }
         return;
@@ -6184,8 +6199,190 @@ function updActions() {
     L.rotation.z = -0.08 - Math.sin(t * 1.3 + 1) * 0.03;
   });
 
-  FX.filipa = { root, ST, F, giveStar, hello, pos: [FXX, FZ] };
+  FX.filipa = { root, ST, F, arms, body, giveStar, hello, pos: [FXX, FZ] };
 }
+// ---- feature: leg og julefest (optional discoveries; one animal follows)
+{
+  const FUN = FX.fun = { stars: new Set(), intros: new Map(), arrivals: [], party: false, partyTime: 0, partyDone: false };
+  const KEY = 'duevej3d-julestjerner';
+  try { const s = JSON.parse(localStorage.getItem(KEY) || '[]'); if (Array.isArray(s)) s.forEach(i => { if (Number.isInteger(i) && i >= 0 && i < 5) FUN.stars.add(i); }); } catch (_) {}
+  const saveStars = () => { try { localStorage.setItem(KEY, JSON.stringify([...FUN.stars])); } catch (_) {} };
+  const gold = toon('#ffcd45', { emissive: '#c78116', emissiveIntensity: 0.35 });
+  const red = toon('#dd4940'), cream = toon('#fff8e8'), wood = toon('#b88958'), green = toon('#348359');
+  const starShape = new THREE.Shape();
+  for (let i = 0; i < 10; i++) { const a = Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 0.23 : 0.5; i ? starShape.lineTo(Math.cos(a) * r, Math.sin(a) * r) : starShape.moveTo(Math.cos(a) * r, Math.sin(a) * r); }
+  starShape.closePath();
+  const starGeo = new THREE.ExtrudeGeometry(starShape, { depth: 0.1, bevelEnabled: false }); starGeo.center();
+  const mkStar = parent => pt(parent, starGeo, gold, 0, 0, 0, { ol: true });
+  const css = document.createElement('style');
+  css.textContent = '#funProgress{position:fixed;left:14px;top:calc(76px + env(safe-area-inset-top,0px));padding:5px 9px;font:600 11px var(--body);pointer-events:none}#funProgress span{color:#a26710}#funProgress b{font-weight:600}@media(max-width:430px){#counter{padding:5px 7px;gap:5px}#counter svg{width:25px;height:25px}#cnt{font-size:18px}#starBadge svg{width:17px;height:17px}#starBadge b{font-size:13px}#funProgress{top:calc(65px + env(safe-area-inset-top,0px));font-size:10px}#toast{top:30%}}';
+  css.textContent += '#findBtn{top:calc(108px + env(safe-area-inset-top,0px))}@media(max-width:430px){#findBtn{top:calc(100px + env(safe-area-inset-top,0px))}#starBadge svg:nth-of-type(n+2){display:none}#actBtn{bottom:calc(230px + env(safe-area-inset-bottom,0px))}}@media(max-height:500px){#poi{display:none}#actBtn{bottom:calc(110px + env(safe-area-inset-bottom,0px))}}';
+  document.head.appendChild(css);
+  const progress = document.createElement('div'); progress.id = 'funProgress'; progress.className = 'sticker'; $('hud').appendChild(progress);
+  let lastProgress = '';
+  function renderProgress() {
+    const n = animals.filter(a => a.id < 12 && found.has(a.id) && a.arrived).length;
+    const text = `Hos Filipa: ${n}/12 · ★ ${FUN.stars.size}/5`;
+    if (text !== lastProgress) { progress.textContent = text; lastProgress = text; }
+  }
+
+  // A Christmas tree with five places for the optional stars, beside Filipa.
+  const tree = grp(dyn, 8.8, groundAt(8.8, -25.8, 0.5), -25.8);
+  pt(tree, cyl(0.15, 0.19, 0.8), wood, 0, 0.4, 0);
+  for (let i = 0; i < 3; i++) pt(tree, cone(1.15 - i * 0.25, 1.5), green, 0, 1.1 + i * 0.7, 0, { ol: true });
+  const treeTop = mkStar(tree); treeTop.position.set(0, 3.4, 0); treeTop.scale.setScalar(0.7);
+  const ornaments = [], bulbs = [];
+  for (let i = 0; i < 5; i++) {
+    const o = mkStar(tree); o.position.set((i % 2 ? -1 : 1) * (0.35 + i * 0.08), 2.8 - i * 0.35, 0.55); o.scale.setScalar(0.38); o.visible = FUN.stars.has(i); ornaments.push(o);
+  }
+  const bulbGeo = sph(0.085, 8, 6), bulbMats = ['#ffda66', '#ff8b91', '#9edcff'].map(color => new THREE.MeshBasicMaterial({ color }));
+  for (let i = 0; i < 18; i++) { const y = 0.85 + i * 0.12, r = 1.06 - (y - 0.85) * 0.3; const b = pt(tree, bulbGeo, bulbMats[i % 3], Math.sin(i * 2.4) * r, y, Math.cos(i * 2.4) * r, { cast: false }); b.visible = false; bulbs.push(b); }
+
+  const pickups = [[26.9,0.12,2.3], [14.8,3.6,-3.5], [18.8,3.6,-3.5], [26.3,3.6,-3.3], [19,0.12,-14.3]].map(([x,y,z], id) => {
+    const root = grp(dyn,x,y,z), star = mkStar(root); star.position.y = 1.05; root.visible = !FUN.stars.has(id);
+    return { id, root, star, x, y, z };
+  });
+  function collect(id) {
+    if (FUN.stars.has(id)) return;
+    FUN.stars.add(id); pickups[id].root.visible = false; ornaments[id].visible = true; saveStars(); renderProgress(); sparkleSound(); burst(pickups[id].root.position);
+    toast(FUN.stars.size === 5 ? 'Alle fem julestjerner! Se dem på træet hos Filipa.' : `En julestjerne! ${FUN.stars.size} af 5. Den hænger på træet hos Filipa.`);
+  }
+
+  // Every animal has a short, distinct greeting before joining the walk.
+  const greetings = { due:'Duen flyver en lille runde!', kat:'Katten gemmer sig i en kasse. Hov, kassen går!', and:'Anden vrikker og siger rap!', egern:'Egernet viser sin agern frem!', hund:'Hunden har fundet en nissehue!', hoene:'Hønen hakker efter et lille frø!', pindsvin:'Pindsvinet putter næsen og kigger frem!', froe:'Frøen hopper tre høje hop!', kanin:'Kaninen hopper og vipper med ørerne!', ugle:'Uglen kigger til begge sider og bukker!', raev:'Ræven snurrer rundt med sin store hale!', skildpadde:'Skildpadden strækker hals og vinker!', mus:'Musen danser en lille dans!' };
+  const catBox = grp(dyn,0,0,0); catBox.visible = false;
+  for (const [x,z,w,d] of [[-0.47,0,0.08,1],[0.47,0,0.08,1],[0,-0.47,1,0.08],[0,0.47,1,0.08]]) pt(catBox,new THREE.BoxGeometry(w,0.55,d),wood,x,0.27,z,{ol:true});
+  const dog = animals.find(a => a.k === 'hund'), dogHat = grp(dog.head,0,0.17,0); dogHat.visible = false;
+  pt(dogHat,cone(0.19,0.43),red,0,0.2,0,{ol:true}); pt(dogHat,cyl(0.2,0.2,0.07),cream,0,0,0); pt(dogHat,sph(0.065),cream,0,0.43,0);
+  HOOKS.found.push(a => {
+    for (const old of [...PARADE]) sendToFilipa(old);
+    // Rapid discoveries also retire the earlier animal still doing its greeting.
+    for (const old of [...FUN.intros.keys()]) { FUN.intros.delete(old); old.g.position.y = old.gy; old.g.rotation.x = old.g.rotation.z = 0; if(old.legs)old.legs.forEach(l=>l.rotation.z=0); old.g.scale.setScalar(old.def.s || 1); sendToFilipa(old); }
+    FUN.intros.set(a, { t: 0, origin: a.g.position.clone(), face: a.g.rotation.y });
+    a.arrived = false;
+  });
+  FUN.greetings = greetings;
+  FUN.updateIntro = (a,dt,t) => {
+    const intro = FUN.intros.get(a); if (!intro) return false;
+    if (paused) return true;
+    intro.t += dt; const u = Math.min(1, intro.t / 2.6), phase = Math.sin(u * Math.PI), gp = a.g.position;
+    gp.copy(intro.origin); a.state = 'idle'; a.happy = 1; ANIM[a.k](a,t,dt);
+    const motion = reduceMotion ? 0.15 : 1;
+    switch(a.k) {
+      case 'due': gp.x += Math.sin(u * 6.28) * 0.75 * motion; gp.z += (Math.cos(u * 6.28)-1)*0.6*motion; gp.y += phase*1.4*motion; a.g.rotation.y = intro.face + u*6.28*motion; flap(a,t); break;
+      case 'kat': catBox.visible = true; catBox.position.copy(gp); catBox.position.x += Math.sin(u*12)*0.25*motion; catBox.rotation.z = Math.sin(u*18)*0.08*motion; gp.x = catBox.position.x; gp.y -= phase*0.27*motion; break;
+      case 'and': a.g.rotation.z = Math.sin(u*22)*0.2*phase*motion; gp.y += Math.abs(Math.sin(u*12))*0.13*motion; break;
+      case 'egern': a.acorn.position.y = 0.2 + phase*0.22*motion; a.head.rotation.x = -phase*0.3; break;
+      case 'hund': dogHat.visible = true; a.head.rotation.x = Math.sin(u*14)*0.25*phase*motion; gp.z += phase*0.35*motion; break;
+      case 'hoene': a.head.rotation.x = Math.max(0,Math.sin(u*20))*0.8; break;
+      case 'pindsvin': a.head.position.z = 0.17 - phase*0.12; a.g.rotation.z = Math.sin(u*10)*0.12*phase*motion; break;
+      case 'froe': gp.y += Math.abs(Math.sin(u*Math.PI*3))*0.95*motion; break;
+      case 'kanin': gp.y += Math.abs(Math.sin(u*Math.PI*4))*0.5*motion; a.ears.forEach((e,i)=>e.rotation.x = Math.sin(u*20+i)*0.35*motion); break;
+      case 'ugle': a.head.rotation.y = Math.sin(u*8)*0.85; a.g.rotation.x = phase*0.15*motion; break;
+      case 'raev': a.g.rotation.y = intro.face + u*6.28*motion; break;
+      case 'skildpadde': a.head.position.z = 0.24 + phase*0.15; if(a.legs[0]) a.legs[0].rotation.z = phase*0.6*motion; break;
+      default: gp.y += Math.abs(Math.sin(u*12))*0.2*motion;
+    }
+    if (u === 1) { FUN.intros.delete(a); gp.copy(intro.origin); a.g.rotation.x = a.g.rotation.z = 0; if(a.legs)a.legs.forEach(l=>l.rotation.z=0); a.happy = 0; catBox.visible = false; if (nFound() === 12) sendToFilipa(a); else joinParade(a); }
+    return true;
+  };
+
+  // Optional objects use the familiar large action button, also on phones.
+  const surprises = [];
+  function surprise(id,label,x,y,z,run,root) { const item = {id,label,x,y,z,run,root,t:0}; surprises.push(item); return item; }
+  const bell = FX.ude.bell;
+  surprise('fun-bell','Ring med klokken',bell.x,0.12,bell.z,()=>FX.ude.ringBell(),FX.ude.bellG);
+  const lamp = grp(dyn,25.0,0.12,3.8);
+  pt(lamp,new THREE.BoxGeometry(0.42,0.7,0.22),wood,0,0.35,0,{ol:true});
+  const lampM = new THREE.MeshBasicMaterial({color:'#756f63'}); pt(lamp,sph(0.2),lampM,0,0.85,0);
+  let lampOn = false;
+  surprise('fun-light','Tænd det lille lys',25.0,0.12,3.8,()=>{ lampOn=!lampOn; lampM.color.set(lampOn?'#fff3a1':'#756f63'); toast(lampOn?'Nu lyser det hyggeligt!':'Godnat, lille lys!'); tone(700,1000,0,0.12,0.04,'triangle'); },lamp);
+  const mouse = grp(dyn,25.4,3.6,-3.8); mouse.visible=false;
+  pt(mouse,sph(0.15),toon('#9a9cab'),0,0.17,0,{s:[1,0.8,1.7],ol:true});
+  for(const x of [-0.1,0.1]) pt(mouse,sph(0.09),cream,x,0.3,0.16); eyes(mouse,0.065,0.19,0.22,0.023);
+  const mouseItem = surprise('fun-mouse','Se den fjollede mus',25.4,3.6,-3.4,()=>{mouseItem.t=3;mouse.visible=true;toast('Pip! Musen løber hen efter en bog!');tone(1200,1800,0,0.15,0.04,'sine');},mouse);
+  const doorRoot = grp(dyn,16.75,3.6,-4.5);
+  pt(doorRoot,new THREE.BoxGeometry(0.09,1.1,0.75),wood,0,0.55,0,{ol:true});
+  const peek = grp(dyn,16.7,3.6,-4.5); peek.visible=false;
+  pt(peek,sph(0.23),red,0,0.55,0,{ol:true}); eyes(peek,0.08,0.6,0.2,0.025); smileG(peek,0.09,0.48,0.22);
+  const doorItem = surprise('fun-door','Kig i det lille skab',17.3,3.6,-4.5,()=>{doorItem.t=3;toast('Bøh! En glad nisse i skabet!');sparkleSound();},doorRoot);
+  const snowman = grp(dyn,19.7,groundAt(19.7,-24,0.5),-24);
+  pt(snowman,sph(0.48),cream,0,0.48,0,{ol:true}); pt(snowman,sph(0.33),cream,0,1.04,0,{ol:true}); eyes(snowman,0.1,1.12,0.3,0.035);
+  pt(snowman,cone(0.065,0.28),red,0,1.02,0.37,{r:[Math.PI/2,0,0]});
+  const hat = grp(snowman,0,1.35,0); pt(hat,cyl(0.26,0.26,0.09),M.dark,0,0,0); pt(hat,cyl(0.18,0.18,0.35),M.dark,0,0.2,0);
+  const snowItem = surprise('fun-hat','Dril snemandens hat',19.7,snowman.position.y,-24,()=>{snowItem.t=3;toast('Hov! Min hat!');tone(480,210,0,0.25,0.05,'triangle');},snowman);
+
+  // Lightweight ambient movement: three birds and six chimney puffs.
+  const birds=[];
+  for(let i=0;i<3;i++){const b=buildDove(); b.g.scale.setScalar(0.75); dyn.add(b.g); birds.push(b);}
+  const smoke = [], smokeM = new THREE.MeshBasicMaterial({color:'#edf2f3',transparent:true,opacity:0.28,depthWrite:false});
+  const smokeGeo = sph(0.38,8,6);
+  for(let i=0;i<6;i++) smoke.push(pt(dyn,smokeGeo,smokeM,0,0,0,{cast:false}));
+
+  function reset() {
+    FUN.stars.clear(); saveStars(); pickups.forEach(p=>p.root.visible=true); ornaments.forEach(o=>o.visible=false);
+    FUN.intros.clear(); FUN.arrivals.length=0; FUN.party=false; FUN.partyDone=false; FUN.partyTime=0; catBox.visible=false; dogHat.visible=false; bulbs.forEach(b=>b.visible=false);
+    animals.forEach(a=>{a.arrived=false; a.returnTime=0; a.g.rotation.x=a.g.rotation.z=0;});
+    renderProgress();
+  }
+  FUN.reset=reset;
+  let greetCd=0, readyHint=false;
+  function startParty() {
+    if(FUN.partyDone) return;
+    FUN.party=true; FUN.partyDone=true; FUN.partyTime=0;
+    P.face=Math.atan2(13-P.pos.x,-23-P.pos.z); cam.yaw=P.face+Math.PI;
+    bulbs.forEach(b=>b.visible=true); FX.ude.startShow(true); fanfare(); toast('Du fandt alle dyrene! Nu holder vi julefest!');
+    if(!FX.filipa.ST.awarded) FX.filipa.giveStar();
+  }
+  FUN.startParty=startParty;
+  // One small point cloud adds celebration snow without changing the chosen season.
+  const partySnowPos = new Float32Array((isTouch ? 70 : 120) * 3);
+  for(let i=0;i<partySnowPos.length;i+=3) { partySnowPos[i]=7+rand()*16; partySnowPos[i+1]=1+rand()*10; partySnowPos[i+2]=-31+rand()*17; }
+  const partySnowGeo = new THREE.BufferGeometry(); partySnowGeo.setAttribute('position',new THREE.BufferAttribute(partySnowPos,3));
+  const partySnow = new THREE.Points(partySnowGeo,new THREE.PointsMaterial({color:'#ffffff',size:0.12,transparent:true,opacity:0.8,depthWrite:false})); partySnow.visible=false;dyn.add(partySnow);
+  HOOKS.frame.push((dt,t)=>{
+    const active=started&&!paused, near=Math.hypot(P.pos.x-15,P.pos.z+21.5)<10 && P.pos.y<1.5;
+    if(active) {
+      for(const p of pickups) { if(!FUN.stars.has(p.id)) { if(!reduceMotion) { p.star.rotation.y=t*1.2; p.star.position.y=1.05+Math.sin(t*2+p.id)*0.12; } if(Math.hypot(P.pos.x-p.x,P.pos.z-p.z)<1.25 && Math.abs(P.pos.y-p.y)<0.65) collect(p.id); } }
+      for(const s of surprises) { s.t=Math.max(0,s.t-dt); if(s.t===0 && Math.hypot(P.pos.x-s.x,P.pos.z-s.z)<1.65 && Math.abs(P.pos.y-s.y)<0.7) offerAction({id:s.id,label:s.id==='fun-light'&&lampOn?'Sluk det lille lys':s.label,prio:1.3,run:s.run}); }
+      greetCd=Math.max(0,greetCd-dt);
+      for(const a of FILIPA_ANIMALS) {
+        if(a.arrived) continue;
+        a.returnTime=(a.returnTime||0)+dt;
+        // A sparkle shortcut takes animals safely out of rooms and across buildings.
+        if(a.returnTime>7 && a.filipaTarget) { a.g.position.set(a.filipaTarget[0],groundAt(...a.filipaTarget,1.2),a.filipaTarget[1]); a.gy=a.g.position.y; burst(a.g.position); }
+        if(a.filipaTarget && Math.hypot(a.g.position.x-a.filipaTarget[0],a.g.position.z-a.filipaTarget[1])<0.15) { a.arrived=true; FUN.arrivals.push(a); FX.filipa.F.wave=2.3; burst(a.g.position); }
+      }
+      if(near && greetCd===0 && FUN.arrivals.length && nFound()<12) { const a=FUN.arrivals.shift(); toast(`Hej, ${a.def.d}! ${12-nFound()} dyr gemmer sig endnu.`); greetCd=4.5; }
+      const allHome = nFound()===12 && animals.filter(a=>a.id<12).every(a=>a.arrived);
+      if(nFound()===12 && !readyHint && FUN.intros.size===0) { readyHint=true; toast('Alle dyr er fundet! Gå hen til Filipa og juletræet. Tryk på Vis vej.'); }
+      if(allHome && near && !FUN.partyDone) startParty();
+      if(FUN.party) {
+        FUN.partyTime+=dt; FX.filipa.F.wave=1;
+        FILIPA_ANIMALS.forEach((a,i)=>{ if(!reduceMotion) {a.g.position.y=a.gy+Math.abs(Math.sin(t*5+i))*0.22; a.g.rotation.y+=Math.sin(t*3+i)*dt;} });
+        if(FX.filipa.F.give<0) FX.filipa.arms.forEach((arm,i)=>{arm.rotation.x=-1.1;arm.rotation.z=(i?1:-1)*(0.55+Math.sin(t*9)*0.2);});
+        if(FUN.partyTime>8) { FUN.party=false; paused=true; keys.clear(); $('finale').hidden=false; $('finOk').focus(); }
+      }
+      if(nFound()<12) readyHint=false;
+    }
+    partySnow.visible=FUN.partyDone && near && outdoorForParty();
+    if(active && partySnow.visible && !reduceMotion) { for(let i=0;i<partySnowPos.length;i+=3) { partySnowPos[i+1]-=dt*(0.55+(i%7)*0.08); if(partySnowPos[i+1]<0.2)partySnowPos[i+1]=10; } partySnowGeo.attributes.position.needsUpdate=true; }
+    catBox.visible=FUN.intros.has(animals.find(a=>a.k==='kat'));
+    if(active) {
+      mouse.visible=mouseItem.t>0; if(mouse.visible) {mouse.position.x=25.4+Math.sin((3-mouseItem.t)*2)*0.9;mouse.position.z=-3.8+Math.sin((3-mouseItem.t)*3)*0.25;}
+      doorRoot.rotation.y=doorItem.t>0?-1.2:0; peek.visible=doorItem.t>0;
+      const h=snowItem.t>0?Math.sin((3-snowItem.t)/3*Math.PI):0; hat.position.set(h*0.6,1.35+h*0.7,0);hat.rotation.z=h*0.8;
+    }
+    const outdoor=!inWing(P.pos.x,P.pos.z,0.2);
+    birds.forEach((b,i)=>{b.g.visible=outdoor&&!reduceMotion; b.g.position.set(16+Math.cos(t*0.12+i*2)*13,11+i+Math.sin(t*0.7+i)*0.4,-22+Math.sin(t*0.12+i*2)*11);b.g.rotation.y=-t*0.12-i*2;b.happy=1;flap(b,t,9);});
+    smoke.forEach((p,i)=>{const f=(t*0.12+i/6)%1;p.visible=outdoor&&!reduceMotion;p.position.set(4+Math.sin(t*0.4+i)*f,21+f*3,-58.5+f);p.scale.setScalar(0.5+f);});
+    renderProgress();
+  });
+  function outdoorForParty() { return !inWing(P.pos.x,P.pos.z,0.2); }
+  FUN.pickups=pickups; FUN.surprises=surprises; FUN.collect=collect; FUN.tree=tree; FUN.bulbs=bulbs;
+  renderProgress();
+}
+
 // (feature logic blocks go here)
 // ---- core: the inside of the yellow wing is only drawn when the camera (or the girl) is near the wing
 {
@@ -6248,7 +6445,7 @@ function boot(data) {
   {
     const savedFound = animals.filter(a => found.has(a.id));
     savedFound.forEach((a, i) => {
-      if (i === savedFound.length - 1) joinParade(a);
+      if (i === savedFound.length - 1 && nFound() < 12) joinParade(a);
       else sendToFilipa(a);
     });
   }
@@ -6268,7 +6465,7 @@ function boot(data) {
   requestAnimationFrame(t => { last = t; frame(t); });
 }
 window.claude?.hot?.snapshot?.(() => ({ found: [...found], pos: P.pos.toArray(), face: P.face, started, evening }));
-window.__duevej = { SWINGS, showWay, PARADE, PILES, PUDDLES, BALL, BARS, WEATHER, UMB, toggleUmbrella, P, cam, kid, setEvening, start: () => goBtn.click(), animals, cyclists, renderer, peek: (y) => { cam.yaw = y; lastDragEnd = clockT + 30; }, snap: (e) => { camInit = false; startBlend = 1; if (typeof e === 'number') { evening = e > 0.5; ev = e; } } };
+window.__duevej = { FX, SWINGS, showWay, PARADE, PILES, PUDDLES, BALL, BARS, WEATHER, UMB, toggleUmbrella, P, cam, kid, setEvening, start: () => goBtn.click(), animals, cyclists, renderer, peek: (y) => { cam.yaw = y; lastDragEnd = clockT + 30; }, snap: (e) => { camInit = false; startBlend = 1; if (typeof e === 'number') { evening = e > 0.5; ev = e; } } };
 if (window.claude?.hot?.ready) window.claude.hot.ready(boot); else boot(window.claude?.hot?.data ?? {});
 </script>
 </body>

@@ -31,7 +31,7 @@ Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, h
 - Kameraet følger altid bag pigen, så man ser derhen, hvor hun går.
 - Et par gange undervejs kommer der en regnbyge i et minut. Så kan pigen slå sin paraply op.
 - Går man lige ind i et af de lave stålrør, svinger pigen sig rundt om røret og går videre.
-- Når et dyr er fundet, hopper det glad og følger efter pigen, så hun til sidst går rundt med en hel dyreparade.
+- Hvert dyr har sin egen lille handling, når det bliver fundet. Kun det nyeste dyr følger efter pigen. Det tidligere dyr går tilbage til Filipa; fra rum eller lange afstande hjælper et lille stjernedrys det sikkert hjem.
 - Under træerne ligger bunker af efterårsblade. Løber eller hopper man ind i dem, flyver bladene til alle sider.
 - Når det regner, kommer der vandpytter, som giver et stort plask, når man hopper eller løber i dem.
 - Vis vej-knappen lægger et spor af stjerner hen til det nærmeste dyr, man ikke har fundet endnu.
@@ -53,3 +53,15 @@ Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, h
 - Man kan høre pigens skridt, og de lyder forskelligt på asfalt, græs, sand, trægulv og sne.
 - Der spiller en blid melodi i baggrunden. Den slås fra med Lyd-knappen eller med "Musik" på Hjælp-kortet.
 - Fundne dyr, guldstjerner, gemmestederne, farverne, dag/aften, vinter, tegningen, musik og lyd huskes i browseren.
+
+## Mere leg og julefest
+
+- Katten går i en papkasse, hunden får nissehue, og alle 12 dyr har en kort, unik velkomst.
+- Filipa vinker til ankomne dyr. Tælleren viser både fundne dyr og dyr hjemme hos Filipa.
+- Ring selv med skoleklokken, tænd et lille lys i forhallen, se musen i biblioteket, kig i nisseskabet i billedkunst, og dril snemandens hat. Brug E eller den store handlingsknap på mobilen.
+- Fem valgfrie julestjerner ligger i forhallen, musiklokalet, billedkunst, biblioteket og skolegården. Gå hen til dem; de pynter juletræet hos Filipa. De er aldrig nødvendige for at gennemføre.
+- Når alle dyrene er hjemme, går man til Filipa. Juletræet tændes, sne daler, dyrene danser, og Filipa fejrer med og giver den eksisterende guldstjerne. Derefter kan man fortsætte med at lege.
+- Fugle flyver diskret, og der kommer røg fra skorstenen. Reduceret bevægelse respekteres.
+- Julestjerner gemmes lokalt. Gem dyrene igen og Start forfra nulstiller også den nye samlerunde.
+
+Valideret i Chromium/Edge med hele dyrejagten, hurtige fund, pause, finale uden julestjerner, alle fem stjerner, de fem overraskelser, genindlæsning, genstart og mobilens handlingsknap.
