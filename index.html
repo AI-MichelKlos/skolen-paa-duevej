@@ -50,6 +50,16 @@ body{margin:0;overflow:hidden;background:var(--sky);color:var(--ink);font-family
 @keyframes pop{from{opacity:0;translate:0 8px}to{opacity:1;translate:0 0}}
 .overlay{position:fixed;inset:0;display:grid;place-items:center;padding:16px;box-sizing:border-box;background:radial-gradient(ellipse at center,rgba(42,34,56,.06),rgba(42,34,56,.38))}
 .card{width:100%;max-width:520px;max-height:calc(100% - 8px);overflow:auto;padding:22px 24px 24px;box-sizing:border-box}
+#intro #goBtn{margin-bottom:16px}
+#characterHeading{font-size:28px;margin:14px 0 12px}
+#characterChoices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:18px}
+.characterChoice{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:124px;padding:10px 4px;background:var(--paper);border:3px solid var(--ink);border-radius:16px;color:var(--ink);font:800 18px var(--display);cursor:pointer;touch-action:manipulation}
+.characterPicture{font:64px/1.15 "Segoe UI Emoji","Apple Color Emoji",sans-serif}
+.characterChoice[aria-pressed="true"]{background:#ffe08a;box-shadow:3px 4px 0 var(--ink)}
+.characterChoice:focus-visible{outline:4px solid #387abb;outline-offset:3px}
+.characterTick{position:absolute;right:5px;top:3px;font-size:22px;visibility:hidden}
+.characterChoice[aria-pressed="true"] .characterTick{visibility:visible}
+@media(max-width:440px){#characterChoices{grid-template-columns:repeat(2,minmax(0,1fr))}.characterChoice{min-height:112px}}
 .eyebrow{font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:600;color:var(--leaf-deep);display:flex;align-items:center;gap:8px}
 .card h1,.card h2{font-family:var(--display);font-weight:800;font-size:clamp(34px,8vw,48px);margin:4px 0 10px;line-height:1;text-wrap:balance;letter-spacing:-.01em}
 .card h2{font-size:clamp(28px,6.5vw,38px)}
@@ -124,6 +134,16 @@ body.touch #poi{bottom:calc(118px + env(safe-area-inset-bottom,0px))}
   <div class="card sticker">
     <div class="eyebrow">Frederiksberg · en gåtur i 3D</div>
     <h1 id="introTitle">Skolen på Duevej</h1>
+    <section aria-labelledby="characterHeading">
+      <h2 id="characterHeading">Hvem vil du være?</h2>
+      <div id="characterChoices" role="group" aria-labelledby="characterHeading">
+        <button class="characterChoice" type="button" data-character="girl" aria-pressed="true"><span class="characterPicture" aria-hidden="true">👧</span><span>Pigen</span><span class="characterTick" aria-hidden="true">✓</span></button>
+        <button class="characterChoice" type="button" data-character="kat" aria-pressed="false"><span class="characterPicture" aria-hidden="true">🐱</span><span>Kat</span><span class="characterTick" aria-hidden="true">✓</span></button>
+        <button class="characterChoice" type="button" data-character="mus" aria-pressed="false"><span class="characterPicture" aria-hidden="true">🐭</span><span>Mus</span><span class="characterTick" aria-hidden="true">✓</span></button>
+        <button class="characterChoice" type="button" data-character="hund" aria-pressed="false"><span class="characterPicture" aria-hidden="true">🐶</span><span>Hund</span><span class="characterTick" aria-hidden="true">✓</span></button>
+      </div>
+    </section>
+    <button class="go" id="goBtn" type="button" disabled>Henter skolen …</button>
     <p class="lead" id="introLead">Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, hop på trampolinerne, og gå hele vejen rundt om skolen. Tolv dyr gemmer sig rundt omkring. Kan du finde dem alle?</p>
     <p class="err" id="loadErr" hidden>3D-motoren kunne ikke hentes. Tjek internetforbindelsen og genindlæs siden.</p>
     <p class="chipsHead">Dyrene, du skal finde</p>
@@ -156,7 +176,6 @@ body.touch #poi{bottom:calc(118px + env(safe-area-inset-bottom,0px))}
       <span>Paraply-knappen</span><span>Kommer frem, når det regner</span>
       <span>Læs op-knappen</span><span>Teksterne bliver læst højt</span>
     </div>
-    <button class="go" id="goBtn" type="button" disabled>Henter skolen …</button>
     <button class="go alt" id="newGameBtn" type="button" hidden>Nyt spil</button>
     <p class="foot">Tegnet frit efter fotos af Skolen på Duevej og en håndtegnet plan af skolen. Placeringer og detaljer er forenklede.</p>
   </div>
@@ -2608,6 +2627,9 @@ function buildKid() {
   return { root, g, head, legs, arms, coat, hair, leggings };
 }
 const kid = buildKid(); dyn.add(kid.root);
+const girlBodyParts = [...kid.g.children];
+let playerCharacter = 'girl';
+const playerModels = new Map();
 
 // ======================================================================== ANIMALS
 const OL = new THREE.MeshBasicMaterial({ color: '#2a2238', side: THREE.BackSide });
@@ -2661,6 +2683,24 @@ function buildCat() {
   for (let i = 0; i < 5; i++) { pt(t, capg(0.034, 0.07), i === 4 ? stripe : fur, 0, 0, -0.05, { r: [Math.PI / 2, 0, 0] }); tail.push(t); t = grp(t, 0, 0, -0.1); }
   return { g, head, tail };
 }
+function buildMouse() {
+  const g = new THREE.Group(); const f = toon('#b7b0b8'), pink = toon('#f2b0b5'), belly = toon('#ebe5e8');
+  pt(g, sph(0.12), f, 0, 0.11, -0.02, { s: [0.95, 0.85, 1.3], ol: true });
+  pt(g, sph(0.07, 10, 8), belly, 0, 0.09, 0.09, { s: [1, 0.9, 0.8], cast: false });
+  const head = grp(g, 0, 0.17, 0.14);
+  pt(head, sph(0.085), f, 0, 0, 0, { s: [1, 0.95, 1.05], ol: true });
+  pt(head, cone(0.052, 0.11, 10), f, 0, -0.018, 0.1, { r: [Math.PI / 2, 0, 0] });
+  pt(head, sph(0.022, 8, 6), pink, 0, -0.018, 0.158, { cast: false });
+  eyes(head, 0.038, 0.028, 0.072, 0.019);
+  for (const s of [-1, 1]) pt(head, sph(0.01, 6, 5), WHITE, s * 0.032, 0.036, 0.086, { cast: false });
+  for (const s of [-1, 1]) for (const k of [-1, 1]) pt(head, cyl(0.0035, 0.0035, 0.13, 4), EYE, s * 0.075, -0.022 + k * 0.012, 0.125, { r: [0, k * s * 0.15, Math.PI / 2], cast: false });
+  const ears = []; for (const s of [-1, 1]) { const e = grp(head, s * 0.062, 0.07, -0.01); pt(e, sph(0.058, 12, 8), f, 0, 0.035, 0, { s: [1, 1, 0.32], ol: true }); pt(e, sph(0.042, 10, 8), pink, 0, 0.035, 0.012, { s: [1, 1, 0.3], cast: false }); e.rotation.z = -s * 0.4; ears.push(e); }
+  const tail = []; let par = grp(g, 0, 0.07, -0.17);
+  for (let i = 0; i < 5; i++) { const sg = grp(par, 0, 0, i ? -0.065 : 0); pt(sg, cyl(0.011, 0.014, 0.07, 6), pink, 0, 0, -0.033, { r: [Math.PI / 2, 0, 0], cast: false }); tail.push(sg); par = sg; }
+  const legs = []; for (const s of [-1, 1]) for (const k of [-1, 1]) { const lg = grp(g, s * 0.07, 0.03, k * 0.08); pt(lg, sph(0.03, 8, 6), pink, 0, -0.01, 0.01, { s: [1, 0.6, 1.4] }); legs.push(lg); }
+  return { g, head, ears, tail, legs };
+}
+
 function buildDuck() {
   const g = new THREE.Group(); const w = toon('#fbfaf3'), o = toon('#f0a03a');
   pt(g, sph(0.17), w, 0, 0.22, 0, { s: [1, 0.85, 1.35], ol: true });
@@ -2684,7 +2724,7 @@ function buildSquirrel() {
   for (let i = 0; i < 5; i++) { pt(t, sph(0.07 + i * 0.01, 10, 8), f, 0, 0.05, -0.02, { s: [0.8, 1, 0.85], ol: i === 2 }); tail.push(t); t = grp(t, 0, 0.09, -0.015); }
   return { g, head, tail, acorn };
 }
-function buildDog() {
+function buildDog(withBall = true) {
   const g = new THREE.Group(); const f = toon('#d9b27c'), d = toon('#8a5a36'), l = toon('#f6e9d4');
   pt(g, sph(0.22), f, 0, 0.27, -0.05, { s: [1, 1.12, 1.25], ol: true });
   pt(g, sph(0.13), l, 0, 0.32, 0.12, { s: [1, 1.2, 0.6] });
@@ -2698,7 +2738,7 @@ function buildDog() {
   const ears = []; for (const s of [-1, 1]) { const e = grp(head, s * 0.13, 0.07, 0); pt(e, sph(0.07, 10, 8), d, 0, -0.07, 0, { s: [0.5, 1.25, 0.8] }); e.rotation.z = s * 0.25; ears.push(e); }
   pt(g, new THREE.TorusGeometry(0.105, 0.022, 6, 16), toon('#d9473b'), 0, 0.45, 0.06, { r: [Math.PI / 2 + 0.35, 0, 0] });
   const tail = grp(g, 0, 0.14, -0.31); pt(tail, capg(0.03, 0.14), f, 0, 0.08, 0); tail.rotation.x = -0.6;
-  pt(g, sph(0.09, 14, 10), toon('#e23f3f'), 0.38, 0.09, 0.32, { ol: true });
+  if (withBall) pt(g, sph(0.09, 14, 10), toon('#e23f3f'), 0.38, 0.09, 0.32, { ol: true });
   return { g, head, ears, tail: [tail] };
 }
 function buildHen() {
@@ -3071,7 +3111,7 @@ function nearestName(x, z) {
 const found = new Set();
 let soundOn = true, started = false, paused = true, showMap = !isTouch || window.innerWidth > 700;
 const SKEY = 'duevej3d-dyr';
-function save() { try { localStorage.setItem(SKEY, JSON.stringify({ found: [...found], ev: evening, sound: soundOn, map: showMap, voice: typeof voiceOn === 'boolean' ? voiceOn : true, jacket: typeof jacketCol === 'string' ? jacketCol : undefined, umb: typeof umbCol === 'string' ? umbCol : undefined, hair: KIDCOL.hair, pants: KIDCOL.pants })); } catch (e) {} }
+function save() { try { localStorage.setItem(SKEY, JSON.stringify({ found: [...found], ev: evening, sound: soundOn, map: showMap, voice: typeof voiceOn === 'boolean' ? voiceOn : true, jacket: typeof jacketCol === 'string' ? jacketCol : undefined, umb: typeof umbCol === 'string' ? umbCol : undefined, hair: KIDCOL.hair, pants: KIDCOL.pants, character: playerCharacter })); } catch (e) {} }
 function load() { try { return JSON.parse(localStorage.getItem(SKEY) || '{}') || {}; } catch (e) { return {}; } }
 
 // ======================================================================== SOUND
@@ -3731,7 +3771,7 @@ function updRain(dt) {
 // puddles appear when it rains (plask!), and the texts are read aloud in Danish.
 
 // ---------------- animal parade
-// Only the newest animal follows her. Earlier animals walk to Filipa and gather by the flagpole.
+// Found animals return to Filipa after their greeting and gather by the flagpole.
 const PARADE = [], FILIPA_ANIMALS = [], TRAIL = [], _tp = { x: 0, y: 0, z: 0 };
 const FILIPA_ANIMAL_X = 15, FILIPA_ANIMAL_Z = -21.5;
 function filipaAnimalSpot(i) {
@@ -3748,13 +3788,8 @@ function sendToFilipa(a) {
   a.returnShortcut = a.gy > 1.2 || inWing(from.x,from.z,0) || rayHit(from,to) < 0.98;
   a.returnOrigin = a.g.position.clone();
 }
-function joinParade(a) {
-  if (a.follow) return;
-  // the animal that was following her goes to Filipa before the new one joins
-  for (const old of [...PARADE]) if (old !== a) sendToFilipa(old);
-  const gi = FILIPA_ANIMALS.indexOf(a); if (gi >= 0) FILIPA_ANIMALS.splice(gi, 1);
-  a.gather = false; a.follow = true; a.state = 'idle'; a.happy = 0; a.idleHop = rr(1, 3); a.hopK = 0; PARADE.push(a);
-}
+// Kept as a compatibility entry point for discovery and the secret mouse.
+function joinParade(a) { sendToFilipa(a); }
 function leaveParade() {
   for (const a of animals.filter(a => a.follow || a.gather || found.has(a.id))) {
     a.follow = false; a.gather = false; a.state = 'idle'; a.happy = 0; a.gy = a.baseY; a.g.position.set(a.home[0], a.baseY, a.home[1]);
@@ -4217,23 +4252,6 @@ function updActions() {
     });
 
     // ---- the secret mouse
-    function buildMouse() {
-      const g = new THREE.Group(); const f = toon('#b7b0b8'), pink = toon('#f2b0b5'), belly = toon('#ebe5e8');
-      pt(g, sph(0.12), f, 0, 0.11, -0.02, { s: [0.95, 0.85, 1.3], ol: true });
-      pt(g, sph(0.07, 10, 8), belly, 0, 0.09, 0.09, { s: [1, 0.9, 0.8], cast: false });
-      const head = grp(g, 0, 0.17, 0.14);
-      pt(head, sph(0.085), f, 0, 0, 0, { s: [1, 0.95, 1.05], ol: true });
-      pt(head, cone(0.052, 0.11, 10), f, 0, -0.018, 0.1, { r: [Math.PI / 2, 0, 0] });
-      pt(head, sph(0.022, 8, 6), pink, 0, -0.018, 0.158, { cast: false });
-      eyes(head, 0.038, 0.028, 0.072, 0.019);
-      for (const s of [-1, 1]) pt(head, sph(0.01, 6, 5), WHITE, s * 0.032, 0.036, 0.086, { cast: false });
-      for (const s of [-1, 1]) for (const k of [-1, 1]) pt(head, cyl(0.0035, 0.0035, 0.13, 4), EYE, s * 0.075, -0.022 + k * 0.012, 0.125, { r: [0, k * s * 0.15, Math.PI / 2], cast: false });
-      const ears = []; for (const s of [-1, 1]) { const e = grp(head, s * 0.062, 0.07, -0.01); pt(e, sph(0.058, 12, 8), f, 0, 0.035, 0, { s: [1, 1, 0.32], ol: true }); pt(e, sph(0.042, 10, 8), pink, 0, 0.035, 0.012, { s: [1, 1, 0.3], cast: false }); e.rotation.z = -s * 0.4; ears.push(e); }
-      const tail = []; let par = grp(g, 0, 0.07, -0.17);
-      for (let i = 0; i < 5; i++) { const sg = grp(par, 0, 0, i ? -0.065 : 0); pt(sg, cyl(0.011, 0.014, 0.07, 6), pink, 0, 0, -0.033, { r: [Math.PI / 2, 0, 0], cast: false }); tail.push(sg); par = sg; }
-      const legs = []; for (const s of [-1, 1]) for (const k of [-1, 1]) { const lg = grp(g, s * 0.07, 0.03, k * 0.08); pt(lg, sph(0.03, 8, 6), pink, 0, -0.01, 0.01, { s: [1, 0.6, 1.4] }); legs.push(lg); }
-      return { g, head, ears, tail, legs };
-    }
     ANIM.mus = (a, t) => {
       const walk = a.state === 'walk';
       a.head.rotation.x = Math.sin(t * 19) * 0.035 + (walk ? 0 : Math.max(0, Math.sin(a.ph * 2.6)) * 0.22);
@@ -6201,7 +6219,7 @@ function updActions() {
 
   FX.filipa = { root, ST, F, arms, body, giveStar, hello, pos: [FXX, FZ] };
 }
-// ---- feature: leg og julefest (optional discoveries; one animal follows)
+// ---- feature: leg og julefest (optional discoveries; animals return to Filipa)
 {
   const FUN = FX.fun = { stars: new Set(), intros: new Map(), arrivals: [], party: false, partyTime: 0, partyDone: false };
   const KEY = 'duevej3d-julestjerner';
@@ -6248,7 +6266,7 @@ function updActions() {
     toast(FUN.stars.size === 5 ? 'Alle fem julestjerner! Se dem på træet hos Filipa.' : `En julestjerne! ${FUN.stars.size} af 5. Den hænger på træet hos Filipa.`);
   }
 
-  // Every animal has a short, distinct greeting before joining the walk.
+  // Every animal has a short, distinct greeting before returning to Filipa.
   const greetings = { due:'Duen flyver en lille runde!', kat:'Katten gemmer sig i en kasse. Hov, kassen går!', and:'Anden vrikker og siger rap!', egern:'Egernet viser sin agern frem!', hund:'Hunden har fundet en nissehue!', hoene:'Hønen hakker efter et lille frø!', pindsvin:'Pindsvinet putter næsen og kigger frem!', froe:'Frøen hopper tre høje hop!', kanin:'Kaninen hopper og vipper med ørerne!', ugle:'Uglen kigger til begge sider og bukker!', raev:'Ræven snurrer rundt med sin store hale!', skildpadde:'Skildpadden strækker hals og vinker!', mus:'Musen danser en lille dans!' };
   const catBox = grp(dyn,0,0,0); catBox.visible = false;
   for (const [x,z,w,d] of [[-0.47,0,0.08,1],[0.47,0,0.08,1],[0,-0.47,1,0.08],[0,0.47,1,0.08]]) pt(catBox,new THREE.BoxGeometry(w,0.55,d),wood,x,0.27,z,{ol:true});
@@ -6283,7 +6301,7 @@ function updActions() {
       case 'skildpadde': a.head.position.z = 0.24 + phase*0.15; if(a.legs[0]) a.legs[0].rotation.z = phase*0.6*motion; break;
       default: gp.y += Math.abs(Math.sin(u*12))*0.2*motion;
     }
-    if (u === 1) { FUN.intros.delete(a); gp.copy(intro.origin); a.g.rotation.x = a.g.rotation.z = 0; if(a.legs)a.legs.forEach(l=>l.rotation.z=0); a.happy = 0; catBox.visible = false; if (nFound() === 12) sendToFilipa(a); else joinParade(a); }
+    if (u === 1) { FUN.intros.delete(a); gp.copy(intro.origin); a.g.rotation.x = a.g.rotation.z = 0; if(a.legs)a.legs.forEach(l=>l.rotation.z=0); a.happy = 0; catBox.visible = false; sendToFilipa(a); }
     return true;
   };
 
@@ -6402,6 +6420,38 @@ function updActions() {
   });
 }
 
+// ---- player character: a separate visual model, never a collectible animal
+function selectPlayerCharacter(value, persist = true) {
+  playerCharacter = ['girl', 'kat', 'mus', 'hund'].includes(value) ? value : 'girl';
+  if (playerCharacter !== 'girl' && !playerModels.has(playerCharacter)) {
+    const build = { kat: buildCat, mus: buildMouse, hund: () => buildDog(false) };
+    const model = build[playerCharacter]();
+    model.g.scale.setScalar(playerCharacter === 'mus' ? 3.4 : playerCharacter === 'kat' ? 1.9 : 1.7);
+    model.state = 'idle'; model.ph = 0; model.happy = 0;
+    kid.g.add(model.g); playerModels.set(playerCharacter, model);
+  }
+  girlBodyParts.forEach(part => { part.visible = playerCharacter === 'girl'; });
+  playerModels.forEach((model, key) => { model.g.visible = key === playerCharacter; model.g.position.set(0, 0, 0); });
+  document.querySelectorAll('[data-character]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.character === playerCharacter)));
+  for (const id of ['swJacket', 'swHair', 'swPants']) { const sw = $(id); sw.hidden = playerCharacter !== 'girl'; sw.previousElementSibling.hidden = sw.hidden; }
+  if (persist) save();
+}
+document.querySelectorAll('[data-character]').forEach(button => button.addEventListener('click', () => {
+  selectPlayerCharacter(button.dataset.character);
+  say({ girl: 'Du er pigen!', kat: 'Du er katten!', mus: 'Du er musen!', hund: 'Du er hunden!' }[playerCharacter]);
+}));
+function updPlayerCharacter(dt, t) {
+  if (!started || paused || playerCharacter === 'girl') return;
+  const model = playerModels.get(playerCharacter);
+  const moving = Math.hypot(P.vel.x, P.vel.z) > 0.3;
+  model.state = moving ? 'walk' : 'idle'; model.ph += dt;
+  ANIM[playerCharacter](model, playerCharacter === 'mus' && moving ? t * 1.5 : t, dt);
+  // Cosmetic gait only: collision, speed, jumps, stairs and rides keep their existing physics.
+  const gait = moving && P.onGround && !P.ride && !P.swing && !reduceMotion;
+  model.g.position.y = gait && playerCharacter === 'hund' ? Math.abs(Math.sin(P.walkT)) * 0.065 : 0;
+  model.g.rotation.z = gait && playerCharacter === 'mus' ? Math.sin(P.walkT * 2) * 0.035 : 0;
+}
+
 // ======================================================================== END FEATURE LOGIC BLOCKS
 
 // ======================================================================== MAIN LOOP
@@ -6417,6 +6467,7 @@ function frame(now) {
   updAnimals(dt, clockT);
   updParade(dt, clockT); updLeafPiles(dt); updPuddles(dt); updVoice(); updSwingsIdle(dt, clockT); updTrail(dt, clockT);
   for (const h of HOOKS.frame) h(dt, clockT);
+  updPlayerCharacter(dt, clockT);
   updActions();
   updEffects(dt);
   const fxz = started ? P.pos : orbitC;
@@ -6441,6 +6492,7 @@ function frame(now) {
 function boot(data) {
   data = data || {};
   const st = load();
+  selectPlayerCharacter(st.character, false);
   (data.found || st.found || []).forEach(i => found.add(i));
   {
     const savedFound = animals.filter(a => found.has(a.id));

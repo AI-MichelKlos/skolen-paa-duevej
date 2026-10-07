@@ -28,14 +28,15 @@ Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, h
 - Én HTML-fil med [three.js](https://threejs.org/) (hentes fra jsDelivr). Ingen billeder eller andre filer.
 - Bygningerne er tegnet frit efter fotos af skolen. Hvor husene står, følger en håndtegnet plan af skolen. Placeringer og detaljer er forenklede.
 - Trampolinerne sidder i et bed af blødt gummi. Gå ud på dem, så hopper du af dig selv. Tryk på hop for at komme helt højt op.
-- Kameraet følger altid bag pigen, så man ser derhen, hvor hun går.
+- Kameraet følger altid bag den valgte spillerfigur, så man ser derhen, hvor den går.
 - Et par gange undervejs kommer der en regnbyge i et minut. Så kan pigen slå sin paraply op.
 - Går man lige ind i et af de lave stålrør, svinger pigen sig rundt om røret og går videre.
-- Hvert dyr har sin egen lille handling, når det bliver fundet. Kun det nyeste dyr følger efter pigen. Det tidligere dyr går tilbage til Filipa; fra rum eller lange afstande hjælper et lille stjernedrys det sikkert hjem.
+- Hvert dyr har sin egen lille handling, når det bliver fundet. Efter velkomsten går hvert fundet dyr tilbage til Filipa; fra rum eller lange afstande hjælper et lille stjernedrys det sikkert hjem.
 - Under træerne ligger bunker af efterårsblade. Løber eller hopper man ind i dem, flyver bladene til alle sider.
 - Når det regner, kommer der vandpytter, som giver et stort plask, når man hopper eller løber i dem.
 - Vis vej-knappen lægger et spor af stjerner hen til det nærmeste dyr, man ikke har fundet endnu.
 - Midt i skolegården står gynger og en rutsjebane. Gå hen til en gynge eller stigen, så gynger eller rutsjer pigen af sig selv.
+- På startkortet vælger man Pigen, Kat, Mus eller Hund med fire store billedknapper under "Hvem vil du være?". Valget huskes i browseren og bevares ved Nyt spil, Start forfra og Gem dyrene igen. Alle figurer bruger samme styring og kan lege i alle rum. Musen tager små hurtige skridt, katten glider roligt, og hunden hopper lidt, når den går. Spillerens dyr er en selvstændig figur og tæller aldrig som et fundet dyr.
 - På startkortet kan man vælge farve på pigens jakke, paraply, hår og bukser.
 - Teksterne bliver læst højt på dansk. Det kan slås fra med Læs op-knappen.
 - Der ligger en bold midt på den store fodboldbane. Går man hen til den, følger den med pigens fødder, og S sparker den væk. Ryger den i mål, står der MÅL!
