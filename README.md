@@ -6,6 +6,14 @@ En hyggelig 3D-gåtur i tegnefilmsstil rundt på Skolen på Duevej på Frederiks
 
 Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, hop på trampolinerne ved den lille fodboldbane, og gå hele vejen rundt om skolen ad Mariendalsvej, Duevej og Egernvej, hvor cyklisterne kører forbi. Tolv dyr gemmer sig rundt omkring: en due, en kat, en and, et egern, en hund, en høne, et pindsvin, en frø, en kanin, en ugle, en ræv og en skildpadde. Kan du finde dem alle?
 
+## Vælg udgave
+
+På startkortet kan man vælge mellem **Almindelig**, **Halloween** og **Jul**. Valget huskes i browseren og kan ændres på Hjælp-kortet uden at miste de dyr, man allerede har fundet.
+
+- **Almindelig** viser skolen uden julepynt eller Halloween-pynt. Vinter-knappen kan stadig bruges til sne og snemænd.
+- **Halloween** pynter skolen med græskarlygter, edderkopper, flagermus og rotter med lysende røde øjne. Kloge ugler kan vise vej til det næste dyr. Figuren og dyrejagten er den samme.
+- **Jul** viser juletræet, de fem valgfrie julestjerner, nissen og julefesten hos Filipa. Jul starter med vintervejr.
+
 ## Styring
 
 | Computer | Telefon og tablet |
@@ -59,7 +67,7 @@ Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, h
 - Der spiller en blid melodi i baggrunden. Den slås fra med Lyd-knappen eller med "Musik" på Hjælp-kortet.
 - Fundne dyr, guldstjerner, gemmestederne, farverne, dag/aften, vinter, tegningen, musik og lyd huskes i browseren.
 
-## Mere leg og julefest
+## Mere leg og julefest i Jul
 
 - Katten går i en papkasse, hunden får nissehue, og alle 12 dyr har en kort, unik velkomst.
 - Filipa vinker til ankomne dyr. Tælleren viser både fundne dyr og dyr hjemme hos Filipa.
