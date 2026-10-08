@@ -59,6 +59,11 @@ body{margin:0;overflow:hidden;background:var(--sky);color:var(--ink);font-family
 .characterChoice:focus-visible{outline:4px solid #387abb;outline-offset:3px}
 .characterTick{position:absolute;right:5px;top:3px;font-size:22px;visibility:hidden}
 .characterChoice[aria-pressed="true"] .characterTick{visibility:visible}
+#versionChoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 18px}
+.versionChoice{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:78px;padding:8px 3px;background:var(--paper);border:3px solid var(--ink);border-radius:16px;color:var(--ink);font:800 16px var(--display);cursor:pointer;touch-action:manipulation}
+.versionChoice span:first-child{font:31px/1.1 "Segoe UI Emoji","Apple Color Emoji",sans-serif}
+.versionChoice[aria-pressed="true"]{background:#ffe08a;box-shadow:3px 4px 0 var(--ink)}
+.versionChoice:focus-visible{outline:4px solid #387abb;outline-offset:3px}
 @media(max-width:440px){#characterChoices{grid-template-columns:repeat(2,minmax(0,1fr))}.characterChoice{min-height:112px}}
 .eyebrow{font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:600;color:var(--leaf-deep);display:flex;align-items:center;gap:8px}
 .card h1,.card h2{font-family:var(--display);font-weight:800;font-size:clamp(34px,8vw,48px);margin:4px 0 10px;line-height:1;text-wrap:balance;letter-spacing:-.01em}
@@ -143,6 +148,14 @@ body.touch #poi{bottom:calc(118px + env(safe-area-inset-bottom,0px))}
         <button class="characterChoice" type="button" data-character="hund" aria-pressed="false"><span class="characterPicture" aria-hidden="true">🐶</span><span>Hund</span><span class="characterTick" aria-hidden="true">✓</span></button>
       </div>
     </section>
+    <section aria-labelledby="versionHeading">
+      <h2 id="versionHeading">Hvilken udgave?</h2>
+      <div id="versionChoices" role="group" aria-labelledby="versionHeading">
+        <button class="versionChoice" type="button" data-version="normal" aria-pressed="true"><span aria-hidden="true">🍂</span><span>Almindelig</span></button>
+        <button class="versionChoice" type="button" data-version="halloween" aria-pressed="false"><span aria-hidden="true">🎃</span><span>Halloween</span></button>
+        <button class="versionChoice" type="button" data-version="christmas" aria-pressed="false"><span aria-hidden="true">🎄</span><span>Jul</span></button>
+      </div>
+    </section>
     <button class="go" id="goBtn" type="button" disabled>Henter skolen …</button>
     <p class="lead" id="introLead">Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, hop på trampolinerne, og gå hele vejen rundt om skolen. Tolv dyr gemmer sig rundt omkring. Kan du finde dem alle?</p>
     <p class="err" id="loadErr" hidden>3D-motoren kunne ikke hentes. Tjek internetforbindelsen og genindlæs siden.</p>
@@ -185,7 +198,7 @@ body.touch #poi{bottom:calc(118px + env(safe-area-inset-bottom,0px))}
   <div class="card sticker">
     <div class="eyebrow">Dyrejagten er slut</div>
     <h2>Alle 12 dyr er fundet!</h2>
-    <p class="lead">Godt gået! Alle dyrene er hos Filipa, og juletræet lyser. Du har fået en guldstjerne! Du kan lege videre og finde de fem julestjerner, hvis du har lyst.</p>
+    <p class="lead">Godt gået! Alle dyrene er hos Filipa. Du har fået en guldstjerne! Du kan lege videre.</p>
     <button class="go" id="finOk" type="button">Gå videre rundt</button>
     <button class="go alt" id="finAgain" type="button">Gem dyrene igen</button>
   </div>
@@ -202,6 +215,9 @@ const $ = id => document.getElementById(id);
 const isTouch = (window.matchMedia && matchMedia('(pointer: coarse)').matches) || (('ontouchstart' in window) && navigator.maxTouchPoints > 0);
 if (isTouch) document.body.classList.add('touch');
 const reduceMotion = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+const VERSION_KEY = 'duevej3d-version';
+let gameVersion = 'normal';
+try { const savedVersion = localStorage.getItem(VERSION_KEY); if (['normal', 'halloween', 'christmas'].includes(savedVersion)) gameVersion = savedVersion; } catch (_) {}
 
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 let rand = mulberry32(82);
@@ -5455,7 +5471,7 @@ function updActions() {
     flush(FB);
   }
   HOOKS.found.push(a => { if (a.id < 12 && all12()) { startShow(true); SHOW.conf = 8; } });
-  $('finOk').addEventListener('click', () => { if (!all12()) return; startShow(true); toast('Hurra! Nu kan du lege videre og finde julestjerner.'); });
+  $('finOk').addEventListener('click', () => { if (!all12()) return; startShow(true); toast(gameVersion === 'christmas' ? 'Hurra! Nu kan du lege videre og finde julestjerner.' : gameVersion === 'halloween' ? 'Hurra! Nu kan du lege videre i Halloween-skolen.' : 'Hurra! Nu kan du lege videre.'); });
   const fwOffer = { id: 'ude-fw', label: 'Fyrværkeri', prio: 1, run: () => startShow(false) };
 
   // ======================================================== 4. the school bell (every 4 minutes of play)
@@ -6033,7 +6049,7 @@ function updActions() {
     const bar = (b / 4) | 0, inBar = b % 4;
     if (inBar === 0) note(t, mtof(ROOTS[bar]), spb * 2, 0.45, 'sine');
     if (inBar === 2) note(t, mtof(ROOTS[bar] + 7), spb * 2, 0.35, 'sine');
-    if (FX.vinter && FX.vinter.on && (b % 2 === 1)) jingle(t);
+    if (gameVersion === 'christmas' && FX.vinter && FX.vinter.on && (b % 2 === 1)) jingle(t);
   }
   const inMusicRoom = () => P.pos.y > 3 && P.pos.x > 12.3 && P.pos.x < 16.45 && P.pos.z < -1.05 && P.pos.z > -5.95;
   HOOKS.frame.push(() => {
@@ -6282,6 +6298,7 @@ function updActions() {
 // ---- feature: leg og julefest (optional discoveries; animals return to Filipa)
 {
   const FUN = FX.fun = { stars: new Set(), intros: new Map(), arrivals: [], party: false, partyTime: 0, partyDone: false };
+  const isChristmas = () => gameVersion === 'christmas';
   const KEY = 'duevej3d-julestjerner';
   try { const s = JSON.parse(localStorage.getItem(KEY) || '[]'); if (Array.isArray(s)) s.forEach(i => { if (Number.isInteger(i) && i >= 0 && i < 5) FUN.stars.add(i); }); } catch (_) {}
   const saveStars = () => { try { localStorage.setItem(KEY, JSON.stringify([...FUN.stars])); } catch (_) {} };
@@ -6300,7 +6317,7 @@ function updActions() {
   let lastProgress = '';
   function renderProgress() {
     const n = animals.filter(a => a.id < 12 && found.has(a.id) && a.arrived).length;
-    const text = `Hos Filipa: ${n}/12 · ★ ${FUN.stars.size}/5`;
+    const text = isChristmas() ? `Hos Filipa: ${n}/12 · ★ ${FUN.stars.size}/5` : gameVersion === 'halloween' ? `Hos Filipa: ${n}/12 · 🦇 Halloween` : `Hos Filipa: ${n}/12`;
     if (text !== lastProgress) { progress.textContent = text; lastProgress = text; }
   }
 
@@ -6317,11 +6334,11 @@ function updActions() {
   for (let i = 0; i < 18; i++) { const y = 0.85 + i * 0.12, r = 1.06 - (y - 0.85) * 0.3; const b = pt(tree, bulbGeo, bulbMats[i % 3], Math.sin(i * 2.4) * r, y, Math.cos(i * 2.4) * r, { cast: false }); b.visible = false; bulbs.push(b); }
 
   const pickups = [[26.9,0.12,2.3], [14.8,3.6,-3.5], [18.8,3.6,-3.5], [26.3,3.6,-3.3], [19,0.12,-14.3]].map(([x,y,z], id) => {
-    const root = grp(dyn,x,y,z), star = mkStar(root); star.position.y = 1.05; root.visible = !FUN.stars.has(id);
+    const root = grp(dyn,x,y,z), star = mkStar(root); star.position.y = 1.05; root.visible = isChristmas() && !FUN.stars.has(id);
     return { id, root, star, x, y, z };
   });
   function collect(id) {
-    if (FUN.stars.has(id)) return;
+    if (!isChristmas() || FUN.stars.has(id)) return;
     FUN.stars.add(id); pickups[id].root.visible = false; ornaments[id].visible = true; saveStars(); renderProgress(); sparkleSound(); burst(pickups[id].root.position);
     toast(FUN.stars.size === 5 ? 'Alle fem julestjerner! Se dem på træet hos Filipa.' : `En julestjerne! ${FUN.stars.size} af 5. Den hænger på træet hos Filipa.`);
   }
@@ -6351,7 +6368,7 @@ function updActions() {
       case 'kat': catBox.visible = true; catBox.position.copy(gp); catBox.position.x += Math.sin(u*12)*0.25*motion; catBox.rotation.z = Math.sin(u*18)*0.08*motion; gp.x = catBox.position.x; gp.y -= phase*0.27*motion; break;
       case 'and': a.g.rotation.z = Math.sin(u*22)*0.2*phase*motion; gp.y += Math.abs(Math.sin(u*12))*0.13*motion; break;
       case 'egern': a.acorn.position.y = 0.2 + phase*0.22*motion; a.head.rotation.x = -phase*0.3; break;
-      case 'hund': dogHat.visible = true; a.head.rotation.x = Math.sin(u*14)*0.25*phase*motion; gp.z += phase*0.35*motion; break;
+      case 'hund': dogHat.visible = isChristmas(); a.head.rotation.x = Math.sin(u*14)*0.25*phase*motion; gp.z += phase*0.35*motion; break;
       case 'hoene': a.head.rotation.x = Math.max(0,Math.sin(u*20))*0.8; break;
       case 'pindsvin': a.head.position.z = 0.17 - phase*0.12; a.g.rotation.z = Math.sin(u*10)*0.12*phase*motion; break;
       case 'froe': gp.y += Math.abs(Math.sin(u*Math.PI*3))*0.95*motion; break;
@@ -6398,8 +6415,8 @@ function updActions() {
   for(let i=0;i<6;i++) smoke.push(pt(dyn,smokeGeo,smokeM,0,0,0,{cast:false}));
 
   function reset() {
-    FUN.stars.clear(); saveStars(); pickups.forEach(p=>p.root.visible=true); ornaments.forEach(o=>o.visible=false);
-    FUN.intros.clear(); FUN.arrivals.length=0; FUN.party=false; FUN.partyDone=false; FUN.partyTime=0; catBox.visible=false; dogHat.visible=false; bulbs.forEach(b=>b.visible=false);
+    FUN.stars.clear(); saveStars(); pickups.forEach(p=>p.root.visible=isChristmas()); ornaments.forEach(o=>o.visible=false);
+    FUN.intros.clear(); FUN.arrivals.length=0; FUN.party=false; FUN.partyDone=false; FUN.partyTime=0; readyHint=false; catBox.visible=false; dogHat.visible=false; bulbs.forEach(b=>b.visible=false);
     animals.forEach(a=>{a.arrived=false; a.returnTime=0; a.g.rotation.x=a.g.rotation.z=0;});
     renderProgress();
   }
@@ -6409,7 +6426,14 @@ function updActions() {
     if(FUN.partyDone) return;
     FUN.party=true; FUN.partyDone=true; FUN.partyTime=0;
     P.face=Math.atan2(13-P.pos.x,-23-P.pos.z); cam.yaw=P.face+Math.PI;
-    bulbs.forEach(b=>b.visible=true); FX.ude.startShow(true); fanfare(); toast('Du fandt alle dyrene! Nu holder vi julefest!');
+    bulbs.forEach(b=>b.visible=isChristmas()); FX.ude.startShow(true); fanfare();
+    const message = isChristmas() ? 'Du fandt alle dyrene! Nu holder vi julefest!' : gameVersion === 'halloween' ? 'Du fandt alle dyrene! Nu holder vi Halloween-fest!' : 'Du fandt alle dyrene! Nu fejrer vi det!';
+    toast(message);
+    $('finale').querySelector('.lead').textContent = isChristmas()
+      ? 'Godt gået! Alle dyrene er hos Filipa, og juletræet lyser. Du har fået en guldstjerne! Du kan lege videre og finde de fem julestjerner, hvis du har lyst.'
+      : gameVersion === 'halloween'
+        ? 'Godt gået! Alle dyrene er hos Filipa, og de venlige Halloween-dyr fejrer med. Du har fået en guldstjerne! Du kan lege videre.'
+        : 'Godt gået! Alle dyrene er hos Filipa. Du har fået en guldstjerne! Du kan lege videre.';
     if(!FX.filipa.ST.awarded) FX.filipa.giveStar();
   }
   FUN.startParty=startParty;
@@ -6421,8 +6445,8 @@ function updActions() {
   HOOKS.frame.push((dt,t)=>{
     const active=started&&!paused, near=Math.hypot(P.pos.x-15,P.pos.z+21.5)<10 && P.pos.y<1.5;
     if(active) {
-      for(const p of pickups) { if(!FUN.stars.has(p.id)) { if(!reduceMotion) { p.star.rotation.y=t*1.2; p.star.position.y=1.05+Math.sin(t*2+p.id)*0.12; } if(Math.hypot(P.pos.x-p.x,P.pos.z-p.z)<1.25 && Math.abs(P.pos.y-p.y)<0.65) collect(p.id); } }
-      for(const s of surprises) { s.t=Math.max(0,s.t-dt); if(s.t===0 && Math.hypot(P.pos.x-s.x,P.pos.z-s.z)<1.65 && Math.abs(P.pos.y-s.y)<0.7) offerAction({id:s.id,label:s.id==='fun-light'&&lampOn?'Sluk det lille lys':s.label,prio:1.3,run:s.run}); }
+      for(const p of pickups) { if(isChristmas() && !FUN.stars.has(p.id)) { if(!reduceMotion) { p.star.rotation.y=t*1.2; p.star.position.y=1.05+Math.sin(t*2+p.id)*0.12; } if(Math.hypot(P.pos.x-p.x,P.pos.z-p.z)<1.25 && Math.abs(P.pos.y-p.y)<0.65) collect(p.id); } }
+      for(const s of surprises) { s.t=Math.max(0,s.t-dt); if(s.t===0 && (isChristmas() || (s.id!=='fun-door' && s.id!=='fun-hat')) && Math.hypot(P.pos.x-s.x,P.pos.z-s.z)<1.65 && Math.abs(P.pos.y-s.y)<0.7) offerAction({id:s.id,label:s.id==='fun-light'&&lampOn?'Sluk det lille lys':s.label,prio:1.3,run:s.run}); }
       greetCd=Math.max(0,greetCd-dt);
       for(const a of FILIPA_ANIMALS) {
         if(a.arrived) continue;
@@ -6433,7 +6457,7 @@ function updActions() {
       }
       if(near && greetCd===0 && FUN.arrivals.length && nFound()<12) { const a=FUN.arrivals.shift(); toast(`Hej, ${a.def.d}! ${12-nFound()} dyr gemmer sig endnu.`); greetCd=4.5; }
       const allHome = nFound()===12 && animals.filter(a=>a.id<12).every(a=>a.arrived);
-      if(nFound()===12 && !readyHint && FUN.intros.size===0) { readyHint=true; toast('Alle dyr er fundet! Gå hen til Filipa og juletræet. Tryk på Vis vej.'); }
+      if(nFound()===12 && !readyHint && FUN.intros.size===0) { readyHint=true; toast(isChristmas() ? 'Alle dyr er fundet! Gå hen til Filipa og juletræet. Tryk på Vis vej.' : 'Alle dyr er fundet! Gå hen til Filipa. Tryk på Vis vej.'); }
       if(allHome && near && !FUN.partyDone) startParty();
       if(FUN.party) {
         FUN.partyTime+=dt; FX.filipa.F.wave=1;
@@ -6443,12 +6467,12 @@ function updActions() {
       }
       if(nFound()<12) readyHint=false;
     }
-    partySnow.visible=FUN.partyDone && near && outdoorForParty();
+    partySnow.visible=isChristmas() && FUN.partyDone && near && outdoorForParty();
     if(active && partySnow.visible && !reduceMotion) { for(let i=0;i<partySnowPos.length;i+=3) { partySnowPos[i+1]-=dt*(0.55+(i%7)*0.08); if(partySnowPos[i+1]<0.2)partySnowPos[i+1]=10; } partySnowGeo.attributes.position.needsUpdate=true; }
     catBox.visible=FUN.intros.has(animals.find(a=>a.k==='kat'));
     if(active) {
       mouse.visible=mouseItem.t>0; if(mouse.visible) {mouse.position.x=25.4+Math.sin((3-mouseItem.t)*2)*0.9;mouse.position.z=-3.8+Math.sin((3-mouseItem.t)*3)*0.25;}
-      doorRoot.rotation.y=doorItem.t>0?-1.2:0; peek.visible=doorItem.t>0;
+      doorRoot.rotation.y=doorItem.t>0?-1.2:0; peek.visible=isChristmas() && doorItem.t>0;
       const h=snowItem.t>0?Math.sin((3-snowItem.t)/3*Math.PI):0; hat.position.set(h*0.6,1.35+h*0.7,0);hat.rotation.z=h*0.8;
     }
     const outdoor=!inWing(P.pos.x,P.pos.z,0.2);
@@ -6458,7 +6482,171 @@ function updActions() {
   });
   function outdoorForParty() { return !inWing(P.pos.x,P.pos.z,0.2); }
   FUN.pickups=pickups; FUN.surprises=surprises; FUN.collect=collect; FUN.tree=tree; FUN.bulbs=bulbs;
-  renderProgress();
+  let appliedVersion = null;
+  FUN.setVersion = () => {
+    const changed = appliedVersion !== null && appliedVersion !== gameVersion;
+    appliedVersion = gameVersion;
+    tree.visible = isChristmas();
+    doorRoot.visible = isChristmas();
+    snowman.visible = isChristmas();
+    pickups.forEach(p => p.root.visible = isChristmas() && !FUN.stars.has(p.id));
+    if (!isChristmas()) { bulbs.forEach(b => b.visible = false); dogHat.visible = false; peek.visible = false; partySnow.visible = false; }
+    greetings.hund = isChristmas() ? 'Hunden har fundet en nissehue!' : 'Hunden hopper glad omkring!';
+    if (changed) { FUN.party = false; FUN.partyDone = false; FUN.partyTime = 0; readyHint = false; }
+    renderProgress();
+  };
+  FUN.setVersion();
+}
+
+
+ // ---- Halloween: gentle creatures and decorations, separate from the animal hunt
+{
+  const H = FX.halloween = {};
+  const root = grp(dyn, 0, 0, 0);
+  const pumpkin = toon('#ed842a'), stem = toon('#487b43'), goldEye = new THREE.MeshBasicMaterial({ color: '#ffd06a' });
+  const dark = toon('#34283f'), ratFur = toon('#6f6977'), pink = toon('#d78e9e');
+  const redEye = new THREE.MeshBasicMaterial({ color: '#ff3038' });
+  const owlFur = toon('#66517e'), owlBelly = toon('#e4cbb0'), owlEye = new THREE.MeshBasicMaterial({ color: '#ffe79b' });
+  const bodyGeo = sph(0.5, 12, 8), tinyGeo = sph(0.07, 8, 6);
+
+  // Lanterns make the schoolyard easy to recognise, without blocking a path.
+  for (const [x,z] of [[11,-25],[19,-25],[26,8],[-7,-18],[5,37],[40,-56]]) {
+    const p = grp(root, x, groundAt(x,z,0.5), z);
+    pt(p, bodyGeo, pumpkin, 0, 0.48, 0, { s:[1.06,0.86,0.94], ol:true });
+    pt(p, cyl(0.08,0.11,0.3,7), stem, 0, 0.97, 0);
+    pt(p, tinyGeo, goldEye, -0.17, 0.58, 0.43, { s:[1.2,1,0.35], cast:false });
+    pt(p, tinyGeo, goldEye, 0.17, 0.58, 0.43, { s:[1.2,1,0.35], cast:false });
+    pt(p, tinyGeo, goldEye, 0, 0.36, 0.45, { s:[2.1,0.55,0.3], cast:false });
+  }
+
+  // Three webs with visible little spiders.
+  const webs = [], webMat = new THREE.LineBasicMaterial({ color:'#d8c7de', transparent:true, opacity:0.85 });
+  const legMat = new THREE.LineBasicMaterial({ color:'#34283f' });
+  for (const [x,y,z] of [[-4,3.1,-12],[25,3.2,9],[20,3.2,-28]]) {
+    const web = grp(root,x,y,z), points = [], n = 8;
+    for (let spoke=0;spoke<n;spoke++) {
+      const a=spoke*Math.PI*2/n, b=(spoke+1)*Math.PI*2/n;
+      points.push(0,0,0,Math.cos(a)*0.95,Math.sin(a)*0.95,0);
+      for(let ring=1;ring<=3;ring++) {
+        const r=ring*0.29;
+        points.push(Math.cos(a)*r,Math.sin(a)*r,0,Math.cos(b)*r,Math.sin(b)*r,0);
+      }
+    }
+    const webGeo = new THREE.BufferGeometry();
+    webGeo.setAttribute('position',new THREE.Float32BufferAttribute(points,3));
+    web.add(new THREE.LineSegments(webGeo,webMat));
+    const spider = grp(web,0,-0.19,0.06);
+    pt(spider,sph(0.15,10,8),dark,0,0,0,{cast:false});
+    pt(spider,tinyGeo,owlEye,-0.06,0.05,0.13,{s:0.4,cast:false});
+    pt(spider,tinyGeo,owlEye,0.06,0.05,0.13,{s:0.4,cast:false});
+    const legs=[];
+    for(const side of [-1,1])for(let i=0;i<4;i++){
+      const yy=(i-1.5)*0.07;
+      legs.push(side*0.08,yy,0,side*0.3,yy+0.11,0);
+    }
+    const legGeo=new THREE.BufferGeometry();
+    legGeo.setAttribute('position',new THREE.Float32BufferAttribute(legs,3));
+    spider.add(new THREE.LineSegments(legGeo,legMat));
+    webs.push(spider);
+  }
+
+  // Bats glide slowly overhead. Their wings flap only when motion is enabled.
+  const wingShape = new THREE.Shape();
+  wingShape.moveTo(0,0); wingShape.lineTo(0.3,0.18); wingShape.lineTo(0.72,0.09);
+  wingShape.lineTo(0.54,-0.12); wingShape.lineTo(0.36,-0.06); wingShape.lineTo(0.17,-0.2); wingShape.lineTo(0,-0.08); wingShape.closePath();
+  const wingGeo = new THREE.ShapeGeometry(wingShape);
+  const wingMat = new THREE.MeshBasicMaterial({ color:'#34283f', side:THREE.DoubleSide });
+  const bats=[];
+  for(let i=0;i<4;i++){
+    const bat=grp(root,0,0,0);
+    pt(bat,sph(0.16,10,8),dark,0,0,0,{s:[0.85,1.35,0.8],cast:false});
+    const wings=[];
+    for(const side of [-1,1]){
+      const wing=pt(bat,wingGeo,wingMat,0,0,0,{cast:false});
+      wing.scale.x=side; wings.push(wing);
+    }
+    pt(bat,tinyGeo,redEye,-0.07,0.05,0.13,{s:0.35,cast:false});
+    pt(bat,tinyGeo,redEye,0.07,0.05,0.13,{s:0.35,cast:false});
+    bats.push({g:bat,wings});
+  }
+
+  // Small grey rats with glowing red eyes scurry near the edges of the yard.
+  const rats=[];
+  for(const [x,z] of [[-11,-22],[29,2],[35,-52]]){
+    const rat=grp(root,x,groundAt(x,z,0.5),z);
+    pt(rat,sph(0.28,12,8),ratFur,0,0.28,0,{s:[1.3,0.8,0.85],ol:true});
+    pt(rat,sph(0.17,10,8),ratFur,0,0.3,0.23);
+    for(const side of [-1,1]){
+      pt(rat,sph(0.09,8,6),pink,side*0.14,0.47,0.11,{s:[0.8,1.2,0.5]});
+      pt(rat,tinyGeo,redEye,side*0.085,0.34,0.37,{s:0.72,cast:false});
+    }
+    pt(rat,tinyGeo,pink,0,0.25,0.4,{s:0.65});
+    const tail = new THREE.CatmullRomCurve3([new THREE.Vector3(0,0.25,-0.22),new THREE.Vector3(0.2,0.2,-0.47),new THREE.Vector3(0.35,0.3,-0.67)]);
+    pt(rat,new THREE.TubeGeometry(tail,7,0.025,5,false),pink,0,0,0,{cast:false});
+    rats.push({g:rat,x,z,y:rat.position.y});
+  }
+
+  // Wise owls give the same useful star trail as the Vis vej button.
+  const owls=[];
+  for(const [x,z] of [[7,-22],[27,-2]]){
+    const owl=grp(root,x,groundAt(x,z,0.5),z);
+    pt(owl,cyl(0.13,0.18,1.55,8),toon('#82624c'),0,0.77,0);
+    pt(owl,sph(0.31,12,9),owlFur,0,1.8,0,{s:[0.9,1.15,0.8],ol:true});
+    pt(owl,sph(0.22,10,8),owlBelly,0,1.67,0.21,{s:[0.95,1,0.45]});
+    for(const side of [-1,1]){
+      pt(owl,sph(0.13,9,7),owlEye,side*0.13,1.91,0.26,{s:[0.95,1,0.4],cast:false});
+      pt(owl,tinyGeo,dark,side*0.13,1.91,0.31,{s:0.53,cast:false});
+      pt(owl,cone(0.09,0.22,5),owlFur,side*0.21,2.16,0);
+    }
+    pt(owl,cone(0.09,0.18,4),pumpkin,0,1.79,0.36,{r:[Math.PI/2,0,0]});
+    owls.push({x,z});
+  }
+
+  H.setVersion = () => { root.visible = gameVersion === 'halloween'; };
+  H.setVersion();
+  HOOKS.frame.push((dt,t) => {
+    if (!root.visible || paused) return;
+    if (started) for(const [i,o] of owls.entries()) {
+      if(Math.hypot(P.pos.x-o.x,P.pos.z-o.z)<2.5 && Math.abs(P.pos.y-groundAt(o.x,o.z,0.5))<1.5)
+        offerAction({id:'wise-owl-'+i,label:'Spørg uglen',prio:1.5,run:()=>{tone(430,390,0,0.25,0.06);showWay();}});
+    }
+    if(reduceMotion) return;
+    webs.forEach((spider,i)=>{spider.position.y=-0.19+Math.sin(t*1.3+i)*0.06;});
+    bats.forEach((b,i)=>{
+      const a=t*0.27+i*Math.PI*0.5;
+      b.g.position.set(13+Math.cos(a)*11,5.7+i*0.35+Math.sin(t*1.5+i)*0.25,-20+Math.sin(a)*8);
+      b.g.rotation.y=-a;
+      b.wings[0].rotation.z=Math.sin(t*7+i)*0.28;
+      b.wings[1].rotation.z=-Math.sin(t*7+i)*0.28;
+    });
+    rats.forEach((r,i)=>{
+      r.g.position.set(r.x+Math.sin(t*1.2+i*2)*0.48,r.y,r.z+Math.cos(t*1.2+i*2)*0.28);
+      r.g.rotation.y=t*0.35+i;
+    });
+  });
+}
+
+
+ // ---- Choose the school version on the same start/help card.
+{
+  const choices = [...document.querySelectorAll('#versionChoices [data-version]')];
+  const render = () => choices.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.version === gameVersion)));
+  function selectVersion(next, initial = false) {
+    if (!['normal', 'halloween', 'christmas'].includes(next)) return;
+    const previous = gameVersion;
+    gameVersion = next;
+    try { localStorage.setItem(VERSION_KEY, gameVersion); } catch (_) {}
+    FX.fun.setVersion();
+    FX.halloween.setVersion();
+    if (gameVersion === 'christmas' && !FX.vinter.on) FX.vinter.set(true, false);
+    else if ((gameVersion === 'halloween' || previous === 'christmas') && FX.vinter.on) FX.vinter.set(false, false);
+    if (!initial && gameVersion === 'halloween') setEvening(true);
+    else if (!initial && previous === 'halloween' && gameVersion !== 'halloween') setEvening(false);
+    render();
+  }
+  choices.forEach(button => button.addEventListener('click', () => selectVersion(button.dataset.version)));
+  selectVersion(gameVersion, true);
+  FX.version = { get: () => gameVersion, set: selectVersion };
 }
 
 // (feature logic blocks go here)
