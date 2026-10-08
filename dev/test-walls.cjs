@@ -8,7 +8,10 @@ const { chromium } = require('playwright');
 let html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const debug = `window.__walls = { cols, camCols, resolve, movePlayerHorizontal, rayHit, keepCameraClear, updCamera, camPos, camLook, selectPlayerCharacter, keys, updPlayer, joy, get root(){return kid.root}, aim(){camInit=true;startBlend=1;lastDragEnd=clockT;cam.yaw=Math.PI/2;camPos.set(3,2,0);camLook.set(1,1.52,0)} };`;
 html = html.replace('if (window.claude?.hot?.ready)', debug + '\nif (window.claude?.hot?.ready)');
-const server = http.createServer((req, res) => { res.setHeader('Content-Type', 'text/html; charset=utf-8'); res.end(html); });
+// Serve the exact local Three.js build when supplied, without browser routing.
+if(process.env.DUEVEJ_THREE_PATH)html=html.replace('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js','/three.module.js');
+html=html.replace(/<link[^>]*(?:googleapis|gstatic)[^>]*>/g,'');
+const server = http.createServer((req, res) => {if(req.url==='/three.module.js'&&process.env.DUEVEJ_THREE_PATH){res.setHeader('Content-Type','application/javascript');res.end(fs.readFileSync(process.env.DUEVEJ_THREE_PATH));return;} res.setHeader('Content-Type', 'text/html; charset=utf-8'); res.end(html); });
 let browser;
 async function main() {
   await new Promise(r => server.listen(8766, '127.0.0.1', r));
@@ -16,10 +19,10 @@ async function main() {
   for (const mobile of [false, true]) {
     const context = await browser.newContext(mobile ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } : { viewport: { width: 1280, height: 900 } });
     if (process.env.DUEVEJ_THREE_PATH) await context.route('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js', route => route.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(process.env.DUEVEJ_THREE_PATH, 'utf8') }));
-    const page = await context.newPage(), errors = [];
+    await context.route(/fonts\.(googleapis|gstatic)\.com/,r=>r.fulfill({contentType:'text/css',body:''}));const page=await context.newPage(), errors = [];
     page.on('pageerror', e => errors.push(e.message));
     await page.addInitScript(() => { window.requestAnimationFrame = () => 0; });
-    await page.goto('http://127.0.0.1:8766');
+    await page.goto('http://127.0.0.1:8766',{waitUntil:'domcontentloaded'});
     await page.waitForFunction(() => window.__gameReady, {}, { timeout: 45000 });
     await page.locator('#goBtn').click();
     const checks = await page.evaluate(() => {

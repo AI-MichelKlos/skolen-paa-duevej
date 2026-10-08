@@ -2623,8 +2623,8 @@ function buildKid() {
     part(new THREE.SphereGeometry(0.08, 10, 8), skin, sh, 0, -0.42, 0);
     sh.rotation.z = s * 0.12; arms.push(sh);
   }
-  const root = new THREE.Group(); g.scale.setScalar(0.92); root.add(g);
-  return { root, g, head, legs, arms, coat, hair, leggings };
+  const root = new THREE.Group(), pose = new THREE.Group(); g.scale.setScalar(0.92); pose.add(g); root.add(pose);
+  return { root, pose, g, head, legs, arms, coat, hair, leggings };
 }
 const kid = buildKid(); dyn.add(kid.root);
 const girlBodyParts = [...kid.g.children];
@@ -3378,8 +3378,10 @@ function updPlayer(dt) {
   const speed = (fwd > 0 ? (run ? 9.5 : 5.2) * fwd : 2.8 * fwd) * (PM.speed ?? 1);
   P.face += turn * (run && fwd > 0 ? 2.0 : 2.5) * dt * (PM.turn ?? 1);
   const fx = Math.sin(P.face), fz = Math.cos(P.face);
-  const acc = (P.onGround ? 12 : 5) * (PM.acc ?? 1);
-  P.vel.x += (fx * speed - P.vel.x) * Math.min(1, acc * dt); P.vel.z += (fz * speed - P.vel.z) * Math.min(1, acc * dt);
+  const acc = (P.onGround ? (Math.abs(fwd) < 0.02 ? 18 : 12) : 5) * (PM.acc ?? 1);
+  const ease = 1 - Math.exp(-acc * dt);
+  P.vel.x += (fx * speed - P.vel.x) * ease; P.vel.z += (fz * speed - P.vel.z) * ease;
+  const stepX = P.pos.x, stepZ = P.pos.z;
   movePlayerHorizontal(dt);
   if (P.swingCd > 0) P.swingCd -= dt;
   else if (P.onGround && fwd > 0.3 && !paused) { const hit = barHit(); if (hit) { startSwing(hit); return; } }
@@ -3402,7 +3404,7 @@ function updPlayer(dt) {
   const hs = Math.hypot(P.vel.x, P.vel.z);
   const k = Math.max(Math.min(1, hs / 5), hs < 0.6 ? Math.abs(turn) * 0.35 : 0);
   const back = (fx * P.vel.x + fz * P.vel.z) < -0.2 ? -1 : 1;
-  P.walkT += dt * (2.5 + hs * 1.5) * (k > 0.02 ? 1 : 0);
+  P.walkT += Math.hypot(P.pos.x - stepX, P.pos.z - stepZ) * 2.1 + (hs < 0.2 ? Math.abs(turn) * dt * 1.8 : 0);
   const ph = P.walkT * back;
   const L = kid.legs, A = kid.arms;
   if (P.onGround) {
@@ -3578,13 +3580,15 @@ function camFollow(dt, out, look) {
     const moving = Math.hypot(P.vel.x, P.vel.z) > 0.4 || Math.abs(turnIn) > 0.05;
     cam.yaw += angDiff(P.face + Math.PI, cam.yaw) * Math.min(1, dt * (moving ? 6 : 1.6));
   }
-  const ahead = Math.min(1.6, Math.hypot(P.vel.x, P.vel.z) * 0.25);
-  cameraEye.set(P.pos.x, P.pos.y + 1.4, P.pos.z);
+  // Start easing in just before the entrance; the floor height stays with the player.
+  const indoor = inWing(P.pos.x, P.pos.z, 0) ? 1 : (inWing(P.pos.x, P.pos.z, 1) ? 0.45 : 0);
+  camIn += (indoor - camIn) * (1 - Math.exp(-dt * 4));
+  const ahead = Math.min(1.2 - camIn * 0.8, Math.hypot(P.vel.x, P.vel.z) * 0.18);
+  cameraEye.set(P.pos.x, P.pos.y + 1.4 - camIn * 0.22, P.pos.z);
   look.set(P.pos.x + Math.sin(P.face) * ahead, cameraEye.y, P.pos.z + Math.cos(P.face) * ahead);
   // Looking ahead must stop on this side of a wall, rather than aiming through it.
   keepCameraClear(cameraEye, look);
-  camIn += ((inWing(P.pos.x, P.pos.z, 0) ? 1 : 0) - camIn) * Math.min(1, dt * 3);
-  const pit = cam.pitch * (1 - 0.55 * camIn), dst = Math.min(cam.dist, 7.5 - 4.3 * camIn);
+  const pit = cam.pitch * (1 - 0.3 * camIn), dst = Math.min(cam.dist, 7.5 - 4.8 * camIn);
   const cp = Math.cos(pit);
   tmpA.set(Math.sin(cam.yaw) * cp * dst, Math.sin(pit) * dst, Math.cos(cam.yaw) * cp * dst);
   tmpB.copy(look).add(tmpA);
@@ -6477,11 +6481,37 @@ function updPlayerCharacter(dt, t) {
   const model = playerModels.get(playerCharacter);
   const moving = Math.hypot(P.vel.x, P.vel.z) > 0.3;
   model.state = moving ? 'walk' : 'idle'; model.ph += dt;
-  ANIM[playerCharacter](model, playerCharacter === 'mus' && moving ? t * 1.5 : t, dt);
+  ANIM[playerCharacter](model, t, dt);
+  if (model.legs) { const step = moving && P.onGround ? Math.sin(P.walkT * 1.55) * 0.55 : 0; model.legs.forEach((leg, i) => { leg.rotation.x = i % 2 ? step : -step; }); }
   // Cosmetic gait only: collision, speed, jumps, stairs and rides keep their existing physics.
   const gait = moving && P.onGround && !P.ride && !P.swing && !reduceMotion;
   model.g.position.y = gait && playerCharacter === 'hund' ? Math.abs(Math.sin(P.walkT)) * 0.065 : 0;
   model.g.rotation.z = gait && playerCharacter === 'mus' ? Math.sin(P.walkT * 2) * 0.035 : 0;
+}
+
+// ---- walking presentation: a shared pose layer leaves rides and play animations intact
+const CONTACT = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 1.15), new THREE.MeshBasicMaterial({ map: TX.glow, color: '#30243b', transparent: true, opacity: 0.28, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+CONTACT.rotation.x = -Math.PI / 2; dyn.add(CONTACT);
+const WALK_FEEL = { grounded: true, fallSpeed: 0, landing: 0 };
+function updWalkingPresentation(dt) {
+  CONTACT.visible = started && kid.root.visible;
+  const floor = groundAt(P.pos.x, P.pos.z, P.pos.y + 0.15), height = Math.max(0, P.pos.y - floor);
+  CONTACT.position.set(P.pos.x, floor + 0.018, P.pos.z);
+  CONTACT.material.opacity = 0.28 / (1 + height * 1.4);
+  CONTACT.scale.setScalar(1 + Math.min(0.45, height * 0.12));
+  if (!started || paused) return;
+  if (!WALK_FEEL.grounded && P.onGround && !P.ride && !P.swing) WALK_FEEL.landing = Math.min(1, Math.abs(WALK_FEEL.fallSpeed) / 10);
+  WALK_FEEL.grounded = P.onGround; WALK_FEEL.fallSpeed = P.vel.y;
+  WALK_FEEL.landing = Math.max(0, WALK_FEEL.landing - dt * 5);
+  const special = P.ride || P.swing || Math.abs(kid.g.rotation.x) > 0.12 || Math.abs(kid.g.rotation.z) > 0.12;
+  const speed = Math.min(1, Math.hypot(P.vel.x, P.vel.z) / 5.2);
+  const tilt = !special && !reduceMotion ? speed * 0.065 : 0;
+  const lean = !special && !reduceMotion ? -turnIn * speed * 0.075 : 0;
+  const ease = 1 - Math.exp(-dt * 10);
+  kid.pose.rotation.x += (tilt - kid.pose.rotation.x) * ease;
+  kid.pose.rotation.z += (lean - kid.pose.rotation.z) * ease;
+  const squash = !special && !reduceMotion ? WALK_FEEL.landing * 0.055 : 0;
+  kid.pose.scale.set(1 + squash * 0.4, 1 - squash, 1 + squash * 0.4);
 }
 
 // ======================================================================== END FEATURE LOGIC BLOCKS
@@ -6500,6 +6530,7 @@ function frame(now) {
   updParade(dt, clockT); updLeafPiles(dt); updPuddles(dt); updVoice(); updSwingsIdle(dt, clockT); updTrail(dt, clockT);
   for (const h of HOOKS.frame) h(dt, clockT);
   updPlayerCharacter(dt, clockT);
+  updWalkingPresentation(dt);
   updActions();
   updEffects(dt);
   const fxz = started ? P.pos : orbitC;

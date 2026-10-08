@@ -29,6 +29,7 @@ Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, h
 - Bygningerne er tegnet frit efter fotos af skolen. Hvor husene står, følger en håndtegnet plan af skolen. Placeringer og detaljer er forenklede.
 - Trampolinerne sidder i et bed af blødt gummi. Gå ud på dem, så hopper du af dig selv. Tryk på hop for at komme helt højt op.
 - Kameraet følger altid bag den valgte spillerfigur, så man ser derhen, hvor den går. Kameraet holder afstand til vægge, også når man drejer i et hjørne.
+- Figurerne har en blød skygge under sig. Skridt følger den faktiske fart, start og stop er bløde, og kroppen læner sig lidt i sving og giver efter ved landing. Kameraet kommer tættere på i rummene og skifter roligt gennem indgangene.
 - Figuren stopper ved vægge og kan glide langs dem eller bakke væk med det samme. Tynde vægge stopper også figuren, når man løber eller tager rulleskøjter på.
 - Et par gange undervejs kommer der en regnbyge i et minut. Så kan pigen slå sin paraply op.
 - Går man lige ind i et af de lave stålrør, svinger pigen sig rundt om røret og går videre.

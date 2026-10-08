@@ -7,20 +7,23 @@ const assert = require('assert/strict');
 const { chromium } = require('playwright');
 const path = require('path');
 const reportDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'duevej-characters-'));
-const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+let html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const debug = `window.__test = {selectPlayerCharacter, updPlayerCharacter, updPlayer, updAnimals, updParade, discover, found, keys, joy, playerModels, girlBodyParts, FILIPA_ANIMALS, save, load, openIntro, render(){P.pos.set(0,0.12,-30);P.vel.set(0,0,0);P.face=0;P.onGround=true;updPlayer(1/60);updPlayerCharacter(1/60,0);kid.root.visible=true;renderer.setPixelRatio(1);renderer.shadowMap.enabled=false;camera.position.set(3,2.2,-26);camera.lookAt(0,0.8,-30);renderer.render(scene,camera)}, get character(){return playerCharacter}, tick(n=600){for(let i=0;i<n;i++){updAnimals(1/60,i/60);updParade(1/60,i/60);for(const h of HOOKS.frame)h(1/60,i/60)}}, jump(){jumpReq=true}};`;
-const server = http.createServer((req,res) => { res.setHeader('Content-Type','text/html; charset=utf-8');res.end(html.replace('if (window.claude?.hot?.ready)',debug+'\nif (window.claude?.hot?.ready)')); });
+// Serve the exact local Three.js build when supplied, without browser routing.
+if(process.env.DUEVEJ_THREE_PATH)html=html.replace('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js','/three.module.js');
+html=html.replace(/<link[^>]*(?:googleapis|gstatic)[^>]*>/g,'');
+const server = http.createServer((req,res) => {if(req.url==='/three.module.js'&&process.env.DUEVEJ_THREE_PATH){res.setHeader('Content-Type','application/javascript');res.end(fs.readFileSync(process.env.DUEVEJ_THREE_PATH));return;} res.setHeader('Content-Type','text/html; charset=utf-8');res.end(html.replace('if (window.claude?.hot?.ready)',debug+'\nif (window.claude?.hot?.ready)')); });
 async function main(){
   await new Promise(r => server.listen(8765,'127.0.0.1',r));
   const browser = await chromium.launch({...(process.env.DUEVEJ_BROWSER_PATH ? {executablePath:process.env.DUEVEJ_BROWSER_PATH} : {}),headless:true,args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});
   const results=[];
   for(const mobile of [false,true]){
     const context=await browser.newContext(mobile?{viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:1}:{viewport:{width:1280,height:900}});
-    const page=await context.newPage();
+    await context.route(/fonts\.(googleapis|gstatic)\.com/,r=>r.fulfill({contentType:'text/css',body:''}));const page=await context.newPage();
     if(process.env.DUEVEJ_THREE_PATH) await context.route('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js', route => route.fulfill({contentType:'application/javascript',body:fs.readFileSync(process.env.DUEVEJ_THREE_PATH,'utf8')}));
     await page.addInitScript(()=>{window.requestAnimationFrame=()=>0;});
     const errors=[];page.on('pageerror',e=>{errors.push(e.message);console.error('Browser error:',e.message)});
-    await page.goto('http://127.0.0.1:8765');
+    await page.goto('http://127.0.0.1:8765',{waitUntil:'domcontentloaded'});
     try { await page.waitForFunction(()=>window.__gameReady,{},{timeout:45000}); }
     catch(e) { console.error('Bootstrap errors:', errors, await page.locator('#loadErr').textContent()); throw e; }
     if(!process.env.DUEVEJ_SKIP_SCREENSHOTS) await page.screenshot({path:path.join(reportDir, `${mobile?'mobile':'desktop'}-start.png`)});
