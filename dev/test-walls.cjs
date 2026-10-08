@@ -14,7 +14,7 @@ html=html.replace(/<link[^>]*(?:googleapis|gstatic)[^>]*>/g,'');
 const server = http.createServer((req, res) => {if(req.url==='/three.module.js'&&process.env.DUEVEJ_THREE_PATH){res.setHeader('Content-Type','application/javascript');res.end(fs.readFileSync(process.env.DUEVEJ_THREE_PATH));return;} res.setHeader('Content-Type', 'text/html; charset=utf-8'); res.end(html); });
 let browser;
 async function main() {
-  await new Promise(r => server.listen(8766, '127.0.0.1', r));
+  await new Promise(r => server.listen(0, '127.0.0.1', r));
   browser = await chromium.launch({ ...(process.env.DUEVEJ_BROWSER_PATH ? { executablePath: process.env.DUEVEJ_BROWSER_PATH } : {}), headless: true, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
   for (const mobile of [false, true]) {
     const context = await browser.newContext(mobile ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } : { viewport: { width: 1280, height: 900 } });
@@ -22,8 +22,8 @@ async function main() {
     await context.route(/fonts\.(googleapis|gstatic)\.com/,r=>r.fulfill({contentType:'text/css',body:''}));const page=await context.newPage(), errors = [];
     page.on('pageerror', e => errors.push(e.message));
     await page.addInitScript(() => { window.requestAnimationFrame = () => 0; });
-    await page.goto('http://127.0.0.1:8766',{waitUntil:'domcontentloaded'});
-    await page.waitForFunction(() => window.__gameReady, {}, { timeout: 45000 });
+    await page.goto('http://127.0.0.1:'+server.address().port,{waitUntil:'commit'});
+    await page.waitForFunction(() => window.__gameReady, {}, {polling:100,timeout:45000});
     await page.locator('#goBtn').click();
     const checks = await page.evaluate(() => {
       const w = window.__walls, g = window.__duevej, p = g.P;

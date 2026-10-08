@@ -30,6 +30,8 @@ Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, h
 - Trampolinerne sidder i et bed af blødt gummi. Gå ud på dem, så hopper du af dig selv. Tryk på hop for at komme helt højt op.
 - Kameraet følger altid bag den valgte spillerfigur, så man ser derhen, hvor den går. Kameraet holder afstand til vægge, også når man drejer i et hjørne.
 - Figurerne har en blød skygge under sig. Skridt følger den faktiske fart, start og stop er bløde, og kroppen læner sig lidt i sving og giver efter ved landing. Kameraet kommer tættere på i rummene og skifter roligt gennem indgangene.
+- Indendørs er vægge og gulve lysere, trappekanterne tydeligere, og dørene har små billedskilte. En varm markering ved dørtrinnet bliver tydelig, når rummet er åbent. Kameraet giver lidt bredere overblik i rummene.
+- Kort og Hjælp er altid synlige. Under Mere ligger Bobler, Vinter, Dag/aften, Lyd og Læs op. Knapperne er større, og menuen kan rulles på små skærme.
 - Figuren stopper ved vægge og kan glide langs dem eller bakke væk med det samme. Tynde vægge stopper også figuren, når man løber eller tager rulleskøjter på.
 - Et par gange undervejs kommer der en regnbyge i et minut. Så kan pigen slå sin paraply op.
 - Går man lige ind i et af de lave stålrør, svinger pigen sig rundt om røret og går videre.

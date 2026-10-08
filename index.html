@@ -228,7 +228,7 @@ const scene = new THREE.Scene();
 const world = new THREE.Group(); scene.add(world);
 const dyn = new THREE.Group(); scene.add(dyn);
 const WING_IN = new THREE.Group(), WING_DYN = new THREE.Group(); WING_IN.userData.noMerge = true;   // the inside of the yellow wing: only drawn when the camera is near it
-const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.3, 900);
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.12, 900);
 const ANI = Math.min(8, renderer.capabilities.getMaxAnisotropy());
 
 // ---------------------------------------------------------------- toon materials
@@ -1159,8 +1159,8 @@ const YB = brickBlock({ x: 33.5, z: 11.75, w: 9, d: 19.5, h: 7.6, rise: 3.2, wal
     const ix0 = X0 + T, ix1 = 28.85, iz0 = Z0 + T, iz1 = Z1 - T;                // inside faces
     const FL = 0.12, CEIL = 3.45, F1 = 3.6, TOP = 6.55;                         // floor, ceiling, first floor, top ceiling
     const DX0 = 25.9, DX1 = 28.1, DH = 2.5;                                     // the two double doorways
-    const plaster = toon('#efe7d6', { emissive: '#4a4436' }), lino = toon('#cdbf9f'), stairM = toon('#bdb5a6'), leafM = toon('#3a3e45'), glassM = toon('#86a3bc');
-    const stairEdgeM = toon('#827a6f'), stairTrimM = toon('#6f675e');
+    const plaster = toon('#f5eddf', { emissive: '#4a4436' }), lino = toon('#d9ccb2'), stairM = toon('#cbbfae'), leafM = toon('#3a3e45'), glassM = toon('#86a3bc');
+    const stairEdgeM = toon('#78634c'), stairTrimM = toon('#6f675e');
     const C = (x0, x1, z0, z1, top, bot) => cols.push(bot === undefined ? { t: 'b', x0, x1, z0, z1, top } : { t: 'b', x0, x1, z0, z1, top, bot });
     const wb = (x0, x1, y0, y1, z0, z1, mat, o = {}) => { box(x1 - x0, y1 - y0, z1 - z0, mat, (x0 + x1) / 2, y0, (z0 + z1) / 2, { edges: o.edges, cast: o.cast }); if (o.col !== false) C(x0, x1, z0, z1, y1, o.bot); };
     const plane = (w, h, mat, x, y, z, ry) => mesh(mplane(w, h), mat, x, y, z, { ry, cast: false });
@@ -2476,6 +2476,27 @@ for (const z of [-80, -55, -30, -5, 20, 45, 70]) tree(-53.6, z, 'round', 0.85);
   mesh(boxGeo(0.05, 0.46, 0.05), M.dark, BX, BY - 0.21, WZ - 0.16, { rx: -0.72, cast: false });
   FX.ude = Object.assign(FX.ude || {}, { bell: { x: BX, y: BY - 0.03, z: WZ - 0.44 } });
 }
+// ---- readable entrances: small pictograms and clear thresholds, with no extra colliders
+{
+  const iconTexture = kind => ctex(96,96,(g,w,h)=>{
+    g.fillStyle='#fff6df';g.fillRect(0,0,w,h);g.strokeStyle='#3f6b4f';g.fillStyle='#3f6b4f';g.lineWidth=6;g.lineCap='round';g.lineJoin='round';g.strokeRect(3,3,w-6,h-6);
+    if(kind==='music'){g.beginPath();g.moveTo(39,66);g.lineTo(39,24);g.lineTo(67,18);g.lineTo(67,59);g.stroke();for(const [x,y]of [[30,67],[58,60]]){g.beginPath();g.ellipse(x,y,10,7,-.3,0,Math.PI*2);g.fill();}}
+    else if(kind==='art'){g.save();g.translate(48,48);g.rotate(-.65);g.fillStyle='#e8994e';g.fillRect(-9,-26,18,45);g.beginPath();g.moveTo(-9,19);g.lineTo(0,33);g.lineTo(9,19);g.closePath();g.fill();g.strokeRect(-9,-26,18,45);g.restore();}
+    else if(kind==='book'){g.beginPath();g.moveTo(48,31);g.quadraticCurveTo(30,20,17,26);g.lineTo(17,66);g.quadraticCurveTo(31,60,48,71);g.quadraticCurveTo(65,60,79,66);g.lineTo(79,26);g.quadraticCurveTo(65,20,48,31);g.lineTo(48,71);g.stroke();}
+    else{g.strokeRect(18,22,60,40);g.beginPath();g.moveTo(48,62);g.lineTo(48,76);g.moveTo(34,76);g.lineTo(62,76);g.stroke();g.beginPath();g.arc(36,40,6,0,Math.PI*2);g.fill();g.beginPath();g.moveTo(51,37);g.lineTo(66,37);g.moveTo(51,47);g.lineTo(62,47);g.stroke();}
+  },{wrap:false});
+  const icons={};for(const kind of ['music','art','book','class'])icons[kind]=new THREE.MeshBasicMaterial({map:iconTexture(kind)});
+  const hints=[];
+  for(const d of FX.sal1.doors){
+    const kind=d.nm==='2.A'?'music':d.nm==='2.B'?'art':d.nm==='3.A'?'book':'class';
+    const z=d.north?-.825:1.325;
+    mesh(new THREE.PlaneGeometry(.36,.36),icons[kind],d.x-.85,4.98,z,{ry:d.north?0:Math.PI,cast:false});
+    const material=new THREE.MeshBasicMaterial({color:'#f0c66b',transparent:true,opacity:.12,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
+    const marker=mesh(new THREE.PlaneGeometry(.9,.44),material,d.x,3.618,d.north?-.93:1.43,{rx:-Math.PI/2,cast:false});
+    marker.userData.noMerge=true;hints.push({door:d,marker,unlocked:false});
+  }
+  FX.entranceHints=hints;
+}
 // (feature world blocks go here)
 // ======================================================================== END FEATURE WORLD BLOCKS
 
@@ -3253,6 +3274,7 @@ $('finOk').addEventListener('click', () => { $('finale').hidden = true; paused =
 $('finAgain').addEventListener('click', () => { leaveParade(); found.clear(); updCounter(); renderChips(); save(); $('finale').hidden = true; paused = false; canvas.focus(); });
 
 function openIntro(help) {
+  closeMoreTools();
   paused = true; keys.clear(); renderChips();
   if (help) { goBtn.textContent = 'Fortsæt'; $('introTitle').textContent = 'Sådan går du rundt'; $('introLead').textContent = `Du har fundet ${nFound()} af 12 dyr. Hvide prikker på kortet viser, hvor de sidste gemmer sig.`; }
   intro.hidden = false; goBtn.focus();
@@ -3603,6 +3625,8 @@ function updCamera(dt, t) {
   orbitPos.set(orbitC.x + Math.cos(oa) * 140, 86, orbitC.z + Math.sin(oa) * 140);
   if (!started) { camera.position.copy(orbitPos); camera.lookAt(orbitC); return; }
   camFollow(dt, followPos, followLook);
+  const lens = (window.innerWidth / window.innerHeight < 0.8 ? 70 : 55) + camIn * (isTouch ? 4 : 8);
+  if (Math.abs(camera.fov - lens) > 0.05) { camera.fov = lens; camera.updateProjectionMatrix(); }
   if (!camInit) { camPos.copy(followPos); camLook.copy(followLook); camInit = true; }
   camPos.lerp(followPos, 1 - Math.exp(-dt * 12)); camLook.lerp(followLook, 1 - Math.exp(-dt * 14));
   // Smoothing can cross a wall at a corner or doorway. Pull in immediately; ease out normally.
@@ -6513,6 +6537,23 @@ function updWalkingPresentation(dt) {
   const squash = !special && !reduceMotion ? WALK_FEEL.landing * 0.055 : 0;
   kid.pose.scale.set(1 + squash * 0.4, 1 - squash, 1 + squash * 0.4);
 }
+
+// ---- quieter HUD: the walk keeps its map and help; other choices live behind Mere
+const MORE = document.createElement('button');MORE.id='bMore';MORE.className='sticker btn';MORE.type='button';MORE.setAttribute('aria-expanded','false');MORE.setAttribute('aria-controls','moreTools');MORE.setAttribute('aria-label','Flere valg');
+MORE.innerHTML='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="19" cy="12" r="2.2"/></svg><span>Mere</span>';
+const MORE_PANEL=document.createElement('div');MORE_PANEL.id='moreTools';MORE_PANEL.className='sticker';MORE_PANEL.hidden=true;MORE_PANEL.setAttribute('role','group');MORE_PANEL.setAttribute('aria-label','Flere valg');
+for(const id of ['bBubbles','bWinter','bNight','bSound','bVoice']){const button=$(id);if(button)MORE_PANEL.appendChild(button);}
+$('tools').append(MORE,MORE_PANEL);
+const moreStyle=document.createElement('style');moreStyle.textContent='#tools{z-index:30}.overlay{z-index:40}#map{pointer-events:none}#tools>.btn{min-width:44px;min-height:44px;box-sizing:border-box;justify-content:center}#moreTools{position:fixed;right:14px;top:calc(72px + env(safe-area-inset-top,0px));width:min(240px,calc(100vw - 28px));padding:10px;box-sizing:border-box;max-height:calc(100dvh - 92px - env(safe-area-inset-top,0px));overflow:auto;touch-action:pan-y;overscroll-behavior:contain;display:grid;gap:8px;z-index:20;background:var(--paper)}#moreTools .btn{min-height:48px;justify-content:flex-start;font-size:16px;padding:10px 14px}#hud #tools #moreTools .btn span{display:inline}#moreTools .btn svg{width:23px;height:23px}@media(max-width:600px){#tools{gap:6px}#tools>.btn{padding:9px}#map{top:calc(76px + env(safe-area-inset-top,0px))}}';document.head.appendChild(moreStyle);
+const smallHudStyle=document.createElement('style');smallHudStyle.textContent='@media(max-width:360px){#counter{gap:6px;padding:7px 9px 7px 7px}#counter svg{width:28px;height:28px}#cnt{font-size:20px}}';document.head.appendChild(smallHudStyle);
+function closeMoreTools(focus=false){MORE_PANEL.hidden=true;MORE.setAttribute('aria-expanded','false');if(focus)MORE.focus();}
+MORE.addEventListener('click',()=>{const open=MORE_PANEL.hidden;MORE_PANEL.hidden=!open;MORE.setAttribute('aria-expanded',String(open));if(open)keys.clear();});
+document.addEventListener('pointerdown',e=>{if(!MORE_PANEL.hidden&&!MORE_PANEL.contains(e.target)&&!MORE.contains(e.target))closeMoreTools();});
+document.addEventListener('keydown',e=>{if(e.code==='Escape'&&!MORE_PANEL.hidden){closeMoreTools(true);e.preventDefault();}});
+HOOKS.frame.push(()=>{
+  if(paused||!started)closeMoreTools();
+  for(const hint of FX.entranceHints){if(hint.unlocked===hint.door.unlocked)continue;hint.unlocked=hint.door.unlocked;hint.marker.material.opacity=hint.unlocked?.65:.12;}
+});
 
 // ======================================================================== END FEATURE LOGIC BLOCKS
 
