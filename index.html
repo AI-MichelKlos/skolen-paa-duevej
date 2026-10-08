@@ -6490,7 +6490,7 @@ function updActions() {
     doorRoot.visible = isChristmas();
     snowman.visible = isChristmas();
     pickups.forEach(p => p.root.visible = isChristmas() && !FUN.stars.has(p.id));
-    if (!isChristmas()) { bulbs.forEach(b => b.visible = false); dogHat.visible = false; partySnow.visible = false; }
+    if (!isChristmas()) { bulbs.forEach(b => b.visible = false); dogHat.visible = false; peek.visible = false; partySnow.visible = false; }
     greetings.hund = isChristmas() ? 'Hunden har fundet en nissehue!' : 'Hunden hopper glad omkring!';
     if (changed) { FUN.party = false; FUN.partyDone = false; FUN.partyTime = 0; readyHint = false; }
     renderProgress();
