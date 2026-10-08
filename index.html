@@ -64,6 +64,7 @@ body{margin:0;overflow:hidden;background:var(--sky);color:var(--ink);font-family
 .versionChoice span:first-child{font:31px/1.1 "Segoe UI Emoji","Apple Color Emoji",sans-serif}
 .versionChoice[aria-pressed="true"]{background:#ffe08a;box-shadow:3px 4px 0 var(--ink)}
 .versionChoice:focus-visible{outline:4px solid #387abb;outline-offset:3px}
+#versionHint{font-size:13.5px;margin:0 0 16px}
 @media(max-width:440px){#characterChoices{grid-template-columns:repeat(2,minmax(0,1fr))}.characterChoice{min-height:112px}}
 .eyebrow{font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:600;color:var(--leaf-deep);display:flex;align-items:center;gap:8px}
 .card h1,.card h2{font-family:var(--display);font-weight:800;font-size:clamp(34px,8vw,48px);margin:4px 0 10px;line-height:1;text-wrap:balance;letter-spacing:-.01em}
@@ -155,6 +156,7 @@ body.touch #poi{bottom:calc(118px + env(safe-area-inset-bottom,0px))}
         <button class="versionChoice" type="button" data-version="halloween" aria-pressed="false"><span aria-hidden="true">🎃</span><span>Halloween</span></button>
         <button class="versionChoice" type="button" data-version="christmas" aria-pressed="false"><span aria-hidden="true">🎄</span><span>Jul</span></button>
       </div>
+      <p id="versionHint" class="lead" hidden></p>
     </section>
     <button class="go" id="goBtn" type="button" disabled>Henter skolen …</button>
     <p class="lead" id="introLead">Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, hop på trampolinerne, og gå hele vejen rundt om skolen. Tolv dyr gemmer sig rundt omkring. Kan du finde dem alle?</p>
@@ -3425,7 +3427,10 @@ function updPlayer(dt) {
   else if (P.onGround && fwd > 0.3 && !paused) { const hit = barHit(); if (hit) { startSwing(hit); return; } }
   if (rideCheck()) { updRide(0); return; }
   pushFromCyclists(P.pos); resolve(P.pos, P.vel);
-  P.pos.x = Math.min(BOUNDS[1], Math.max(BOUNDS[0], P.pos.x)); P.pos.z = Math.min(BOUNDS[3], Math.max(BOUNDS[2], P.pos.z));
+  if (!FX.halloweenHall?.inside) {
+    P.pos.x = Math.min(BOUNDS[1], Math.max(BOUNDS[0], P.pos.x));
+    P.pos.z = Math.min(BOUNDS[3], Math.max(BOUNDS[2], P.pos.z));
+  }
   const tr = trampAt(P.pos.x, P.pos.z);
   if (jumpReq && tr && !paused) P.boost = true;
   if (jumpReq && P.onGround && !paused && !tr) { P.vel.y = 7.4; P.onGround = false; hop(); }
@@ -3619,7 +3624,7 @@ function camFollow(dt, out, look) {
     cam.yaw += angDiff(P.face + Math.PI, cam.yaw) * Math.min(1, dt * (moving ? 6 : 1.6));
   }
   // Start easing in just before the entrance; the floor height stays with the player.
-  const indoor = inWing(P.pos.x, P.pos.z, 0) ? 1 : (inWing(P.pos.x, P.pos.z, 1) ? 0.45 : 0);
+  const indoor = FX.halloweenHall?.inside ? 1 : (inWing(P.pos.x, P.pos.z, 0) ? 1 : (inWing(P.pos.x, P.pos.z, 1) ? 0.45 : 0));
   camIn += (indoor - camIn) * (1 - Math.exp(-dt * 4));
   const ahead = Math.min(1.2 - camIn * 0.8, Math.hypot(P.vel.x, P.vel.z) * 0.18);
   cameraEye.set(P.pos.x, P.pos.y + 1.4 - camIn * 0.22, P.pos.z);
@@ -3799,6 +3804,10 @@ function rainSound(level) {
 }
 function inWing(x, z, m) { return (x > 12 - m && x < 29 + m && z > -6.25 - m && z < 6.75 + m) || (x > 25.4 && x < 29 && z > 6.75 && z < 9.3); }
 function updRain(dt) {
+  if (FX.halloweenHall?.inside) {
+    rainLines.visible = false; splash.visible = false; if (rainLvl !== 0) { rainSound(0); rainLvl = 0; }
+    return;
+  }
   if (started && !paused) {
     WEATHER.t -= dt;
     if (WEATHER.t <= 0) {
@@ -6602,7 +6611,7 @@ function updActions() {
     owls.push({x,z});
   }
 
-  H.setVersion = () => { root.visible = gameVersion === 'halloween'; };
+  H.setVersion = () => { root.visible = gameVersion === 'halloween' && !FX.halloweenHall?.inside; };
   H.setVersion();
   HOOKS.frame.push((dt,t) => {
     if (!root.visible || paused) return;
@@ -6627,10 +6636,212 @@ function updActions() {
 }
 
 
+
+ // ---- Halloween-only hall inside the red main building. The entrance is its arched east door.
+{
+  const H = FX.halloweenHall = { inside:false, hasFlashlight:false };
+  const DOOR = { x:12.05, z:-58.5 };
+  const PICKUP = { x:13.2, z:-56.9 };
+  const HX=-180, HZ=-58.5, HW=14, HD=20;
+  const hall = grp(dyn,0,0,0);
+  const pickup = grp(dyn,PICKUP.x,groundAt(PICKUP.x,PICKUP.z,0.6),PICKUP.z);
+  const floorMat=toon('#554752'), wallMat=toon('#655568'), ceilingMat=toon('#3b3248');
+  const wood=toon('#694637'), frameMat=toon('#b0844e'), cloth=toon('#713e54');
+  const lensMat=new THREE.MeshBasicMaterial({color:'#ffe79c'});
+  pt(pickup,cyl(0.13,0.13,0.62,8),toon('#ef9a38'),0,0.32,0,{r:[0,0,Math.PI/2],ol:true});
+  pt(pickup,cyl(0.2,0.2,0.09,8),frameMat,0.34,0.32,0,{r:[0,0,Math.PI/2]});
+  pt(pickup,sph(0.12,10,8),lensMat,0.39,0.32,0,{s:[0.4,1,1],cast:false});
+  const shine=new THREE.Sprite(new THREE.SpriteMaterial({map:TX.glow,color:'#ffe4a0',transparent:true,depthWrite:false}));
+  shine.position.set(0,1.0,0);shine.scale.set(1.35,1.35,1);pickup.add(shine);
+
+  // The room lives away from the outdoor map; entry and exit at the real front door move the player.
+  box(HW,0.12,HD,floorMat,HX,-0.12,HZ,{parent:hall,cast:false});
+  box(2.35,0.025,14,cloth,HX,0.005,HZ,{parent:hall,cast:false});
+  box(HW,0.2,HD,ceilingMat,HX,4.15,HZ,{parent:hall,cast:false});
+  const hallWalls=[
+    [HX-HW/2,0.35,HD],[HX+HW/2,0.35,HD],
+    [HX,HW,0.35,HZ-HD/2],[HX,HW,0.35,HZ+HD/2]
+  ];
+  for(let i=0;i<4;i++){
+    const wall=hallWalls[i];
+    if(i<2) {
+      box(wall[1],4.15,wall[2],wallMat,wall[0],0,HZ,{parent:hall,edges:true});
+      colBox(wall[0]-wall[1]/2,wall[0]+wall[1]/2,HZ-HD/2,HZ+HD/2,4.15);
+    } else {
+      box(wall[1],4.15,wall[2],wallMat,HX,0,wall[3],{parent:hall,edges:true});
+      colBox(HX-HW/2,HX+HW/2,wall[3]-wall[2]/2,wall[3]+wall[2]/2,4.15);
+    }
+    camCols.push(cols[cols.length-1]);
+  }
+  // A door shape tells the player where to leave.
+  box(0.08,2.85,2.25,wood,HX+HW/2-0.25,0,HZ,{parent:hall,edges:true});
+  pt(hall,sph(0.075,8,6),frameMat,HX+HW/2-0.34,1.25,HZ+0.74,{cast:false});
+  for(const [x,z] of [[HX-4,HZ-6],[HX+3.5,HZ+5.5]]){
+    box(2.2,0.5,0.55,wood,x,0,z,{parent:hall,edges:true});
+  }
+
+  // Tiny painted stories, lit by the flashlight rather than by the scene.
+  function paintingTexture(kind) {
+    return ctex(320,240,(g,w,h)=>{
+      const bg=g.createLinearGradient(0,0,0,h);
+      bg.addColorStop(0,kind<2?'#24284e':'#333258');
+      bg.addColorStop(1,kind<2?'#80516b':'#6c5b86');
+      g.fillStyle=bg;g.fillRect(0,0,w,h);
+      g.fillStyle='#f4dba4';g.beginPath();g.arc(252,48,25,0,Math.PI*2);g.fill();
+      g.fillStyle='#30243e';g.beginPath();g.moveTo(0,195);g.quadraticCurveTo(90,150,170,193);g.quadraticCurveTo(260,160,320,198);g.lineTo(320,240);g.lineTo(0,240);g.fill();
+      g.lineWidth=5;g.lineCap='round';g.lineJoin='round';
+      if(kind<2) {
+        // A horse and a rider with a conspicuous empty space above the collar.
+        g.fillStyle=kind===0?'#292338':'#4a3044';
+        g.beginPath();g.ellipse(155,169,65,27,-0.08,0,Math.PI*2);g.fill();
+        g.beginPath();g.moveTo(195,156);g.lineTo(211,117);g.lineTo(232,119);g.lineTo(220,162);g.fill();
+        g.beginPath();g.ellipse(228,121,20,13,0.2,0,Math.PI*2);g.fill();
+        g.strokeStyle=g.fillStyle;
+        for(const x of [112,142,180,202]){g.beginPath();g.moveTo(x,182);g.lineTo(x+(x%3)*3,226);g.stroke();}
+        g.beginPath();g.moveTo(96,164);g.quadraticCurveTo(55,145,74,206);g.lineWidth=9;g.stroke();
+        g.fillStyle=kind===0?'#191a35':'#39243f';
+        g.beginPath();g.moveTo(130,146);g.lineTo(145,92);g.lineTo(170,90);g.lineTo(187,150);g.fill();
+        g.strokeStyle='#211c33';g.lineWidth=9;g.beginPath();g.moveTo(143,108);g.lineTo(111,150);g.moveTo(174,108);g.lineTo(209,146);g.stroke();
+        g.fillStyle='#d9b16d';g.fillRect(145,83,23,7);
+        // The hat floats where the missing head ought to be.
+        g.fillStyle='#1a1b32';g.fillRect(135,49,42,8);g.beginPath();g.moveTo(143,49);g.lineTo(148,27);g.lineTo(166,27);g.lineTo(172,49);g.fill();
+        if(kind===1){g.fillStyle='#f18c36';g.beginPath();g.arc(211,151,14,0,Math.PI*2);g.fill();g.fillStyle='#ffd688';g.fillRect(204,147,4,3);g.fillRect(213,147,4,3);}
+      } else if(kind===2) {
+        // A cheerful ghost practising a very small "boo".
+        g.fillStyle='#ede8f2';g.beginPath();g.moveTo(98,175);g.bezierCurveTo(88,74,125,55,160,69);
+        g.bezierCurveTo(208,45,233,91,225,185);g.quadraticCurveTo(208,162,195,184);
+        g.quadraticCurveTo(180,164,161,185);g.quadraticCurveTo(143,166,125,185);g.closePath();g.fill();
+        g.fillStyle='#34304e';for(const x of [142,180]){g.beginPath();g.arc(x,118,7,0,Math.PI*2);g.fill();}
+        g.strokeStyle='#34304e';g.lineWidth=4;g.beginPath();g.arc(161,143,13,0.1,Math.PI-0.1);g.stroke();
+      } else if(kind===3) {
+        // A skeleton dancing with its hat in its hand.
+        g.strokeStyle='#ece4cf';g.lineWidth=11;g.beginPath();g.moveTo(160,109);g.lineTo(160,176);g.moveTo(134,124);g.lineTo(185,124);g.moveTo(160,176);g.lineTo(128,218);g.moveTo(160,176);g.lineTo(202,213);g.moveTo(134,124);g.lineTo(100,95);g.moveTo(185,124);g.lineTo(218,105);g.stroke();
+        g.fillStyle='#ece4cf';g.beginPath();g.arc(160,84,28,0,Math.PI*2);g.fill();
+        g.fillStyle='#34304e';for(const x of [149,171]){g.beginPath();g.arc(x,83,5,0,Math.PI*2);g.fill();}
+        g.fillStyle='#d79045';g.fillRect(204,78,42,7);g.fillRect(212,61,25,18);
+      } else {
+        // A scholarly owl reading about where the animals hide.
+        g.fillStyle='#81649a';g.beginPath();g.ellipse(160,146,52,69,0,0,Math.PI*2);g.fill();
+        g.fillStyle='#eee1bc';for(const x of [139,182]){g.beginPath();g.arc(x,112,19,0,Math.PI*2);g.fill();}
+        g.fillStyle='#30243e';for(const x of [139,182]){g.beginPath();g.arc(x,112,7,0,Math.PI*2);g.fill();}
+        g.fillStyle='#eaa653';g.beginPath();g.moveTo(160,126);g.lineTo(151,139);g.lineTo(169,139);g.fill();
+        g.fillStyle='#f1c979';g.fillRect(115,170,90,45);g.strokeStyle='#654573';g.lineWidth=3;g.beginPath();g.moveTo(160,170);g.lineTo(160,215);g.stroke();
+      }
+    },{wrap:false});
+  }
+  const stories=[
+    [0,HX-HW/2+0.23,HZ-5,Math.PI/2,'Rytteren uden hoved leder efter sin hat. Den svæver lige over ham!'],
+    [1,HX-HW/2+0.23,HZ+1.5,Math.PI/2,'Endnu en hovedløs rytter! Han har taget et græskar med på tur.'],
+    [2,HX-3.6,HZ-HD/2+0.23,0,'Det lille spøgelse øver sig på at sige bøh.'],
+    [3,HX+3.6,HZ-HD/2+0.23,0,'Skelettet danser, så knoglerne rasler.'],
+    [4,HX-3.6,HZ+HD/2-0.23,Math.PI,'Den kloge ugle læser en bog om skolens dyr.']
+  ];
+  const paintings=[];
+  stories.forEach(([kind,x,z,ry,message],i)=>{
+    const frame=grp(hall,x,2.25,z);frame.rotation.y=ry;
+    box(3.25,2.55,0.16,frameMat,0,-1.275,0,{parent:frame,cast:false,edges:true});
+    const art=pt(frame,new THREE.PlaneGeometry(2.94,2.22),
+      new THREE.MeshLambertMaterial({map:paintingTexture(kind),side:THREE.DoubleSide}),
+      0,0,0.09,{cast:false});
+    paintings.push({frame,art,x,z,message,id:i});
+  });
+
+  // A smiling ghost waits at the far end of the room.
+  const ghost=grp(hall,HX-0.5,0,HZ-6.4);
+  const pale=toon('#eee8fa',{transparent:true,opacity:0.82,depthWrite:false});
+  pt(ghost,sph(0.42,14,10),pale,0,1.38,0,{s:[1,1.2,0.8],cast:false});
+  pt(ghost,cone(0.45,0.7,12),pale,0,0.81,0,{r:[Math.PI,0,0],cast:false});
+  const face=toon('#30243d');
+  for(const side of [-1,1])pt(ghost,sph(0.055,8,6),face,side*0.15,1.47,0.32,{cast:false});
+  pt(ghost,sph(0.055,8,6),face,0,1.25,0.34,{s:[1.2,0.5,0.4],cast:false});
+
+  const beam=new THREE.SpotLight('#fff0c4',30,14,Math.PI/5,0.52,1.5);
+  beam.visible=false;beam.castShadow=false;scene.add(beam);scene.add(beam.target);
+  let winterBefore=false;
+  function moveTo(x,z,faceDir) {
+    P.pos.set(x,0,z);P.vel.set(0,0,0);P.face=faceDir;P.onGround=true;
+    kid.root.position.copy(P.pos);kid.root.rotation.y=faceDir;
+    cam.yaw=faceDir+Math.PI;camInit=false;startBlend=1;keys.clear();
+  }
+  function updateBeam() {
+    beam.position.set(P.pos.x, P.pos.y+1.18, P.pos.z);
+    beam.target.position.set(P.pos.x+Math.sin(P.face)*7,P.pos.y+1.12,P.pos.z+Math.cos(P.face)*7);
+    beam.target.updateMatrixWorld();
+  }
+  function takeFlashlight() {
+    if(H.hasFlashlight || gameVersion!=='halloween')return;
+    H.hasFlashlight=true;pickup.visible=false;sparkleSound();
+    toast('Du fandt en lommelygte! Nu kan du gå ind i det store hus.');
+  }
+  function enter() {
+    if(gameVersion!=='halloween'||H.inside)return;
+    if(!H.hasFlashlight){toast('Find lommelygten ved trappen først.');return;}
+    H.inside=true;hall.visible=true;beam.visible=true;FX.halloween.setVersion();
+    winterBefore=!!FX.vinter?.on;
+    if(winterBefore){FX.vinter.set(false,false);FX.vinter.snap();}
+    BALL.held=false;updKickHint();
+    $('map').hidden=true;$('findBtn').hidden=true;
+    moveTo(HX+HW/2-5.0,HZ,-Math.PI/2);updateBeam();
+    toast('Her er mørkt! Lommelygten viser vej. Døren bag dig fører ud igen.');
+  }
+  function leave() {
+    if(!H.inside)return;
+    H.inside=false;hall.visible=false;beam.visible=false;FX.halloween.setVersion();
+    moveTo(DOOR.x+1.2,DOOR.z,Math.PI/2);
+    evApplied=-1;applyEvening();
+    $('map').hidden=!showMap;$('findBtn').hidden=false;
+    if(winterBefore){FX.vinter.set(true,false);FX.vinter.snap();winterBefore=false;}
+    toast('Du er ude i skolegården igen.');
+  }
+  H.setVersion=()=>{
+    if(gameVersion!=='halloween'&&H.inside)leave();
+    pickup.visible=gameVersion==='halloween'&&!H.hasFlashlight;
+    hall.visible=gameVersion==='halloween'&&H.inside;
+  };
+  H.take=takeFlashlight;H.enter=enter;H.leave=leave;H.hall=hall;H.paintings=paintings;H.beam=beam;
+  H.setVersion();
+  HOOKS.frame.push((dt,t)=>{
+    if(!started||paused)return;
+    if(!H.inside) {
+      if(gameVersion!=='halloween')return;
+      if(!H.hasFlashlight){
+        if(!reduceMotion)shine.scale.setScalar(1.2+Math.sin(t*3)*0.16);
+        if(Math.hypot(P.pos.x-PICKUP.x,P.pos.z-PICKUP.z)<2.1&&P.pos.y<1.2)
+          offerAction({id:'take-flashlight',label:'Tag lommelygten',prio:2.8,run:takeFlashlight});
+      }
+      if(Math.hypot(P.pos.x-DOOR.x,P.pos.z-DOOR.z)<2.45&&P.pos.y<1.3)
+        offerAction(H.hasFlashlight
+          ?{id:'enter-halloween-hall',label:'Gå ind i det store hus',prio:2.5,run:enter}
+          :{id:'find-halloween-flashlight',label:'Hvor er lommelygten?',prio:1.2,run:()=>toast('Lommelygten ligger lige ved trappen.')});
+      return;
+    }
+    // No sun or ambient light reaches the hall. The moving cone reveals its contents.
+    hemi.intensity=0.012;sun.intensity=0;
+    updateBeam();
+    if(Math.hypot(P.pos.x-(HX+HW/2-1.7),P.pos.z-HZ)<2.35)
+      offerAction({id:'leave-halloween-hall',label:'Gå ud i skolegården',prio:3,run:leave});
+    for(const p of paintings)if(Math.hypot(P.pos.x-p.x,P.pos.z-p.z)<2.9)
+      offerAction({id:'halloween-painting-'+p.id,label:'Se maleriet',prio:1.5,run:()=>{tone(440,620,0,0.2,0.05,'triangle');toast(p.message);}});
+    if(Math.hypot(P.pos.x-ghost.position.x,P.pos.z-ghost.position.z)<2.5)
+      offerAction({id:'friendly-ghost',label:'Hils på spøgelset',prio:1.8,run:()=>{tone(780,490,0,0.4,0.05,'sine');toast('Bøh! Jeg øver mig bare i at være uhyggelig.');}});
+    if(!reduceMotion) {
+      ghost.position.y=Math.sin(t*1.5)*0.15;
+      paintings.forEach((p,i)=>{p.frame.rotation.z=Math.sin(t*0.7+i)*0.009;});
+    }
+  });
+}
+
  // ---- Choose the school version on the same start/help card.
 {
   const choices = [...document.querySelectorAll('#versionChoices [data-version]')];
-  const render = () => choices.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.version === gameVersion)));
+  const render = () => {
+    choices.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.version === gameVersion)));
+    const hint = $('versionHint');
+    hint.hidden = gameVersion === 'normal';
+    hint.textContent = gameVersion === 'halloween'
+      ? 'Find lommelygten ved Hovedbygningens trappe. Så kan du gå ind og se malerier af hovedløse ryttere og andre sjove ting.'
+      : gameVersion === 'christmas' ? 'Find julestjerner, byg snemænd og hold julefest hos Filipa.' : '';
+  };
   function selectVersion(next, initial = false) {
     if (!['normal', 'halloween', 'christmas'].includes(next)) return;
     const previous = gameVersion;
@@ -6638,13 +6849,19 @@ function updActions() {
     try { localStorage.setItem(VERSION_KEY, gameVersion); } catch (_) {}
     FX.fun.setVersion();
     FX.halloween.setVersion();
+    FX.halloweenHall.setVersion();
     if (gameVersion === 'christmas' && !FX.vinter.on) FX.vinter.set(true, false);
     else if ((gameVersion === 'halloween' || previous === 'christmas') && FX.vinter.on) FX.vinter.set(false, false);
     if (!initial && gameVersion === 'halloween') setEvening(true);
     else if (!initial && previous === 'halloween' && gameVersion !== 'halloween') setEvening(false);
     render();
   }
-  choices.forEach(button => button.addEventListener('click', () => selectVersion(button.dataset.version)));
+  choices.forEach(button => button.addEventListener('click', () => {
+    selectVersion(button.dataset.version);
+    if (gameVersion === 'halloween') say('Halloween. Find lommelygten ved det store hus. Så kan du gå ind.');
+    else if (gameVersion === 'christmas') say('Jul. Find julestjerner og hold julefest.');
+    else say('Almindelig udgave. Find de tolv dyr.');
+  }));
   selectVersion(gameVersion, true);
   FX.version = { get: () => gameVersion, set: selectVersion };
 }
