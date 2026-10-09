@@ -6695,7 +6695,7 @@ function updActions() {
   for(let i=0;i<6;i++) smoke.push(pt(dyn,smokeGeo,smokeM,0,0,0,{cast:false}));
 
   function reset() {
-    if(FX.halloweenHall?.resetWitch)FX.halloweenHall.resetWitch();
+    if(FX.halloweenHall?.resetWitch)FX.halloweenHall.resetWitch();if(FX.roadRide)FX.roadRide.reset();
     FUN.stars.clear(); saveStars(); pickups.forEach(p=>p.root.visible=isChristmas()); ornaments.forEach(o=>o.visible=false);
     FUN.intros.clear(); FUN.arrivals.length=0; FUN.party=false; FUN.partyDone=false; FUN.partyTime=0; readyHint=false; catBox.visible=false; dogHat.visible=false; bulbs.forEach(b=>b.visible=false);
     animals.forEach(a=>{a.arrived=false; a.returnTime=0; a.g.rotation.x=a.g.rotation.z=0;});
@@ -7303,6 +7303,7 @@ function updActions() {
 
 // ---- player character: a separate visual model, never a collectible animal
 function selectPlayerCharacter(value, persist = true) {
+  if (FX.roadRide?.active) FX.roadRide.stop(false);
   playerCharacter = ['girl', 'kat', 'mus', 'hund'].includes(value) ? value : 'girl';
   if (playerCharacter !== 'girl' && !playerModels.has(playerCharacter)) {
     const build = { kat: buildCat, mus: buildMouse, hund: () => buildDog(false) };
@@ -7411,6 +7412,112 @@ function updPlayerCharacter(dt, t) {
   mesh(new THREE.PlaneGeometry(.9,1.15),toon('#fff',{map:menu}),38.26,1.25,244, {ry:Math.PI/2,cast:false});
 }
 
+// Borrow a scooter or bicycle for the streets. Gardens and houses stay on foot.
+{
+  const R=FX.roadRide={active:null,phase:0};
+  const street=p=>!FX.halloweenHall?.inside && p.y<.55 && (
+    (p.x>=40.5&&p.x<=57.5&&p.z>=-110&&p.z<=253.5)||
+    (p.x>=-56&&p.x<=57.5&&p.z>=-110&&p.z<=-92)||
+    (p.x>=-56&&p.x<=-37.5&&p.z>=-110&&p.z<=114)||
+    (p.x>=-56&&p.x<=57.5&&p.z>=96&&p.z<=114));
+  const vehicles=[];
+  function buildVehicle(kind,x,z){
+    const g=grp(dyn,x,.12,z),frame=toon(kind==='bike'?'#e29b56':'#56a9b6'),metal=toon('#c0c6c8'),wheels=[];
+    const rod=(a,b,r=.026,m=frame)=>{
+      const av=new THREE.Vector3(...a),bv=new THREE.Vector3(...b),v=bv.clone().sub(av);
+      const o=pt(g,cyl(r,r,v.length(),8),m,...av.clone().add(bv).multiplyScalar(.5).toArray());
+      o.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),v.normalize());return o;
+    };
+    const bike=kind==='bike',radius=bike?.27:.105,back=bike?-.55:-.35,front=bike?.62:.46;
+    for(const z of [back,front]){
+      const wheel=grp(g,0,radius,z);pt(wheel,new THREE.TorusGeometry(radius-.024,.024,6,20),M.dark,0,0,0,{r:[0,Math.PI/2,0]});
+      for(let n=0;n<4;n++)pt(wheel,new THREE.BoxGeometry(.012,radius*1.8,.012),metal,0,0,0,{r:[n*Math.PI/4,0,0]});wheels.push(wheel);
+    }
+    if(bike){
+      rod([0,.27,back],[0,.33,0]);rod([0,.33,0],[0,.9,-.16]);rod([0,.9,-.16],[0,.86,.48]);rod([0,.86,.48],[0,.33,0]);rod([0,.27,back],[0,.9,-.16]);rod([0,.27,front],[0,.97,.48]);
+      pt(g,new THREE.BoxGeometry(.22,.055,.3),M.dark,0,.93,-.16);rod([0,.86,.48],[0,1.23,.41],.023,metal);
+      pt(g,new THREE.BoxGeometry(.64,.035,.035),M.dark,0,1.23,.41);
+      pt(g,new THREE.TorusGeometry(.12,.018,6,16),metal,0,.33,0,{r:[0,Math.PI/2,0]});
+    }else{
+      pt(g,new THREE.BoxGeometry(.22,.06,.68),frame,0,.12,-.02,{ol:true});
+      rod([0,.105,front],[0,.96,.42],.027,metal);pt(g,new THREE.BoxGeometry(.64,.04,.04),M.dark,0,.98,.42);
+      rod([0,.11,back],[0,.15,-.19],.022,metal);
+    }
+    const marker=new THREE.Sprite(new THREE.SpriteMaterial({map:TX.glow,color:'#ffe791',transparent:true,opacity:.42,depthWrite:false}));
+    marker.position.set(0,.6,0);marker.scale.set(1.35,1.35,1);g.add(marker);
+    const v={kind,g,wheels,marker,home:new THREE.Vector3(x,.12,z),last:new THREE.Vector3(x,.12,z)};vehicles.push(v);return v;
+  }
+  buildVehicle('scooter',42,135);buildVehicle('bike',42,235);
+  function stop(message=true){
+    const v=R.active;if(!v)return;
+    v.g.position.copy(v.last);v.g.rotation.y=P.face;R.active=null;
+    kid.g.position.set(0,0,0);kid.g.rotation.x=0;kid.pose.rotation.set(0,0,0);kid.pose.scale.set(1,1,1);
+    P.vel.set(0,0,0);P.onGround=true;
+    if(message)toast('Du parkerer her. I haverne og husene går du til fods.');
+  }
+  function take(v){
+    if(!started||paused||playerCharacter!=='girl'||!P.onGround||P.ride||P.swing||BALL.held||FX.juice?.left>0||R.active||!street(P.pos)||P.pos.distanceTo(v.g.position)>2)return;
+    R.active=v;R.phase=0;P.vel.set(0,0,0);v.last.copy(P.pos);v.last.y=groundAt(P.pos.x,P.pos.z,.5);v.marker.visible=false;
+    toast(v.kind==='bike'?'Du cykler! Brug de samme taster som når du går. Vælg Stig af for at parkere.':'Du kører på løbehjul! Brug de samme taster som når du går. Vælg Stig af for at parkere.');
+  }
+  R.stop=stop;R.take=take;R.vehicles=vehicles;R.street=street;
+  R.reset=()=>{stop(false);for(const v of vehicles){v.g.position.copy(v.home);v.last.copy(v.home);v.g.rotation.y=0;}};
+  const candidate=new THREE.Vector3();
+  HOOKS.ride.unshift(dt=>{
+    if(!R.active)return false;
+    if(playerCharacter!=='girl'||!street(P.pos)||P.ride||P.swing){stop();return false;}
+    if(paused){P.vel.set(0,0,0);return true;}
+    let forward=0,turn=0;
+    if(keys.has('KeyW')||keys.has('ArrowUp'))forward++;
+    if((keys.has('KeyS')&&!sHold)||keys.has('ArrowDown'))forward--;
+    if(keys.has('KeyA')||keys.has('ArrowLeft'))turn++;
+    if(keys.has('KeyD')||keys.has('ArrowRight'))turn--;
+    if(joy.id!==null){forward-=joy.y;turn-=joy.x*.9;}
+    forward=Math.max(-1,Math.min(1,forward));turn=Math.max(-1,Math.min(1,turn));turnIn=turn;
+    P.face+=turn*2.05*dt;
+    const speed=forward*(forward<0?2.8:R.active.kind==='bike'?14:11),ease=1-Math.exp(-dt*(forward===0?13:5));
+    P.vel.x+=(Math.sin(P.face)*speed-P.vel.x)*ease;P.vel.z+=(Math.cos(P.face)*speed-P.vel.z)*ease;
+    const steps=Math.max(1,Math.ceil(Math.hypot(P.vel.x,P.vel.z)*dt/(RAD*.45)));
+    for(let n=0;n<steps;n++){
+      candidate.copy(P.pos);candidate.x+=P.vel.x*dt/steps;candidate.z+=P.vel.z*dt/steps;
+      if(!street(candidate)){stop();jumpReq=false;kid.root.position.copy(P.pos);return true;}
+      resolve(candidate,P.vel);
+      if(!street(candidate)){stop();jumpReq=false;return true;}
+      P.pos.copy(candidate);
+    }
+    pushFromCyclists(P.pos);resolve(P.pos,P.vel);
+    if(!street(P.pos)){stop();return true;}
+    P.pos.y=groundAt(P.pos.x,P.pos.z,.5);P.vel.y=0;P.onGround=true;jumpReq=false;
+    R.active.last.copy(P.pos);R.phase+=Math.hypot(P.vel.x,P.vel.z)*dt;
+    kid.root.position.copy(P.pos);kid.root.rotation.y=P.face;
+    return true;
+  });
+  R.pose=()=>{
+    const v=R.active;if(!v)return;
+    v.g.position.copy(P.pos);v.g.rotation.y=P.face;
+    const bike=v.kind==='bike',moving=Math.hypot(P.vel.x,P.vel.z)>.2,p=R.phase*(bike?4:1.8);
+    kid.g.position.set(0,bike?.38:.12,bike?-.1:0);kid.g.rotation.x=bike?.12:0;
+    kid.arms.forEach((a,i)=>{a.rotation.set(-1.18,0,i===0?-.08:.08);});
+    kid.legs.forEach((l,i)=>{
+      const phase=p+i*Math.PI;
+      l.hip.rotation.x=bike?-1.02+(moving?Math.sin(phase)*.3:0):(i===1&&moving?Math.sin(p)*.35:0);
+      l.knee.rotation.x=bike?1.45+(moving?Math.cos(phase)*.25:0):Math.max(0,l.hip.rotation.x)*.6;
+      l.shoe.rotation.x=-(l.hip.rotation.x+l.knee.rotation.x);
+    });
+    for(const w of v.wheels)w.rotation.x=R.phase/(bike?.27:.105);
+  };
+  HOOKS.frame.push((dt,t)=>{
+    if(R.active&&(playerCharacter!=='girl'||!street(P.pos)))stop();
+    for(const v of vehicles){
+      v.marker.visible=!R.active&&playerCharacter==='girl';v.marker.material.opacity=reduceMotion?.4:.32+Math.sin(t*2)*.1;
+      if(!started||paused||R.active||P.pos.distanceTo(v.g.position)>2)continue;
+      if(playerCharacter==='girl')offerAction({id:'borrow-'+v.kind,label:v.kind==='bike'?'Tag cyklen':'Tag løbehjulet',prio:2.4,run:()=>take(v)});
+      else offerAction({id:'ride-girl-only',label:'Kun pigen kan køre',prio:.3,run:()=>toast('Vælg pigen for at bruge cyklen eller løbehjulet.')});
+    }
+    if(R.active&&!paused)offerAction({id:'park-road-ride',label:'Stig af',prio:4,run:()=>stop(false)});
+  });
+}
+
 // ---- walking presentation: a shared pose layer leaves rides and play animations intact
 const CONTACT = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 1.15), new THREE.MeshBasicMaterial({ map: TX.glow, color: '#30243b', transparent: true, opacity: 0.28, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
 CONTACT.rotation.x = -Math.PI / 2; dyn.add(CONTACT);
@@ -7425,7 +7532,7 @@ function updWalkingPresentation(dt) {
   if (!WALK_FEEL.grounded && P.onGround && !P.ride && !P.swing) WALK_FEEL.landing = Math.min(1, Math.abs(WALK_FEEL.fallSpeed) / 10);
   WALK_FEEL.grounded = P.onGround; WALK_FEEL.fallSpeed = P.vel.y;
   WALK_FEEL.landing = Math.max(0, WALK_FEEL.landing - dt * 5);
-  const special = P.ride || P.swing || Math.abs(kid.g.rotation.x) > 0.12 || Math.abs(kid.g.rotation.z) > 0.12;
+  const special = FX.roadRide?.active || P.ride || P.swing || Math.abs(kid.g.rotation.x) > 0.12 || Math.abs(kid.g.rotation.z) > 0.12;
   const speed = Math.min(1, Math.hypot(P.vel.x, P.vel.z) / 5.2);
   const tilt = !special && !reduceMotion ? speed * 0.065 : 0;
   const lean = !special && !reduceMotion ? -turnIn * speed * 0.075 : 0;
@@ -7470,6 +7577,7 @@ function frame(now) {
   for (const h of HOOKS.frame) h(dt, clockT);
   updPlayerCharacter(dt, clockT);
   if (FX.juice) FX.juice.pose(dt);
+  if (FX.roadRide) FX.roadRide.pose();
   updWalkingPresentation(dt);
   updActions();
   updEffects(dt);
