@@ -2138,15 +2138,76 @@ apartment(-140, -60, -132, -114, 5); apartment(-34, 36, -132, -114, 5); apartmen
     box(0.8, 0.7, 1.5, M.wood, 58.5, 0, z);
     bush(58.5, z, 0.42);
   }
-  // Vagns on the right corner: brick gable and green awning.
-  box(18, 7.5, 13, yellow, 29, 0, 243.5, { col: true, map: '#c4a571', edges: true });
-  gableRoof(13, 18, 4, M.tile, 29, 7.5, 243.5, { ridgeZ: true, gableMat: yellow });
-  for (const x of [24, 29, 34]) addWin('rect', x, 5.7, 250.08, 0, 2.2, 1.8, 0.4);
-  label('VAGNS', 12, 1.5, 29, 3.4, 250.09, 0, '#304a3c', '#e5c97b');
-  box(18, 0.18, 3, green, 29, 2.5, 251.4, { cast: false });
-  label('VAGNS', 7, 1.1, 38.08, 3.2, 243.5, Math.PI/2, '#304a3c', '#e5c97b');
-  box(3, 0.18, 12, green, 39.5, 2.5, 243.5, { cast: false });
-  bike(39.4, 239.5, Math.PI/2, '#ce534b');
+  // Vagns Kaffebar: weathered brick gable, dark fascia, sloping green awnings,
+  // crowned pretzel sign and pavement seating, simplified from Michel's photo.
+  const cafeBrick = toon('#fff', { map: brickTex('#ad916d', '#7c705f') });
+  const cafeTrim = toon('#283a30'), cafeGold = toon('#dfbc72');
+  box(18, 7.5, 13, cafeBrick, 29, 0, 243.5, { col: true, map: '#ad916d', edges: true });
+  gableRoof(13, 18, 4, M.tile, 29, 7.5, 243.5, { ridgeZ: true, gableMat: cafeBrick });
+  // Stone bands and dark window frames on the corner gable.
+  box(18.12, 0.18, 0.24, M.stone, 29, 6.25, 250.06, { cast: false });
+  box(7.5, 2.0, 0.12, cafeTrim, 29, 8.0, 250.07, { cast: false });
+  for (const x of [26.6, 29, 31.4]) addWin('rect', x, 9.0, 250.15, 0, 2.2, 1.72, 0.3);
+  box(3.1, 2.0, 0.12, cafeTrim, 34.3, 4.4, 250.07, { cast: false });
+  addWin('rect', 34.3, 5.4, 250.15, 0, 2.85, 1.72, 0.45);
+  for (const z of [240, 245.5]) {
+    box(0.12, 2, 2.8, cafeTrim, 38.05, 4.6, z, { cast: false });
+    addWin('rect', 38.13, 5.6, z, Math.PI/2, 2.55, 1.72, 0.45);
+  }
+  // Fascia wraps around the corner. Gold lettering matches the photo.
+  box(18.15, 1.35, 0.22, cafeTrim, 29, 2.85, 250.06, { cast: false });
+  box(0.22, 1.35, 13.15, cafeTrim, 38.06, 2.85, 243.5, { cast: false });
+  label('VAGNS', 12, 1.16, 29, 3.53, 250.18, 0, '#283a30', '#dfbc72');
+  label('VAGNS KAFFEBAR', 11.5, 1.08, 38.18, 3.53, 243.5, Math.PI/2, '#283a30', '#dfbc72');
+  // Warm shop windows and door below the awning.
+  for (const x of [22.3, 25.6, 29, 32.4, 35.7]) {
+    box(2.9, 2.6, 0.1, cafeTrim, x, 0, 250.1, { cast: false });
+    addWin('rect', x, 1.45, 250.18, 0, 2.65, 2.2, 0.95);
+  }
+  for (const z of [238.5, 242, 246]) {
+    box(0.1, 2.6, 2.9, cafeTrim, 38.1, 0, z, { cast: false });
+    addWin('rect', 38.18, 1.45, z, Math.PI/2, 2.65, 2.2, 0.95);
+  }
+  // Sloped canopies with a straight valance along the front edge.
+  const frontAwning = box(18.3, 0.12, 2.8, green, 29, 2.75, 251.4, { cast: false });
+  frontAwning.rotation.x = 0.21;
+  box(18.3, 0.27, 0.09, green, 29, 2.37, 252.78, { cast: false });
+  const sideAwning = box(2.5, 0.12, 12.8, green, 39.25, 2.76, 243.4, { cast: false });
+  sideAwning.rotation.z = -0.21;
+  box(0.09, 0.27, 12.8, green, 40.47, 2.4, 243.4, { cast: false });
+  // Hanging pretzel with the little crown above it.
+  box(1.55, 0.07, 0.07, cafeTrim, 38.7, 5.1, 239.4, { cast: false });
+  const pretzel = new THREE.Group(); pretzel.position.set(39.45, 4.35, 239.4);
+  pretzel.rotation.y = Math.PI/2; world.add(pretzel);
+  const line = (points, radius, material, closed = false) => {
+    const path = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(...p)), closed, 'centripetal');
+    const m = new THREE.Mesh(new THREE.TubeGeometry(path, 48, radius, 8, closed), material);
+    pretzel.add(m); return m;
+  };
+  const knot = [[0,-.2,0],[-.55,-.24,0],[-.78,.05,0],[-.65,.43,0],[-.35,.48,0],[.13,.12,.03],[.35,-.2,.03],[0,-.37,0],[-.35,-.2,-.03],[-.13,.12,-.03],[.35,.48,0],[.65,.43,0],[.78,.05,0],[.55,-.24,0]];
+  line(knot, .13, toon('#916132', { side: THREE.BackSide }), true); line(knot, .087, cafeGold, true);
+  line([[-.34,.65,0],[-.4,.96,0],[-.14,.85,0],[0,1.08,0],[.14,.85,0],[.4,.96,0],[.34,.65,0],[-.34,.65,0]], .028, white);
+  // Cafe tables, woven-looking chairs and low planters sit beside the wall.
+  const table = (x, z) => {
+    mesh(new THREE.CylinderGeometry(.42,.42,.06,20), toon('#ede6cf'), x,.74,z);
+    mesh(new THREE.CylinderGeometry(.04,.04,.71,8), cafeTrim, x,.355,z);
+    colCirc(x,z,.44,.8);
+    for (const dz of [-.58,.58]) {
+      box(.44,.06,.43,cafeTrim,x,.43,z+dz,{cast:false});
+      box(.44,.48,.055,cafeTrim,x,.46,z+dz+(dz>0?.2:-.2),{cast:false});
+      for(const dx of [-.17,.17])box(.04,.43,.04,cafeTrim,x+dx,0,z+dz,{cast:false});
+      colCirc(x,z+dz,.31,.96);
+    }
+  };
+  for(const x of [24,29,34])table(x,251.6);
+  for(const z of [241,244.5,248])table(39.25,z);
+  for(const z of [237.6,250]) {
+    box(.55,.52,1.2,cafeTrim,39.5,0,z,{col:true}); bush(39.5,z,.38);
+  }
+  bike(39.2,236.5,Math.PI/2,'#ce534b');
+  // The small corner street plate belongs to the facade, below the awning.
+  label('Duevej', 2.5, .55, 38.23, 2.3, 249.4, Math.PI/2, '#34443e', '#fff');
+  
   // Stalden faces Duevej across the wider street.
   box(38, 3.2, 12, white, 49, 0, 278, { col: true, map: '#f1eee5', edges: true });
   gableRoof(38, 12, 3.8, M.tile, 49, 3.2, 278, { gableMat: white });
@@ -2156,7 +2217,7 @@ apartment(-140, -60, -132, -114, 5); apartment(-34, 36, -132, -114, 5); apartmen
   box(12, 9, 14, white, 79, 0, 278, { col: true, map: '#eee9df', edges: true });
   gableRoof(12, 14, 4, M.tile, 79, 9, 278, { gableMat: white });
   for (const x of [76, 82]) for (const y of [2.2, 5.5]) addWin('rect', x, y, 270.92, Math.PI, 2, 2.1, 0.5);
-  label('Duevej', 2.5, 0.55, 39.8, 2.2, 249.4, Math.PI/2, '#34443e', '#fff');
+
   rand = savedRand;
 }
 
