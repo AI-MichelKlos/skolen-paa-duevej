@@ -2078,9 +2078,88 @@ apartment(-140, -60, -132, -114, 5); apartment(-34, 36, -132, -114, 5); apartmen
   dueBlock(-78, -34, true);
   dueBlock(-28, 30);
   dueBlock(36, 88);
-  dueBlock(104, 160);
+  // Southern block is drawn below from Michel's photographs.
   rand = savedRand;
 }
+// Southern Duevej, simplified from Michel's six photos (9 October 2026).
+// +x is left when walking south (+z). Distances are compressed for the game.
+{
+  const savedRand = rand; rand = mulberry32(9102026);
+  const yellow = toon('#fff', { map: brickTex('#c6ac70', '#9c8b6b') });
+  const rail = toon('#fff', { map: ctex(64, 64, (g, w, h) => { g.fillStyle = '#30373a'; g.fillRect(0, 0, w, h); g.fillStyle = '#596063'; for (let x = 0; x < w; x += 16) g.fillRect(x, 0, 2, h); }, { rep: 1 }) }), green = toon('#304f39'), white = toon('#f1eee5');
+  const label = (txt, w, h, x, y, z, ry, bg, fg) => {
+    const tx = ctex(512, 128, (g, W, H) => {
+      g.fillStyle = bg; g.fillRect(0, 0, W, H);
+      g.fillStyle = fg; g.font = 'bold 76px sans-serif';
+      g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, W/2, H/2, W-24);
+    }, { wrap: false });
+    mesh(new THREE.PlaneGeometry(w, h), toon('#fff', { map: tx }), x, y, z, { ry, cast: false });
+  };
+  rectG(44, 54, 200, 267, M.road, 0.012, '#8b8b8e');
+  slab(40, 44, 200, 254, 0.12, M.sidewalk, '#d8d3c8');
+  slab(54, 58, 200, 254, 0.12, M.sidewalk, '#d8d3c8');
+  // Long yellow-brick apartment building with continuous dark balconies.
+  box(16, 18.8, 132, yellow, 70, 0, 180, { col: true, map: '#c6ac70', edges: true });
+  box(16.4, 0.3, 132.4, M.dark, 70, 18.8, 180);
+  for (let floor = 0; floor < 6; floor++) {
+    const y = 0.7 + floor * 3.05;
+    box(2.2, 0.18, 132, M.concrete, 61, y, 180, { cast: false });
+    box(0.09, 0.92, 132, rail, 59.9, y+0.18, 180, { cast: false });
+    for (let z = 118; z < 246; z += 8.5) {
+      addWin('rect', 61.91, y+1.35, z, -Math.PI/2, 5.4, 1.8, 0.4);
+      box(2.1, 2.8, 0.26, yellow, 61, y+0.18, z+3.8, { cast: false });
+      // Repeating railing texture keeps the long facade light on mobile.
+    }
+  }
+  rectG(58, 60, 115, 235, M.grass, 0.025);
+  for (let z = 118; z < 231; z += 10) bush(59, z, 0.8);
+  // Ivy-covered fence and tall green trees on the right, leaving the pavement clear.
+  box(1.2, 3.4, 112, M.hedge, 38.6, 0, 182, { col: true, map: '#42633d' });
+  for (let z = 130; z < 239; z += 16) tree(35.5, z, 'big', 1.6, '#476e44');
+  for (let z = 130, i = 0; z < 236; z += 9, i++) {
+    car(45.4, z, 0, ['#e6e4dc', '#444c55', '#4f91bb'][i%3]);
+    car(52.5, z+3, Math.PI, ['#50585e', '#f0eee5', '#81909b'][i%3]);
+  }
+  for (const z of [147, 190, 231]) lamp(55.4, z, 7, true);
+  // The checkerboard speed hump is flat enough to cross without a collision wall.
+  slab(44, 54, 170, 174, 0.15, M.road);
+  for (let ix = 0; ix < 8; ix++) for (let iz = 0; iz < 3; iz++)
+    if ((ix+iz)%2 === 0) box(1.25, 0.012, 1.25, M.zebra, 44.625+ix*1.25, 0.151, 170.7+iz*1.25, { cast: false });
+  // Cross street and pavement at the end of Duevej.
+  rectG(-30, 125, 254, 267, M.road, 0.02, '#8b8b8e');
+  slab(-30, 125, 250, 254, 0.12, M.sidewalk, '#d8d3c8');
+  slab(-30, 125, 267, 271, 0.12, M.sidewalk, '#d8d3c8');
+  // Netto on the left corner, underneath the apartment block.
+  box(20, 3.4, 11, rail, 68, 0, 244.5, { col: true, map: '#e7c32a' });
+  for (let z = 241; z < 249; z += 2.6) addWin('rect', 57.92, 1.6, z, -Math.PI/2, 2.2, 2.3, 0.9);
+  label('Netto', 7.5, 1.25, 68, 2.7, 250.06, 0, '#252929', '#ffe12d');
+  label('Netto', 5.8, 1.1, 57.91, 2.8, 244.3, -Math.PI/2, '#252929', '#ffe12d');
+  for (const z of [241, 247]) {
+    box(0.8, 0.7, 1.5, M.wood, 58.5, 0, z);
+    bush(58.5, z, 0.42);
+  }
+  // Vagns on the right corner: brick gable and green awning.
+  box(18, 7.5, 13, yellow, 29, 0, 243.5, { col: true, map: '#c4a571', edges: true });
+  gableRoof(13, 18, 4, M.tile, 29, 7.5, 243.5, { ridgeZ: true, gableMat: yellow });
+  for (const x of [24, 29, 34]) addWin('rect', x, 5.7, 250.08, 0, 2.2, 1.8, 0.4);
+  label('VAGNS', 12, 1.5, 29, 3.4, 250.09, 0, '#304a3c', '#e5c97b');
+  box(18, 0.18, 3, green, 29, 2.5, 251.4, { cast: false });
+  label('VAGNS', 7, 1.1, 38.08, 3.2, 243.5, Math.PI/2, '#304a3c', '#e5c97b');
+  box(3, 0.18, 12, green, 39.5, 2.5, 243.5, { cast: false });
+  bike(39.4, 239.5, Math.PI/2, '#ce534b');
+  // Stalden faces Duevej across the wider street.
+  box(38, 3.2, 12, white, 49, 0, 278, { col: true, map: '#f1eee5', edges: true });
+  gableRoof(38, 12, 3.8, M.tile, 49, 3.2, 278, { gableMat: white });
+  for (let x = 33; x < 67; x += 5) addWin('green', x, 1.6, 271.92, Math.PI, 2.2, 2.1, 0.5);
+  fenceSeg(28, 270.3, 68, 270.3, 1.3, true);
+  label('STALDEN', 13, 1.9, 49, 1.6, 270.16, Math.PI, '#253e31', '#f7f3e9');
+  box(12, 9, 14, white, 79, 0, 278, { col: true, map: '#eee9df', edges: true });
+  gableRoof(12, 14, 4, M.tile, 79, 9, 278, { gableMat: white });
+  for (const x of [76, 82]) for (const y of [2.2, 5.5]) addWin('rect', x, y, 270.92, Math.PI, 2, 2.1, 0.5);
+  label('Duevej', 2.5, 0.55, 39.8, 2.2, 249.4, Math.PI/2, '#34443e', '#fff');
+  rand = savedRand;
+}
+
 // ---------------- row houses on the far side of Egernvej, and Solsortvej
 {
   const rowBrick = toon('#fff', { map: brickTex('#c9a86e', '#8f7b5b') });
@@ -3093,6 +3172,8 @@ const camCols = [...cols.filter(c => c.t === 'b' && c.top > 1.7), ...camOnly];
 
 // ======================================================================== POIs
 const POIS = [
+  { n: 'For enden af Duevej', t: 'Her ligger Netto og Vagns ved hjørnerne. På den anden side af den store vej ligger Stalden. Vend om her og gå tilbage til skolen.', area: [40, 61, 237, 254] },
+  { n: 'Duevej syd for skolen', t: 'Gå langs den lange gule bygning med mørke altaner og de store grønne træer. For enden kan du se Stalden, Netto og Vagns.', area: [40, 61, 126, 237] },
   { n: 'Hovedbygningen', t: 'Skolens største og højeste hus. Røde mursten, et stejlt skifertag med mange skorstene og en buet hoveddør i midten. Kig efter uret oppe i gavlen.', x: 3, z: -58.5, r: 14 },
   { n: 'Stenfontænen', t: 'En gammel drikkefontæne i sten med et lille dyrehoved på toppen. Den sidder lige op ad Hovedbygningen.', x: 11, z: -48, r: 4 },
   { n: 'Sandcirklen og flagstangen', t: 'En stor rund sandkasse midt i skolegården. Lige ved siden af vajer det grønne flag.', x: 12, z: -16, r: 9 },
@@ -3221,9 +3302,9 @@ function updEffects(dt) {
 // ======================================================================== UI
 const hud = $('hud'), intro = $('intro'), goBtn = $('goBtn'), newGameBtn = $('newGameBtn');
 const mapCv = $('map'), mctx = mapCv.getContext('2d');
-let mapBase = null; const MX0 = -60, MX1 = 64, MZ0 = -112, MZ1 = 115;
+let mapBase = null; const MX0 = -60, MX1 = 64, MZ0 = -112, MZ1 = 256;
 function sizeMap() {
-  const cssW = window.innerWidth < 600 ? 104 : 150; const cssH = Math.round(cssW * (MZ1 - MZ0) / (MX1 - MX0));
+  const cssW = Math.min(window.innerWidth < 600 ? 104 : 150, Math.floor(window.innerHeight * 0.42 * (MX1 - MX0) / (MZ1 - MZ0))); const cssH = Math.round(cssW * (MZ1 - MZ0) / (MX1 - MX0));
   mapCv.style.width = cssW + 'px'; mapCv.style.height = cssH + 'px';
   const dpr = Math.min(2, window.devicePixelRatio || 1); mapCv.width = Math.round(cssW * dpr); mapCv.height = Math.round(cssH * dpr);
   buildMapBase();
@@ -3249,6 +3330,7 @@ function buildMapBase() {
   g.textAlign = 'center'; g.fillText('Mariendalsvej', mpx(-4), mpz(-101));
   g.save(); g.translate(mpx(49), mpz(20)); g.rotate(Math.PI / 2); g.fillText('Duevej', 0, 0); g.restore();
   g.fillText('Egernvej', mpx(-12), mpz(104.5));
+  g.fillText('Stalden', mpx(26), mpz(249));
   mapBase = cv;
 }
 function drawMap() {
@@ -3369,7 +3451,7 @@ canvas.addEventListener('contextmenu', e => e.preventDefault());
 const P = { pos: new THREE.Vector3(42, 0.12, -57.5), vel: new THREE.Vector3(), onGround: true, walkT: 0, face: -Math.PI / 2 };
 const TRAMP_Y = 0.3;
 function trampAt(x, z) { for (const t of TRAMPS) if ((x - t.x) ** 2 + (z - t.z) ** 2 < t.r * t.r) return t; return null; }
-const STEP = 0.5, RAD = 0.35, G = 22, BOUNDS = [-57.6, 60.6, -112, 115.3];
+const STEP = 0.5, RAD = 0.35, G = 22, BOUNDS = [-57.6, 60.6, -112, 253.5];
 const angDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 function resolve(p, velocity = null) {
   const stopInto = (nx, nz) => {
@@ -3430,6 +3512,7 @@ function updPlayer(dt) {
   if (!FX.halloweenHall?.inside) {
     P.pos.x = Math.min(BOUNDS[1], Math.max(BOUNDS[0], P.pos.x));
     P.pos.z = Math.min(BOUNDS[3], Math.max(BOUNDS[2], P.pos.z));
+    if (P.pos.z > 125) P.pos.x = Math.max(40.5, P.pos.x);
   }
   const tr = trampAt(P.pos.x, P.pos.z);
   if (jumpReq && tr && !paused) P.boost = true;
