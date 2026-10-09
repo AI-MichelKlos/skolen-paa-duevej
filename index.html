@@ -3845,15 +3845,61 @@ function toggleUmbrella() {
   if (UMB.open) { tone(380, 760, 0, 0.14, 0.05, 'triangle'); tone(900, 1300, 0.08, 0.08, 0.03); } else tone(700, 360, 0, 0.14, 0.05, 'triangle');
   updUmbBtn();
 }
+// The animal's tail curls around the handle; the umbrella follows its own model.
+function updUmbrellaHolder() {
+  const model = playerCharacter === 'girl' ? null : playerModels.get(playerCharacter);
+  playerModels.forEach(m => {
+    const holding = m === model && UMB.k >= 0.01;
+    if (m.umbrellaTail) m.umbrellaTail.visible = holding;
+    if (m.tail?.[0]) m.tail[0].visible = !holding;
+  });
+  if (!model) {
+    if (UMB.root.parent !== kid.g) kid.g.add(UMB.root);
+    UMB.root.position.set(0.3, 0, 0.3);
+    return 1;
+  }
+  const s = model.g.scale.x, size = 0.85;
+  if (UMB.root.parent !== model.g) model.g.add(UMB.root);
+  UMB.root.position.set(0.24 / s, -0.12 / s, -0.48 / s);
+  if (!model.umbrellaTail && UMB.k >= 0.01) {
+    model.g.updateWorldMatrix(true, true);
+    const base = model.g.worldToLocal(model.tail[0].getWorldPosition(new THREE.Vector3()));
+    const grip = new THREE.Vector3(0.24 / s, (-0.12 + 0.8 * size) / s, -0.48 / s);
+    const r = 0.065 / s;
+    const points = [
+      base,
+      new THREE.Vector3(-0.16 / s, base.y + 0.14 / s, base.z - 0.12 / s),
+      new THREE.Vector3(-0.08 / s, grip.y - 0.04 / s, grip.z - 0.14 / s),
+      new THREE.Vector3(grip.x - r, grip.y, grip.z),
+      new THREE.Vector3(grip.x, grip.y, grip.z + r),
+      new THREE.Vector3(grip.x + r, grip.y, grip.z),
+      new THREE.Vector3(grip.x, grip.y + 0.025 / s, grip.z - r)
+    ];
+    let material;
+    model.tail[0].traverse(o => { if (!material && o.isMesh) material = o.material; });
+    model.umbrellaTail = new THREE.Mesh(
+      new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 24, playerCharacter === 'mus' ? 0.014 : 0.03, 8, false),
+      material
+    );
+    model.umbrellaTail.castShadow = true;
+    model.g.add(model.umbrellaTail);
+  }
+  if (model.umbrellaTail) model.umbrellaTail.visible = UMB.k >= 0.01;
+  return size / s;
+}
+
 function updUmbrella(dt) {
   UMB.k += ((UMB.open ? 1 : 0) - UMB.k) * Math.min(1, dt * 6);
+  const holderScale = updUmbrellaHolder();
   if (UMB.k < 0.01 && !UMB.open) { UMB.root.visible = false; return; }
   UMB.root.visible = true;
   const k = UMB.k;
   UMB.canopy.scale.set(0.12 + 0.88 * k, 1.7 - 0.7 * k, 0.12 + 0.88 * k);
-  UMB.root.scale.setScalar(0.55 + 0.45 * Math.min(1, k * 1.6));
+  UMB.root.scale.setScalar(holderScale * (playerCharacter === 'girl' ? 0.55 + 0.45 * Math.min(1, k * 1.6) : 1));
   UMB.root.rotation.z = Math.sin(P.walkT) * 0.035 * k;
-  const a = kid.arms[1]; a.rotation.x += (-0.9 - a.rotation.x) * k; a.rotation.z += (0.05 - a.rotation.z) * k;
+  if (playerCharacter === 'girl') {
+    const a = kid.arms[1]; a.rotation.x += (-0.9 - a.rotation.x) * k; a.rotation.z += (0.05 - a.rotation.z) * k;
+  }
 }
 
 const WEATHER = { t: 45, raining: false };  // the first shower comes after about 45 seconds of walking
@@ -6982,6 +7028,7 @@ function selectPlayerCharacter(value, persist = true) {
   playerModels.forEach((model, key) => { model.g.visible = key === playerCharacter; model.g.position.set(0, 0, 0); });
   document.querySelectorAll('[data-character]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.character === playerCharacter)));
   for (const id of ['swJacket', 'swHair', 'swPants']) { const sw = $(id); sw.hidden = playerCharacter !== 'girl'; sw.previousElementSibling.hidden = sw.hidden; }
+  updUmbrella(0);
   if (persist) save();
 }
 document.querySelectorAll('[data-character]').forEach(button => button.addEventListener('click', () => {
