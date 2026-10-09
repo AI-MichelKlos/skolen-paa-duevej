@@ -3092,6 +3092,13 @@ function buildCyclist(i) {
   const hm = new THREE.Mesh(sph(0.13, 16, 12), skin); hm.castShadow = true; head.add(hm);
   const hl = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), toon(helmet)); hl.position.y = 0.02; hl.rotation.x = -0.25; head.add(hl);
   for (const s of [-1, 1]) { const e = new THREE.Mesh(sph(0.018, 6, 5), EYE); e.position.set(s * 0.05, 0.0, 0.12); head.add(e); }
+  // Several women ride with a ponytail tucked below the helmet.
+  if (i % 2 === 1 || i === 8) {
+    const hair=toon(['#6b432b','#c99b59','#302a27'][i%3]);
+    pt(head,sph(.09,10,8),hair,0,-.035,-.1,{s:[1,.85,.7]});
+    pt(head,sph(.065,8,6),hair,0,-.15,-.15,{s:[1,1.8,.8]});
+    g.userData.female=true;
+  }
   // arms to handlebar (static)
   const shoulderY = hip.y + Math.cos(0.42) * 0.5, shoulderZ = hip.z + Math.sin(0.42) * 0.5;
   for (const s of [-1, 1]) { bar([s * 0.17, shoulderY, shoulderZ], [s * 0.24, hbar.position.y + 0.02, hbar.position.z], 0.05, jm); }
@@ -3126,6 +3133,21 @@ for (let i = 0; i < 8; i++) {
   if (c.legs) poseLegs(c);
   dyn.add(c.g); cyclists.push(c);
 }
+// Two occasional cyclists on the southern part of Duevej.
+{
+  const path=new THREE.CurvePath(),V=(x,z)=>new THREE.Vector3(x,0,z);
+  path.add(new THREE.LineCurve3(V(47,130),V(47,246)));
+  path.add(new THREE.QuadraticBezierCurve3(V(47,246),V(49,251),V(51,246)));
+  path.add(new THREE.LineCurve3(V(51,246),V(51,130)));
+  path.add(new THREE.QuadraticBezierCurve3(V(51,130),V(49,125),V(47,130)));
+  const N=600,pts=[],tans=[];
+  for(let n=0;n<=N;n++){pts.push(path.getPointAt(n/N));tans.push(path.getTangentAt(n/N));}
+  const lane={L:path.getLength(),N,pts,tans};
+  for(let i=8;i<10;i++){
+    const c=buildCyclist(i);Object.assign(c,{lane,dir:1,s:(i-8)*lane.L/2,vMax:3.2,v:3.2,phase:0,bell:0,i});
+    laneAt(lane,c.s,c.g.position);poseLegs(c);dyn.add(c.g);cyclists.push(c);
+  }
+}
 const _cp = new THREE.Vector3(), _ct = new THREE.Vector3(), _ca = new THREE.Vector3();
 function updCyclists(dt) {
   for (const c of cyclists) {
@@ -3152,6 +3174,64 @@ function pushFromCyclists(p) {
     const dx = p.x - c.g.position.x, dz = p.z - c.g.position.z, d = Math.hypot(dx, dz), m = 0.75 + RAD;
     if (d < m && p.y < 1.8) { if (d > 1e-5) { p.x = c.g.position.x + dx / d * m; p.z = c.g.position.z + dz / d * m; } }
   }
+}
+
+// A few neighbours around Vagns, with room left on both pavements.
+{
+  const neighbours=[];
+  function neighbour({shirt='#8a647e',hair='#65432b',skin='#ecc1a2',female=false,child=false,seated=false}={}) {
+    const g=new THREE.Group(), clothes=toon(shirt), sk=toon(skin), hm=toon(hair), trousers=toon('#34465c');
+    const body=grp(g,0,seated?.48:.8,0);
+    pt(body,capg(.17,.32),clothes,0,.26,0,{ol:true});
+    const head=grp(body,0,.67,0);
+    pt(head,sph(.16,12,10),sk,0,0,0,{ol:true});
+    pt(head,new THREE.SphereGeometry(.17,12,8,0,Math.PI*2,0,Math.PI/2),hm,0,.02,0);
+    if(female){pt(head,sph(.13,10,8),hm,0,-.035,-.12,{s:[1,1.5,.55]});pt(head,sph(.07,8,6),hm,0,-.08,-.22,{s:[1,2,1]});}
+    for(const s of [-1,1])pt(head,sph(.017,6,5),EYE,s*.055,0,.148);
+    smileG(head,.045,-.046,.154);
+    const legs=[],arms=[];
+    for(const s of [-1,1]){
+      const leg=grp(g,s*.1,seated?.48:.8,0);legs.push(leg);
+      if(seated){pt(leg,capg(.07,.22),trousers,0,0,.15,{r:[Math.PI/2,0,0]});pt(leg,capg(.065,.23),trousers,0,-.22,.31);pt(leg,sph(.08,8,6),M.dark,0,-.4,.36,{s:[1,.65,1.6]});}
+      else {pt(leg,capg(.07,.53),trousers,0,-.34,0);pt(leg,sph(.085,8,6),M.dark,0,-.73,.04,{s:[1,.6,1.5]});}
+      const arm=grp(body,s*.21,.43,0);arms.push(arm);pt(arm,capg(.055,.3),clothes,0,-.18,0);pt(arm,sph(.065,8,6),sk,0,-.39,0);
+      if(seated)arm.rotation.x=-.7;
+    }
+    if(child)g.scale.setScalar(.66);
+    dyn.add(g);return {g,legs,arms,head};
+  }
+  // Three guests occupy existing chairs; one has a cup on the table.
+  for(const [x,z,face,shirt,female] of [[39.25,240.42,0,'#c17e58',true],[39.25,241.58,Math.PI,'#486d83',false],[29,252.18,Math.PI,'#9376ab',true]]){
+    const p=neighbour({shirt,female,seated:true});p.g.position.set(x,0,z);p.g.rotation.y=face;neighbours.push(p);
+  }
+  pt(dyn,cyl(.065,.055,.11,10),toon('#eee0c3'),39.25,.815,241);pt(dyn,cyl(.052,.052,.006,10),toon('#765139'),39.25,.873,241);
+  const mother=neighbour({female:true,shirt:'#769c85'}),girl=neighbour({female:true,child:true,shirt:'#d895ba',hair:'#a36b37'});
+  const pram=grp(dyn,56.2,0,218),pramM=toon('#526d79');
+  for(const x of [-.3,.3])for(const z of [-.38,.38])pt(pram,cyl(.145,.145,.075,10),M.dark,x,.145,z,{r:[0,0,Math.PI/2]});
+  pt(pram,new THREE.BoxGeometry(.56,.08,.86),M.steel,0,.32,0);
+  pt(pram,new THREE.BoxGeometry(.58,.34,.7),pramM,0,.54,.06,{ol:true});
+  pt(pram,new THREE.SphereGeometry(.34,12,8,0,Math.PI,0,Math.PI/2),pramM,0,.73,.19,{s:[1,1,1.1],r:[0,Math.PI,0]});
+  pt(pram,sph(.07,8,6),toon('#edc5a5'),0,.74,-.12);
+  for(const x of [-.26,.26])pt(pram,cyl(.018,.018,.54,6),M.steel,x,.76,-.43,{r:[-.45,0,0]});
+  pt(pram,new THREE.BoxGeometry(.56,.035,.035),M.dark,0,.995,-.55);
+  mother.arms.forEach(a=>a.rotation.x=-1.05);girl.arms[0].rotation.z=-.38;
+  const walker=neighbour({shirt:'#b09a60',skin:'#a77556'});walker.g.position.set(42,0,199);
+  const walkers=[mother,girl,walker];neighbours.push(...walkers);
+  let clock=0;
+  HOOKS.frame.push(dt=>{
+    if(!started||paused)return;clock+=dt;
+    // Slow out-and-back strolls, with a gentle turn at each end.
+    const a=clock*.055,z=219+6*Math.sin(a),face=Math.cos(a)>=0?0:Math.PI;
+    const dir=Math.cos(a)>=0?1:-1;
+    mother.g.position.set(56.2,0,z);mother.g.rotation.y=face;
+    girl.g.position.set(57.1,0,z-.1*dir);girl.g.rotation.y=face;
+    pram.position.set(56.2,0,z+1.05*dir);pram.rotation.y=face;
+    walker.g.position.z=199+4*Math.sin(clock*.065);walker.g.rotation.y=Math.cos(clock*.065)>=0?0:Math.PI;
+    for(const p of walkers){const swing=reduceMotion?0:Math.sin(clock*3)*.22;p.legs[0].rotation.x=swing;p.legs[1].rotation.x=-swing;}
+    for(const p of neighbours)p.g.visible=!(FX.halloweenHall&&FX.halloweenHall.inside)&&p.g.position.distanceToSquared(camera.position)<130*130;
+    pram.visible=mother.g.visible;
+  });
+  FX.streetLife={neighbours,mother,girl,pram,walker};
 }
 
 // ======================================================================== FALLING LEAVES
@@ -6615,6 +6695,7 @@ function updActions() {
   for(let i=0;i<6;i++) smoke.push(pt(dyn,smokeGeo,smokeM,0,0,0,{cast:false}));
 
   function reset() {
+    if(FX.halloweenHall?.resetWitch)FX.halloweenHall.resetWitch();
     FUN.stars.clear(); saveStars(); pickups.forEach(p=>p.root.visible=isChristmas()); ornaments.forEach(o=>o.visible=false);
     FUN.intros.clear(); FUN.arrivals.length=0; FUN.party=false; FUN.partyDone=false; FUN.partyTime=0; readyHint=false; catBox.visible=false; dogHat.visible=false; bulbs.forEach(b=>b.visible=false);
     animals.forEach(a=>{a.arrived=false; a.returnTime=0; a.g.rotation.x=a.g.rotation.z=0;});
@@ -6946,6 +7027,150 @@ function updActions() {
   for(const side of [-1,1])pt(ghost,sph(0.055,8,6),face,side*0.15,1.47,0.32,{cast:false});
   pt(ghost,sph(0.055,8,6),face,0,1.25,0.34,{s:[1.2,0.5,0.4],cast:false});
 
+  const silver=new THREE.MeshPhongMaterial({color:'#c6d4df',specular:'#ffffff',shininess:75});
+  const darkSteel=new THREE.MeshPhongMaterial({color:'#596d82',specular:'#b9cadd',shininess:55});
+  const brass=new THREE.MeshPhongMaterial({color:'#d7b56a',specular:'#fff2c7',shininess:55});
+  const under=toon('#384052'), redCloth=toon('#95435d'), slit=new THREE.MeshBasicMaterial({color:'#1b2132'});
+  const armour=grp(hall,HX+4.5,0,HZ+7.0);armour.rotation.y=Math.PI;
+  const armorPart=(geo,mat,x,y,z,o={})=>pt(armour,geo,mat,x,y,z,o);
+  armorPart(cyl(.74,.82,.18,12),toon('#7e7888'),0,.09,0);
+  armorPart(cyl(.7,.74,.09,12),brass,0,.225,0);
+  // Articulated legs, overlapping kneecaps, shin guards and broad rounded boots.
+  for(const side of [-1,1]){
+    const x=side*.21;
+    armorPart(capg(.13,.37),darkSteel,x,.84,0);
+    armorPart(sph(.15,12,8),brass,x,.62,.07,{s:[1,.9,.7]});
+    armorPart(cyl(.12,.16,.38,12),silver,x,.43,.01);
+    armorPart(sph(.16,12,8),silver,x,.31,.12,{s:[.9,.65,1.6]});
+    armorPart(cyl(.055,.055,.62,8),brass,x,.59,.135);
+  }
+  armorPart(capg(.26,.28),under,0,1.22,0,{s:[1,1, .68]});
+  armorPart(sph(.37,20,14),silver,0,1.34,.025,{s:[1,.95,.62]});
+  armorPart(sph(.27,16,10),brass,0,1.1,.08,{s:[1.12,.42,.76]});
+  for(const side of [-1,1])for(const y of [1.15,1.34,1.49])armorPart(sph(.027,8,6),brass,side*.24,y,.235,{cast:false});
+  armorPart(cyl(.13,.16,.16,12),darkSteel,0,1.66,0);
+  // Rounded helmet, raised visor rim, a clear eye slit, air vents and brass rivets.
+  armorPart(sph(.285,20,14),silver,0,1.94,0,{s:[1,1.16,1]});
+  armorPart(sph(.267,18,12),darkSteel,0,1.9,.05,{s:[1,.72,1.02]});
+  armorPart(new THREE.BoxGeometry(.38,.065,.06),slit,0,1.995,.303);
+  armorPart(new THREE.BoxGeometry(.42,.025,.065),brass,0,2.04,.29);
+  for(const x of [-.115,-.058,0,.058,.115])armorPart(new THREE.BoxGeometry(.018,.1,.045),slit,x,1.83,.305);
+  for(const side of [-1,1])armorPart(sph(.045,10,8),brass,side*.27,1.94,.06);
+  armorPart(cyl(.048,.07,.15,10),brass,0,2.24,-.05);
+  armorPart(sph(.16,12,8),redCloth,0,2.42,-.13,{s:[.38,1.4,.95]});
+  const waving=grp(armour,-.39,1.53,0);
+  for(const side of [-1,1]){
+    const arm=side===-1?waving:grp(armour,.39,1.53,0);
+    pt(arm,sph(.18,14,10),silver,0,0,0,{s:[1.1,.8,1]});
+    pt(arm,capg(.085,.24),darkSteel,side*.035,-.25,0);
+    pt(arm,sph(.1,12,8),brass,side*.04,-.39,.015);
+    pt(arm,cyl(.09,.075,.25,10),silver,side*.04,-.54,.025);
+    pt(arm,sph(.1,12,8),silver,side*.04,-.72,.04,{s:[.8,1,.75]});
+    for(const dx of [-.035,0,.035])pt(arm,capg(.016,.075),brass,side*.04+dx,-.81,.075,{cast:false});
+  }
+  // A broad shield with a gold rim and a welcoming little star.
+  const shield=grp(armour,.5,1.0,.19);shield.rotation.y=-.17;
+  const shieldShape=new THREE.Shape();shieldShape.moveTo(-.27,.36);shieldShape.lineTo(.27,.36);shieldShape.lineTo(.25,-.1);shieldShape.quadraticCurveTo(0,-.48,-.25,-.1);shieldShape.closePath();
+  const shieldGeo=new THREE.ExtrudeGeometry(shieldShape,{depth:.045,bevelEnabled:true,bevelSize:.025,bevelThickness:.02,bevelSegments:2,steps:1});
+  pt(shield,shieldGeo,brass,0,0,0);
+  pt(shield,shieldGeo,redCloth,0,.02,.052,{s:[.85,.83,.45],cast:false});
+  const emblem=new THREE.Shape();for(let i=0;i<10;i++){const a=Math.PI/2+i*Math.PI/5,r=i%2?.055:.125;i?emblem.lineTo(Math.cos(a)*r,Math.sin(a)*r):emblem.moveTo(Math.cos(a)*r,Math.sin(a)*r);}emblem.closePath();
+  pt(shield,new THREE.ExtrudeGeometry(emblem,{depth:.012,bevelEnabled:false}),brass,0,.02,.1,{cast:false});
+  const happyEyes=new THREE.MeshBasicMaterial({color:'#a8f3df'});
+  const eyes=[];for(const side of [-1,1])eyes.push(armorPart(sph(.028,8,6),happyEyes,side*.075,1.995,.342,{s:[1,.65,.3],cast:false}));
+  const rewardLight=new THREE.PointLight('#ffe2a1',0,9,2);rewardLight.position.set(armour.position.x,2.8,armour.position.z-1.0);hall.add(rewardLight);
+  colCirc(armour.position.x,armour.position.z,.72,2.7);
+  eyes.forEach(e=>e.visible=true);
+  H.armour=armour;
+
+// Find the little witch, accompany her outside, then watch her wave and fly home.
+  const witchKey='duevej3d-heks-farvel';
+  let witchDone=false;try{witchDone=localStorage.getItem(witchKey)==='1';}catch(_){}
+  const W=H.witch={state:witchDone?'done':'waiting',time:0,start:new THREE.Vector3()};
+  const witchRoot=grp(dyn,HX-3.4,0,HZ+5.5), witchBody=grp(witchRoot,0,0,0);
+  const purple=toon('#8052a5'), lilac=toon('#c298d6'), skin=toon('#f4c79e'), hair=toon('#9b503d'), hat=toon('#344646');
+  pt(witchBody,cyl(.16,.27,.53,14),purple,0,.48,0,{ol:true});
+  pt(witchBody,cyl(.18,.2,.07,12),lilac,0,.52,0);
+  for(const side of [-1,1]){
+    pt(witchBody,cyl(.045,.05,.22,8),lilac,side*.105,.16,0);
+    for(const y of [.10,.17,.23])pt(witchBody,cyl(.049,.049,.023,8),purple,side*.105,y,0,{cast:false});
+    pt(witchBody,sph(.075,10,8),hat,side*.105,.045,.05,{s:[1,.65,1.5]});
+  }
+  const witchHead=grp(witchBody,0,.91,0);
+  pt(witchHead,sph(.205,16,12),hair,0,.02,-.04,{s:[1.04,1.04,.95]});
+  pt(witchHead,sph(.18,16,12),skin,0,0,.02,{ol:true});
+  for(const side of [-1,1]){
+    pt(witchHead,sph(.025,8,6),face,side*.065,.035,.177,{cast:false});
+    pt(witchHead,sph(.03,8,6),toon('#ed9299'),side*.105,-.04,.172,{s:[1,.5,.3],cast:false});
+    pt(witchHead,capg(.055,.12),hair,side*.17,-.045,-.02,{r:[0,0,side*.2]});
+  }
+  pt(witchHead,new THREE.TorusGeometry(.052,.009,5,12,Math.PI),face,0,-.045,.185,{r:[0,0,Math.PI],cast:false});
+  pt(witchHead,cyl(.31,.31,.038,18),hat,0,.155,-.015);
+  pt(witchHead,cone(.19,.43,16),hat,.015,.38,-.025,{r:[0,0,-.12],ol:true});
+  pt(witchHead,cyl(.175,.185,.055,14),lilac,.007,.21,-.025);
+  pt(witchHead,new THREE.BoxGeometry(.072,.055,.027),brass,0,.215,.145,{cast:false});
+  const witchArm=grp(witchBody,-.23,.69,0);
+  for(const side of [-1,1]){
+    const a=side===-1?witchArm:grp(witchBody,.23,.69,0);
+    pt(a,capg(.05,.16),purple,0,-.105,0);
+    pt(a,sph(.06,10,8),skin,0,-.23,.03);
+  }
+  const broom=grp(witchBody,.32,.52,-.04);
+  pt(broom,cyl(.024,.03,1.12,8),wood,0,.23,0);
+  pt(broom,cone(.17,.34,12),toon('#c59858'),0,-.36,0,{r:[Math.PI,0,0]});
+  for(let i=0;i<7;i++){const a=i*Math.PI*2/7;pt(broom,cyl(.012,.017,.35,5),brass,Math.cos(a)*.10,-.39,Math.sin(a)*.10,{r:[Math.sin(a)*.16,0,-Math.cos(a)*.16],cast:false});}
+  pt(broom,cyl(.095,.095,.045,12),purple,0,-.235,0);
+  const witchGlow=new THREE.Sprite(new THREE.SpriteMaterial({map:TX.glow,color:'#d1b8ef',transparent:true,opacity:.25,depthWrite:false}));witchGlow.position.y=.9;witchGlow.scale.set(1.35,1.35,1);witchRoot.add(witchGlow);
+  const witchStyle=document.createElement('style');witchStyle.textContent='#hallWitch{position:fixed;left:14px;top:calc(126px + env(safe-area-inset-top,0px));padding:8px 12px;background:#eee3fa;font:600 14px var(--body);pointer-events:none;max-width:calc(100vw - 28px);box-sizing:border-box}@media(max-height:500px){#hallWitch{top:64px;font-size:12px;padding:5px 8px}}';document.head.appendChild(witchStyle);
+  const witchBadge=document.createElement('div');witchBadge.id='hallWitch';witchBadge.className='sticker';witchBadge.hidden=true;witchBadge.setAttribute('role','status');$('hud').appendChild(witchBadge);
+  function takeWitch(){
+    if(!started||paused||!H.inside||gameVersion!=='halloween'||W.state!=='waiting'||Math.hypot(P.pos.x-witchRoot.position.x,P.pos.z-witchRoot.position.z)>2)return;
+    W.state='following';sparkleSound();toast('Heksen vil gerne hjem! Hun følger efter dig. Vis hende døren.');
+  }
+  function witchOutside(){
+    if(W.state!=='following')return false;
+    try{localStorage.setItem(witchKey,'1');}catch(_){}
+    W.state='waving';W.time=0;witchRoot.position.set(P.pos.x+1.8,.12,P.pos.z+1.0);W.start.copy(witchRoot.position);
+    witchRoot.rotation.y=Math.atan2(P.pos.x-witchRoot.position.x,P.pos.z-witchRoot.position.z);
+    witchBody.position.y=0;witchGlow.visible=false;
+    toast('Tak for hjælpen! Heksen vinker farvel og flyver hjem på sin kost.');return true;
+  }
+  H.witchOutside=witchOutside;
+  H.resetWitch=()=>{
+    W.state='waiting';W.time=0;witchRoot.position.set(HX-3.4,0,HZ+5.5);witchRoot.rotation.set(0,0,0);witchBody.position.y=0;witchArm.rotation.set(0,0,0);broom.position.set(.32,.52,-.04);broom.rotation.set(0,0,0);witchGlow.visible=true;
+    try{localStorage.removeItem(witchKey);}catch(_){}
+  };
+  W.root=witchRoot;W.take=takeWitch;W.broom=broom;W.arm=witchArm;
+  HOOKS.frame.push((dt,t)=>{
+    const halloween=gameVersion==='halloween';
+    witchBadge.hidden=!(started&&H.inside&&halloween);
+    witchBadge.textContent=W.state==='waiting'?'🧙 Find den lille heks':W.state==='following'?'🧙 Vis heksen ud af huset':'✨ Du hjalp heksen hjem!';
+    witchRoot.visible=started&&halloween&&(H.inside?(W.state==='waiting'||W.state==='following'):(W.state==='waving'||W.state==='flying'));
+    if(!started||paused||!halloween)return;
+    if(H.inside&&W.state==='waiting'){
+      if(!reduceMotion){witchHead.rotation.y=Math.sin(t*.7)*.16;witchGlow.scale.setScalar(1.25+Math.sin(t*2)*.1);}
+      if(Math.hypot(P.pos.x-witchRoot.position.x,P.pos.z-witchRoot.position.z)<2)
+        offerAction({id:'hall-take-witch',label:'Tag heksen med',prio:2.7,run:takeWitch});
+    }else if(H.inside&&W.state==='following'){
+      const dx=P.pos.x-witchRoot.position.x,dz=P.pos.z-witchRoot.position.z,d=Math.hypot(dx,dz);
+      if(d>1.35){const step=Math.min(d-1.35,dt*10);witchRoot.position.x+=dx/d*step;witchRoot.position.z+=dz/d*step;witchRoot.rotation.y=Math.atan2(dx,dz);resolve(witchRoot.position);}
+      witchBody.position.y=reduceMotion?0:Math.sin(t*9)*.025;
+    }else if(W.state==='waving'||W.state==='flying'){
+      W.time+=dt;
+      if(W.time<1.6){witchArm.rotation.z=reduceMotion?-2.1:-2.1+Math.sin(W.time*9)*.2;}
+      else{
+        W.state='flying';const f=Math.min(1,(W.time-1.6)/5.0),ease=f*f;
+        broom.position.set(0,.38,0);broom.rotation.z=Math.PI/2;witchArm.rotation.z=-.4;
+        witchRoot.position.set(W.start.x+25*ease,W.start.y+12*f*f,W.start.z-19*ease);
+        witchRoot.rotation.y=Math.atan2(25,-19);witchBody.position.y=.20;
+        if(f===1){W.state='done';witchRoot.visible=false;try{localStorage.setItem(witchKey,'1');}catch(_){}}
+      }
+    }
+    if(H.inside&&Math.hypot(P.pos.x-armour.position.x,P.pos.z-armour.position.z)<2.4)
+      offerAction({id:'hall-armour-hello',label:'Hils på rustningen',prio:1.9,run:()=>{tone(500,650,0,.2,.025,'triangle');toast(W.state==='waiting'?'En lille heks gemmer sig herinde. Vil du hjælpe hende ud?':'Rustningen nikker til dig. Tak for at hjælpe heksen!');}});
+  });
+
+
   const beam=new THREE.SpotLight('#fff0c4',30,14,Math.PI/5,0.52,1.5);
   beam.visible=false;beam.castShadow=false;scene.add(beam);scene.add(beam.target);
   let winterBefore=false;
@@ -6973,7 +7198,7 @@ function updActions() {
     BALL.held=false;updKickHint();
     $('map').hidden=true;$('findBtn').hidden=true;
     moveTo(HX+HW/2-5.0,HZ,-Math.PI/2);updateBeam();
-    toast('Her er mørkt! Lommelygten viser vej. Døren bag dig fører ud igen.');
+    toast(W.state==='waiting'?'Find den lille heks og hjælp hende ud. Lommelygten viser vej!':W.state==='following'?'Heksen følger dig. Vis hende hen til døren.':'Du hjalp heksen hjem! Du kan stadig kigge rundt i huset.');
   }
   function leave() {
     if(!H.inside)return;
@@ -6982,7 +7207,7 @@ function updActions() {
     evApplied=-1;applyEvening();
     $('map').hidden=!showMap;$('findBtn').hidden=false;
     if(winterBefore){FX.vinter.set(true,false);FX.vinter.snap();winterBefore=false;}
-    toast('Du er ude i skolegården igen.');
+    if(!H.witchOutside())toast('Du er ude i skolegården igen.');
   }
   H.setVersion=()=>{
     if(gameVersion!=='halloween'&&H.inside)leave();
@@ -7030,7 +7255,7 @@ function updActions() {
     const hint = $('versionHint');
     hint.hidden = gameVersion === 'normal';
     hint.textContent = gameVersion === 'halloween'
-      ? 'Find lommelygten ved Hovedbygningens trappe. Så kan du gå ind og se malerier af hovedløse ryttere og andre sjove ting.'
+      ? 'Find lommelygten ved Hovedbygningens trappe. Inde i huset gemmer sig en lille heks. Hjælp hende ud, så hun kan flyve hjem på sin kost.'
       : gameVersion === 'christmas' ? 'Find julestjerner, byg snemænd og hold julefest hos Filipa.' : '';
   };
   function selectVersion(next, initial = false) {
