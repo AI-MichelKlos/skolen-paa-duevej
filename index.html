@@ -2250,6 +2250,69 @@ apartment(-140, -60, -132, -114, 5); apartment(-34, 36, -132, -114, 5); apartmen
     }
   }
   rowBlock(-37, -5.5, 115.5); rowBlock(5.5, 39.5, 115.5); rowBlock(-95, -56.5, 115.5);
+  // Egernvej west to Vagtelvej, simplified from Google Street View (September 2024 imagery).
+  // The green spaces, yellow row houses and the modern yellow corner block anchor the route.
+  rectG(-275,-200,99.5,109.5,M.road,.018,'#8b8b8e');
+  slab(-275,-200,95.5,99.5,.12,M.sidewalk,'#d8d3c8');
+  slab(-275,-200,109.5,113.5,.12,M.sidewalk,'#d8d3c8');
+  rowBlock(-173,-113,115.5);rowBlock(-257,-187,115.5);
+  // Two side streets break up the long terraces.
+  for(const x of [-106,-180]){
+    rectG(x-3.5,x+3.5,48,165,M.road,.019,'#8b8b8e');
+    slab(x-5.5,x-3.5,48,99.5,.12,M.sidewalk,'#d8d3c8');
+    slab(x+3.5,x+5.5,48,99.5,.12,M.sidewalk,'#d8d3c8');
+  }
+  // Houses on the north side, before the two green squares.
+  for(const [a,b] of [[-98,-84]]){
+    const cx=(a+b)/2;box(b-a,6.6,9,rowBrick,cx,0,86,{col:true,edges:true});
+    gableRoof(b-a,9,3.2,M.tile,cx,6.6,86,{over:.4,gableMat:rowBrick});
+    for(let x=a+3;x<b;x+=6){
+      addWin('doorGreen',x-1,2.0,90.6,0,1,2.2,0);addWin('green',x+1,2.2,90.6,0,1.2,1.5,.5);addWin('green',x+1,4.9,90.6,0,1.2,1.4,.5);
+      for(let n=0;n<3;n++)box(1.3,.25*(3-n),.35,M.concrete,x-1,0,90.7+n*.35,{col:true});
+    }
+    slab(a,b,91.5,95.5,.12,M.sidewalk,'#d8d3c8');
+  }
+  // The open lawn followed by the tree-lined playground close to Vagtelvej.
+  rectG(-173,-113,65,95.5,M.grass,.024,'#a7c46f');
+  rectG(-257,-187,48,95.5,M.grass,.025,'#a7c46f');
+  rectG(-257,-187,89.5,93,M.path,.04,'#d9c4a0');
+  rectG(-245,-242,55,89.5,M.path,.045,'#d9c4a0');
+  for(const x of [-252,-236,-220,-204,-189,-169,-148,-126])tree(x,96.3,'round',.9);
+  for(const [x,z] of [[-251,62],[-230,52],[-195,56],[-191,75],[-252,79],[-169,72],[-121,70]])tree(x,z,'big',.9);
+  for(const [x,z] of [[-250,88],[-215,88],[-152,88]])bench(x,z);
+  // A small play tower, sand area and a low channel suggest the renovated playground.
+  rectG(-235,-220,64,77,M.path,.045,'#d8c48e');
+  box(3,1.15,3,M.deck,-225,0,68,{col:true});
+  for(const x of [-226.3,-223.7])for(const z of [66.7,69.3])box(.13,3.2,.13,M.deck,x,0,z,{col:true});
+  gableRoof(3.4,3.4,1.1,M.tile,-225,3.2,68,{gableMat:rowBrick});
+  const chute=mesh(new THREE.BoxGeometry(1.15,.11,3.7),M.steel,-225,.68,71.1,{rx:.32});
+  colBox(-225.6,-224.4,69.8,73,1.25);
+  for(const z of [77,80,83])box(6,.18,.45,M.concrete,-231,0,z,{col:true,cast:false});
+  // Vagtelvej crosses the far end, with a modern pale-yellow building opposite.
+  rectG(-270,-260,30,166,M.road,.021,'#8b8b8e');
+  slab(-275,-270,30,166,.12,M.sidewalk,'#d8d3c8');
+  slab(-260,-257,30,166,.12,M.sidewalk,'#d8d3c8');
+  const corner=toon('#d2bd87'),lightWall=toon('#eeebe0');
+  box(12,12.4,50,corner,-284,0,102,{col:true,edges:true});
+  box(12.05,2.4,50.05,lightWall,-284,10,102,{cast:false});
+  box(12.4,.2,50.4,M.concrete,-284,12.4,102);
+  for(const z of [81,88,95,102,109,116,123])for(const y of [2.4,5.5,8.6,11.1]){
+    addWin('green',-277.88,y,z,Math.PI/2,2.2,1.15,.4);
+  }
+  box(.16,2.4,3.5,M.dark,-277.86,0,110,{cast:false});
+  for(let n=0;n<6;n++){
+    const x=-258.5;mesh(new THREE.ShapeGeometry((()=>{const s=new THREE.Shape();s.moveTo(0,0);s.lineTo(.38,.7);s.lineTo(-.38,.7);s.closePath();return s;})()),M.zebra,x,.025,100.6+n*1.45,{rx:-Math.PI/2,cast:false});
+  }
+  for(const [x,name] of [[-106,'Drosselvej'],[-180,'Solsortvej'],[-259,'Vagtelvej']]){
+    lamp(x+2.3,97.4,4.7);
+    label(name,2.2,.4,x+2.3,2.9,97.4,0,'#34443e','#fff');
+  }
+  label('Egernvej',2.3,.42,-258.1,2.35,97.4,Math.PI/2,'#34443e','#fff');
+  for(const x of [-124,-138,-151,-166,-199,-214,-230,-247]){
+    car(x,108.15,Math.PI/2,['#ece7dc','#384451','#648b83'][Math.abs(x)%3]);
+  }
+  for(const x of [-85,-142,-216,-249])bike(x,112.8,Math.PI/2,'#48565c');
+
   // Solsortvej runs south from Egernvej between the two rows
   rectG(-3, 3, 109.5, 200, M.road, 0.02, '#8b8b8e');
   // the corner with the street sign and a pink cherry tree
@@ -3313,6 +3376,9 @@ const camCols = [...cols.filter(c => c.t === 'b' && c.top > 1.7), ...camOnly];
 
 // ======================================================================== POIs
 const POIS = [
+  {n:'Ved Vagtelvej',t:'Egernvej ender her ved Vagtelvej. De gule rækkehuse ligger på den ene side, og det grønne område med legeplads ligger på den anden. Følg Egernvej tilbage til skolen.',area:[-275.5,-251,95,114],s:.7},
+  {n:'Legepladsen ved Egernvej',t:'Et grønt område med store træer, bænke og en lille legeplads. Her stiger man af cyklen og løbehjulet.',area:[-257,-187,48,95],s:.7},
+  {n:'Plænen ved Egernvej',t:'En åben græsplæne mellem sidevejene, med træer langs Egernvej.',area:[-173,-113,65,95],s:.7},
   { n: 'For enden af Duevej', t: 'Her ligger Netto og Vagns ved hjørnerne. På den anden side af den store vej ligger Stalden. Vend om her og gå tilbage til skolen.', area: [40, 61, 237, 254] },
   { n: 'Duevej syd for skolen', t: 'Gå langs den lange gule bygning med mørke altaner og de store grønne træer. For enden kan du se Stalden, Netto og Vagns.', area: [40, 61, 126, 237] },
   { n: 'Hovedbygningen', t: 'Skolens største og højeste hus. Røde mursten, et stejlt skifertag med mange skorstene og en buet hoveddør i midten. Kig efter uret oppe i gavlen.', x: 3, z: -58.5, r: 14 },
@@ -3342,7 +3408,7 @@ const POIS = [
   { n: 'Naboens røde hus', t: 'Det store røde hus ud mod Mariendalsvej. Det hører ikke til skolen.', x: 15, z: -85, r: 13 },
   { n: 'Husene med haver', t: 'Små huse med hver sin have. Her bor der nogen, så de hører ikke til skolen.', area: [-37.5, -6, -21.5, 91] },
   { n: 'Husene med haver', t: 'Små huse med hver sin have. Her bor der nogen, så de hører ikke til skolen.', area: [-6, 40, 72.5, 91] },
-  { n: 'Egernvej', t: 'Vejen syd for skolen. Den løber langs stien med træerne og fortsætter lige ud mod vest. På den anden side ligger lange rækkehuse i gule mursten med grønne døre. Cyklisterne kører her, så kig dig for.', area: [-200, 44, 98, 116] },
+  { n: 'Egernvej', t: 'Vejen syd for skolen. Den løber langs stien med træerne og fortsætter mod vest til Vagtelvej. På den anden side ligger lange rækkehuse i gule mursten med grønne døre. Cyklisterne kører her, så kig dig for.', area: [-275.5, 44, 98, 116] },
   { n: 'Duevej', t: 'Vejen, der har givet skolen sit navn. Bilerne holder parkeret i en lang række under træerne, og cyklisterne suser forbi. Fodgængerovergangen ligger mellem det lille røde hus og huset med fiskeskælstaget. Langs skolen er der et grønt bælte med højt græs og små træer.', area: [40, 60, -96, 200] },
   { n: 'Mariendalsvej', t: 'Den store vej på nordsiden af skolen. Kig dig for, før du går over.', area: [-200, 200, -200, -92] },
   { n: 'Vejen bag haverne', t: 'Her kan du gå hele vejen rundt om skolen. På den anden side af vejen ligger små parcelhuse med haver. Cyklisterne kører i begge retninger, så kig dig for, før du går over.', area: [-60, -37.5, -92, 200] },
@@ -3443,7 +3509,14 @@ function updEffects(dt) {
 // ======================================================================== UI
 const hud = $('hud'), intro = $('intro'), goBtn = $('goBtn'), newGameBtn = $('newGameBtn');
 const mapCv = $('map'), mctx = mapCv.getContext('2d');
-let mapBase = null; const MX0 = -60, MX1 = 64, MZ0 = -112, MZ1 = 256;
+let mapBase = null; let MX0 = -60, MX1 = 64, MZ0 = -112, MZ1 = 256;
+function focusStreetMap() {
+  const west=P.pos.x < -58;
+  const x0=west?Math.max(-278,Math.floor((P.pos.x-60)/60)*60-10):-60;
+  const x1=west?x0+140:64,z0=west?20:-112,z1=west?160:256;
+  if(MX0===x0&&MX1===x1&&MZ0===z0&&MZ1===z1)return;
+  MX0=x0;MX1=x1;MZ0=z0;MZ1=z1;sizeMap();
+}
 function sizeMap() {
   const cssW = Math.min(window.innerWidth < 600 ? 104 : 150, Math.floor(window.innerHeight * 0.42 * (MX1 - MX0) / (MZ1 - MZ0))); const cssH = Math.round(cssW * (MZ1 - MZ0) / (MX1 - MX0));
   mapCv.style.width = cssW + 'px'; mapCv.style.height = cssH + 'px';
@@ -3470,7 +3543,8 @@ function buildMapBase() {
   g.font = `600 ${fs}px Lexend, system-ui, sans-serif`; g.fillStyle = '#2a2238'; g.textBaseline = 'middle';
   g.textAlign = 'center'; g.fillText('Mariendalsvej', mpx(-4), mpz(-101));
   g.save(); g.translate(mpx(49), mpz(20)); g.rotate(Math.PI / 2); g.fillText('Duevej', 0, 0); g.restore();
-  g.fillText('Egernvej', mpx(-12), mpz(104.5));
+  g.fillText('Egernvej', mpx(MX0 < -60 ? (MX0+MX1)/2 : -12), mpz(104.5));
+  if(MX0 < -60){g.save();g.translate(mpx(-265),mpz(73));g.rotate(Math.PI/2);g.fillText('Vagtelvej',0,0);g.restore();}
   g.fillText('Stalden', mpx(26), mpz(249));
   mapBase = cv;
 }
@@ -3592,7 +3666,7 @@ canvas.addEventListener('contextmenu', e => e.preventDefault());
 const P = { pos: new THREE.Vector3(42, 0.12, -57.5), vel: new THREE.Vector3(), onGround: true, walkT: 0, face: -Math.PI / 2 };
 const TRAMP_Y = 0.3;
 function trampAt(x, z) { for (const t of TRAMPS) if ((x - t.x) ** 2 + (z - t.z) ** 2 < t.r * t.r) return t; return null; }
-const STEP = 0.5, RAD = 0.35, G = 22, BOUNDS = [-57.6, 60.6, -112, 253.5];
+const STEP = 0.5, RAD = 0.35, G = 22, BOUNDS = [-275.5, 60.6, -112, 253.5];
 const angDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 function resolve(p, velocity = null) {
   const stopInto = (nx, nz) => {
@@ -3614,13 +3688,22 @@ function resolve(p, velocity = null) {
     }
   }
 }
+function westStreetWalkable(p) {
+  return p.x >= -57.6 || (p.z >= 95.8 && p.z <= 114) ||
+    (p.x >= -257 && p.x <= -187 && p.z >= 48 && p.z <= 114) ||
+    (p.x >= -173 && p.x <= -113 && p.z >= 65 && p.z <= 114);
+}
 function movePlayerHorizontal(dt) {
   // Small steps cannot skip thin walls, even when running or skating at a low frame rate.
   const steps = Math.max(1, Math.ceil(Math.hypot(P.vel.x, P.vel.z) * dt / (RAD * 0.45)));
   const stepDt = dt / steps;
   for (let i = 0; i < steps; i++) {
+    const oldX=P.pos.x,oldZ=P.pos.z;
     P.pos.x += P.vel.x * stepDt; P.pos.z += P.vel.z * stepDt;
     resolve(P.pos, P.vel);
+    if(!FX.halloweenHall?.inside && !westStreetWalkable(P.pos)){
+      P.pos.x=oldX;P.pos.z=oldZ;P.vel.x=0;P.vel.z=0;
+    }
   }
 }
 function updPlayer(dt) {
@@ -3654,6 +3737,11 @@ function updPlayer(dt) {
     P.pos.x = Math.min(BOUNDS[1], Math.max(BOUNDS[0], P.pos.x));
     P.pos.z = Math.min(BOUNDS[3], Math.max(BOUNDS[2], P.pos.z));
     if (P.pos.z > 125) P.pos.x = Math.max(40.5, P.pos.x);
+    if (P.pos.x < -57.6) {
+      const park = P.pos.x >= -257 && P.pos.x <= -187;
+      const lawn = P.pos.x >= -173 && P.pos.x <= -113;
+      P.pos.z = Math.min(114, Math.max(park ? 48 : lawn ? 65 : 95.8, P.pos.z));
+    }
   }
   const tr = trampAt(P.pos.x, P.pos.z);
   if (jumpReq && tr && !paused) P.boost = true;
@@ -7419,7 +7507,7 @@ function updPlayerCharacter(dt, t) {
     (p.x>=40.5&&p.x<=57.5&&p.z>=-110&&p.z<=253.5)||
     (p.x>=-56&&p.x<=57.5&&p.z>=-110&&p.z<=-92)||
     (p.x>=-56&&p.x<=-37.5&&p.z>=-110&&p.z<=114)||
-    (p.x>=-56&&p.x<=57.5&&p.z>=96&&p.z<=114));
+    (p.x>=-275.5&&p.x<=57.5&&p.z>=98&&p.z<=114));
   const vehicles=[];
   function buildVehicle(kind,x,z){
     const g=grp(dyn,x,.12,z),frame=toon(kind==='bike'?'#e29b56':'#56a9b6'),metal=toon('#c0c6c8'),wheels=[];
@@ -7591,7 +7679,7 @@ function frame(now) {
   tmpA.copy(sunOff).normalize().multiplyScalar(420).add(camera.position); sunSprite.position.copy(tmpA);
   if (started) {
     poiT -= dt; if (poiT < 0) { poiT = 0.25; showPoi(paused ? null : poiAt(P.pos.x, P.pos.z, P.pos.y)); updLocked(); }
-    mapT -= dt; if (mapT < 0) { mapT = 1 / 30; drawMap(); }
+    mapT -= dt; if (mapT < 0) { mapT = 1 / 30; focusStreetMap(); drawMap(); }
     if (toastTimer > 0) { toastTimer -= dt; if (toastTimer <= 0) $('toast').hidden = true; }
   }
   clockTick -= dt; if (clockTick < 0) { clockTick = 1; updClock(); }
