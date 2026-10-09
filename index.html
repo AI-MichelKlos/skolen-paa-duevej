@@ -6206,6 +6206,7 @@ function updActions() {
   });
   HOOKS.frame.push(() => { const show = started && !intro.hidden; if (rb.hidden === show) { rb.hidden = !show; if (!show) disarm(); } });
   function startOver() {
+    if (FX.juice) FX.juice.reset();
     leaveParade(); found.clear(); homeAgain(); updCounter(); renderChips(); save();
     if (P.ride) { if (P.ride.s) P.ride.s.busy = false; P.ride = null; }
     P.swing = null; BALL.held = false; updKickHint();
@@ -7109,6 +7110,82 @@ function updPlayerCharacter(dt, t) {
   model.g.rotation.z = gait && playerCharacter === 'mus' ? Math.sin(P.walkT * 2) * 0.035 : 0;
 }
 
+// Optional cafe play: all four player figures can order and sip juice.
+{
+  const J = FX.juice = { left: 0, character: null, sips: 0 };
+  const cream = toon('#fff6db'), orange = toon('#ffae35'), mint = toon('#4b9f85');
+  const serving = new THREE.Group(); serving.visible = false; kid.g.add(serving);
+  const tabletop = new THREE.Mesh(new THREE.CylinderGeometry(.37,.37,.055,20), cream);
+  const leg = new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,1,8), mint);
+  const glass = new THREE.Mesh(new THREE.CylinderGeometry(.14,.11,.29,20,1,true),
+    new THREE.MeshToonMaterial({color:'#d9f3f5',transparent:true,opacity:.36,side:THREE.DoubleSide,depthWrite:false}));
+  const liquid = new THREE.Mesh(new THREE.CylinderGeometry(.125,.102,1,20), orange);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(.14,.012,6,20),cream); rim.rotation.x=Math.PI/2;
+  serving.add(tabletop,leg,glass,liquid,rim);
+  let straw = null, baseY = 0;
+  function resetJuice() {
+    J.left=0; J.character=null; serving.visible=false;
+    if(straw){serving.remove(straw);straw.geometry.dispose();straw=null;}
+  }
+  J.reset=resetJuice;
+  function atCafe() { return P.onGround && P.pos.y<.6 && Math.hypot(P.pos.x-42,P.pos.z-244)<2.2; }
+  function orderJuice() {
+    if(!started||paused||J.left>0||P.ride||P.swing||!atCafe())return;
+    resetJuice(); J.left=4.8; J.character=playerCharacter; J.sips=0;
+    P.vel.set(0,0,0); P.face=-Math.PI/2; kid.root.rotation.y=P.face;
+    const model=playerCharacter==='girl'?null:playerModels.get(playerCharacter);
+    if(model){model.g.position.y=0;model.g.rotation.z=0;}
+    const head=model?model.head:kid.head; head.rotation.set(0,0,0);
+    kid.g.updateWorldMatrix(true,true);
+    const mouth=kid.g.worldToLocal(head.localToWorld(new THREE.Vector3(0,-.05,playerCharacter==='hund'?.22:playerCharacter==='mus'?.17:playerCharacter==='kat'?.16:.32)));
+    baseY=Math.max(.18,mouth.y-.48);
+    const x=mouth.x+.25,z=mouth.z+.26;
+    tabletop.position.set(x,baseY-.028,z);leg.scale.y=baseY;leg.position.set(x,baseY/2,z);
+    glass.position.set(x,baseY+.145,z);rim.position.set(x,baseY+.29,z);
+    const path=new THREE.CatmullRomCurve3([
+      new THREE.Vector3(x,baseY+.05,z),new THREE.Vector3(x,baseY+.36,z),
+      new THREE.Vector3(mouth.x+.08,mouth.y+.03,mouth.z+.07),mouth
+    ]);
+    straw=new THREE.Mesh(new THREE.TubeGeometry(path,18,.015,6,false),mint);serving.add(straw);
+    serving.visible=true; toast('Værsgo! Et glas juice med sugerør.'); tone(660,880,0,.14,.035,'triangle');
+  }
+  J.order=orderJuice;
+  // Pause walking while sipping; the normal umbrella update still runs.
+  HOOKS.ride.push(()=>{
+    if(J.left<=0)return false;
+    if(J.character!==playerCharacter||P.ride||P.swing){resetJuice();return false;}
+    if(!paused)P.vel.set(0,0,0);
+    return true;
+  });
+  HOOKS.frame.push(()=>{
+    if(started&&!paused&&!P.ride&&!P.swing&&J.left<=0&&atCafe())
+      offerAction({id:'vagns-juice',label:'Bestil juice',prio:3,run:orderJuice});
+  });
+  // This pose runs after the usual player animation, so the straw stays at the mouth.
+  J.pose=dt=>{
+    if(J.left<=0)return;
+    if(J.character!==playerCharacter){resetJuice();return;}
+    if(!started||paused)return;
+    J.left=Math.max(0,J.left-dt);
+    const model=playerCharacter==='girl'?null:playerModels.get(playerCharacter);
+    (model?model.head:kid.head).rotation.set(0,0,0);
+    if(!model){kid.arms[0].rotation.x=-.8;kid.arms[0].rotation.z=-.25;}
+    const height=.24*Math.max(.08,J.left/4.8);
+    liquid.scale.y=height;liquid.position.copy(glass.position);liquid.position.y=baseY+height/2;
+    const sip=Math.min(3,Math.floor((4.8-J.left)/1.2));
+    if(sip>J.sips){J.sips=sip;tone(360,240,0,.11,.025,'sine');}
+    if(J.left===0){resetJuice();toast('Mmm, dejlig juice!');}
+  };
+  // A small menu on the cafe wall makes the interaction visible on arrival.
+  const menu=ctex(256,256,(g,w,h)=>{
+    g.fillStyle='#304f39';g.fillRect(0,0,w,h);g.strokeStyle='#e8ce92';g.lineWidth=8;g.strokeRect(5,5,w-10,h-10);
+    g.fillStyle='#fff6db';g.textAlign='center';g.font='bold 34px sans-serif';g.fillText('JUICE',w/2,62);
+    g.fillStyle='#ffae35';g.beginPath();g.arc(w/2,130,40,0,Math.PI*2);g.fill();
+    g.fillStyle='#fff6db';g.font='22px sans-serif';g.fillText('med sugerør',w/2,218);
+  },{wrap:false});
+  mesh(new THREE.PlaneGeometry(.9,1.15),toon('#fff',{map:menu}),38.26,1.25,244, {ry:Math.PI/2,cast:false});
+}
+
 // ---- walking presentation: a shared pose layer leaves rides and play animations intact
 const CONTACT = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 1.15), new THREE.MeshBasicMaterial({ map: TX.glow, color: '#30243b', transparent: true, opacity: 0.28, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
 CONTACT.rotation.x = -Math.PI / 2; dyn.add(CONTACT);
@@ -7167,6 +7244,7 @@ function frame(now) {
   updParade(dt, clockT); updLeafPiles(dt); updPuddles(dt); updVoice(); updSwingsIdle(dt, clockT); updTrail(dt, clockT);
   for (const h of HOOKS.frame) h(dt, clockT);
   updPlayerCharacter(dt, clockT);
+  if (FX.juice) FX.juice.pose(dt);
   updWalkingPresentation(dt);
   updActions();
   updEffects(dt);
