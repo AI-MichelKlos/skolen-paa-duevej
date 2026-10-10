@@ -159,7 +159,7 @@ body.touch #poi{bottom:calc(118px + env(safe-area-inset-bottom,0px))}
       <p id="versionHint" class="lead" hidden></p>
     </section>
     <button class="go" id="goBtn" type="button" disabled>Henter skolen …</button>
-    <p class="lead" id="introLead">Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, hop på trampolinerne, og gå hele vejen rundt om skolen. Tolv dyr gemmer sig rundt omkring. Kan du finde dem alle?</p>
+    <p class="lead" id="introLead">Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, hop på trampolinerne, og gå hele vejen rundt om skolen. Ved krydset mellem Duevej og Egernvej står en cykel, du kan køre på. Tolv dyr gemmer sig rundt omkring. Kan du finde dem alle?</p>
     <p class="err" id="loadErr" hidden>3D-motoren kunne ikke hentes. Tjek internetforbindelsen og genindlæs siden.</p>
     <p class="chipsHead">Dyrene, du skal finde</p>
     <div class="chips" id="chips"></div>
@@ -180,6 +180,7 @@ body.touch #poi{bottom:calc(118px + env(safe-area-inset-bottom,0px))}
       <span>Træk med musen</span><span>Kig dig omkring (rul for at zoome)</span>
       <span><kbd>N</kbd> <kbd>M</kbd></span><span>Dag eller aften · vis eller skjul kortet</span>
       <span><kbd>V</kbd></span><span>Vis vej: stjerner viser vejen til det nærmeste dyr</span>
+      <span><kbd>E</kbd></span><span>Tag cyklen ved Duevej og Egernvej, eller stig af</span>
       <span><kbd>P</kbd></span><span>Slå paraplyen op eller ned, når det regner</span>
       <span>Læs op-knappen</span><span>Teksterne bliver læst højt (tryk for at slå fra)</span>
     </div>
@@ -1949,8 +1950,7 @@ const SWINGS = [], SLIDE = { x: 12, zb: 33.6, z0: 35.0, z1: 40.3, top: 2.0 };
   for (const x of [-70, -25, 5, 32]) lamp(x, 111.4, 7, true);
   for (const z of [-86, -70, -54, -38, -6, 10, 46, 62, 78]) car(-49.8, z, 0, CAR_COLS[ci++ % CAR_COLS.length]);
   bike(41.4, -14.5, Math.PI / 2, '#f2c14e'); bike(41.4, -13.3, Math.PI / 2 + 0.08, '#4a7bd0');
-  // Park the red bicycle on the path at the Duevej / Egernvej corner.
-  bike(41.4, 97.0, 0, '#d9534f');
+  // The rideable bicycle at this corner is added with the vehicles below.
 }
 apartment(-140, -60, -132, -114, 5); apartment(-34, 36, -132, -114, 5); apartment(62, 140, -132, -114, 5);
 // ---------------- Duevej homes, simplified from Google Street View (April 2025)
@@ -7743,16 +7743,17 @@ function updPlayerCharacter(dt, t) {
     marker.position.set(0,.6,0);marker.scale.set(1.35,1.35,1);g.add(marker);
     const v={kind,g,wheels,marker,home:new THREE.Vector3(x,.12,z),last:new THREE.Vector3(x,.12,z)};vehicles.push(v);return v;
   }
-  buildVehicle('scooter',42,135);buildVehicle('bike',42,235);
+  buildVehicle('scooter',42,135);buildVehicle('bike',42,97);
   function stop(message=true){
     const v=R.active;if(!v)return;
     v.g.position.copy(v.last);v.g.rotation.y=P.face;R.active=null;
     kid.g.position.set(0,0,0);kid.g.rotation.x=0;kid.pose.rotation.set(0,0,0);kid.pose.scale.set(1,1,1);
     P.vel.set(0,0,0);P.onGround=true;
+    if(playerCharacter!=='girl'){const model=playerModels.get(playerCharacter);if(model)model.g.position.set(0,0,0);}
     if(message)toast('Du parkerer her. I haverne og husene går du til fods.');
   }
   function take(v){
-    if(!started||paused||playerCharacter!=='girl'||!P.onGround||P.ride||P.swing||BALL.held||FX.juice?.left>0||R.active||!street(P.pos)||P.pos.distanceTo(v.g.position)>2)return;
+    if(!started||paused||!P.onGround||P.ride||P.swing||BALL.held||FX.juice?.left>0||R.active||!street(P.pos)||P.pos.distanceTo(v.g.position)>2)return;
     R.active=v;R.phase=0;P.vel.set(0,0,0);v.last.copy(P.pos);v.last.y=groundAt(P.pos.x,P.pos.z,.5);v.marker.visible=false;
     toast(v.kind==='bike'?'Du cykler! Brug de samme taster som når du går. Vælg Stig af for at parkere.':'Du kører på løbehjul! Brug de samme taster som når du går. Vælg Stig af for at parkere.');
   }
@@ -7761,7 +7762,7 @@ function updPlayerCharacter(dt, t) {
   const candidate=new THREE.Vector3();
   HOOKS.ride.unshift(dt=>{
     if(!R.active)return false;
-    if(playerCharacter!=='girl'||!street(P.pos)||P.ride||P.swing){stop();return false;}
+    if(!street(P.pos)||P.ride||P.swing){stop();return false;}
     if(paused){P.vel.set(0,0,0);return true;}
     let forward=0,turn=0;
     if(keys.has('KeyW')||keys.has('ArrowUp'))forward++;
@@ -7793,6 +7794,11 @@ function updPlayerCharacter(dt, t) {
     v.g.position.copy(P.pos);v.g.rotation.y=P.face;
     const bike=v.kind==='bike',moving=Math.hypot(P.vel.x,P.vel.z)>.2,p=R.phase*(bike?4:1.8);
     kid.g.position.set(0,bike?.38:.12,bike?-.1:0);kid.g.rotation.x=bike?.12:0;
+    if(playerCharacter!=='girl'){
+      const model=playerModels.get(playerCharacter);
+      if(model){model.g.position.set(0,bike?.43:.16,bike?-.08:0);model.g.rotation.z=0;
+        if(model.legs)model.legs.forEach((leg,i)=>{leg.rotation.x=bike?-.72+(moving?Math.sin(p+i*Math.PI)*.15:0):0;});}
+    }
     kid.arms.forEach((a,i)=>{a.rotation.set(-1.18,0,i===0?-.08:.08);});
     kid.legs.forEach((l,i)=>{
       const phase=p+i*Math.PI;
@@ -7805,10 +7811,9 @@ function updPlayerCharacter(dt, t) {
   HOOKS.frame.push((dt,t)=>{
     if(R.active&&(playerCharacter!=='girl'||!street(P.pos)))stop();
     for(const v of vehicles){
-      v.marker.visible=!R.active&&playerCharacter==='girl';v.marker.material.opacity=reduceMotion?.4:.32+Math.sin(t*2)*.1;
+      v.marker.visible=!R.active;v.marker.material.opacity=reduceMotion?.4:.32+Math.sin(t*2)*.1;
       if(!started||paused||R.active||P.pos.distanceTo(v.g.position)>2)continue;
-      if(playerCharacter==='girl')offerAction({id:'borrow-'+v.kind,label:v.kind==='bike'?'Tag cyklen':'Tag løbehjulet',prio:2.4,run:()=>take(v)});
-      else offerAction({id:'ride-girl-only',label:'Kun pigen kan køre',prio:.3,run:()=>toast('Vælg pigen for at bruge cyklen eller løbehjulet.')});
+      offerAction({id:'borrow-'+v.kind,label:v.kind==='bike'?'Tag cyklen':'Tag løbehjulet',prio:2.4,run:()=>take(v)});
     }
     if(R.active&&!paused)offerAction({id:'park-road-ride',label:'Stig af',prio:4,run:()=>stop(false)});
   });
