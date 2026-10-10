@@ -3579,7 +3579,7 @@ const camCols = [...cols.filter(c => c.t === 'b' && c.top > 1.7), ...camOnly];
 // ======================================================================== POIs
 const POIS = [
   {n:'Poolen i Vagtelvænget',t:'Den udendørs pool ligger i bebyggelsens nordvestlige hjørne bag et hegn, med fliser og et lille poolhus.',area:[-379,-351,-79,-36],s:.55},
-  {n:'Vagtelvej 31',t:'Indgangen ligger på den vestlige boligfløj ved den store grønne gård.',area:[-339,-333,-32,-21],s:.45},
+  {n:'Vagtelvej 31',t:'Indgangen ligger på den vestlige boligfløj ved den store grønne gård.',area:[-339,-333,-20,-10],s:.45},
   {n:'Den store gård',t:'En åben græsplæne ligger mellem de høje boligfløje. Bilerne holder langs vest- og sydsiden, og der er plads til ophold og petanque.',area:[-339,-303,-56,-4],s:.7},
   {n:'De parallelle blokke',t:'To lange boligblokke ligger nærmest Egernvej med et grønt fællesareal og en legeplads imellem sig.',area:[-327,-275,24,91],s:.75},
   {n:'Ved Vagtelvej',t:'Egernvej ender her ved Vagtelvej. Mod vest ligger Vagtelvængets gule boligblokke. De to parallelle huse er dem, man først ser fra Egernvej.',area:[-275.5,-251,95,114],s:.7},
@@ -3897,7 +3897,13 @@ function resolve(p, velocity = null) {
 function westStreetWalkable(p) {
   return p.x >= -57.6 || (p.z >= 95.8 && p.z <= 114) ||
     (p.x >= -257 && p.x <= -187 && p.z >= 48 && p.z <= 114) ||
-    (p.x >= -173 && p.x <= -113 && p.z >= 65 && p.z <= 114);
+    (p.x >= -173 && p.x <= -113 && p.z >= 65 && p.z <= 114) ||
+    // Vagtelvej and its pavements continue north from Egernvej.
+    (p.x >= -275.5 && p.x <= -257 && p.z >= -105 && p.z <= 166) ||
+    // Enter the estate at the southeast gap, then follow the courtyard to no. 31.
+    (p.x >= -352.5 && p.x <= -273 && p.z >= 12 && p.z <= 22.5) ||
+    (p.x >= -309 && p.x <= -273 && p.z >= -10.5 && p.z <= 22.5) ||
+    (p.x >= -339 && p.x <= -302 && p.z >= -56 && p.z <= -7);
 }
 function movePlayerHorizontal(dt) {
   // Small steps cannot skip thin walls, even when running or skating at a low frame rate.
@@ -3943,11 +3949,6 @@ function updPlayer(dt) {
     P.pos.x = Math.min(BOUNDS[1], Math.max(BOUNDS[0], P.pos.x));
     P.pos.z = Math.min(BOUNDS[3], Math.max(BOUNDS[2], P.pos.z));
     if (P.pos.z > 125) P.pos.x = Math.max(40.5, P.pos.x);
-    if (P.pos.x < -57.6) {
-      const park = P.pos.x >= -257 && P.pos.x <= -187;
-      const lawn = P.pos.x >= -173 && P.pos.x <= -113;
-      P.pos.z = Math.min(114, Math.max(park ? 48 : lawn ? 65 : 95.8, P.pos.z));
-    }
   }
   const tr = trampAt(P.pos.x, P.pos.z);
   if (jumpReq && tr && !paused) P.boost = true;
