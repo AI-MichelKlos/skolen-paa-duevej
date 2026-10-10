@@ -2332,54 +2332,98 @@ let label;
     box(.16,.02,6,M.zebra,-265,.022,z,{cast:false});
   // Vagtelvænget west of Vagtelvej: the long southern block comes first from Egernvej.
   // The courtyard wings follow the photographed yellow-brick, flat-roofed estate.
-  const estateBrick = toon('#fff', { map: brickTex('#d0b987', '#94866e') });
-  const estateBase = toon('#b7afa0'), estateRoof = toon('#3d4c66');
-  const estateRail = toon('#485367');
-  const estateBlock = (x, z, w, d, h, floors, entryZ = null) => {
-    box(w, h, d, estateBrick, x, 0, z, { col: true, edges: true, map: '#cdb681' });
-    box(w+.06, .65, d+.06, estateBase, x, 0, z, { cast: false });
-    box(w+.42, .34, d+.42, estateRoof, x, h, z, { edges: true });
-    const zBays = Math.max(2, Math.floor((d-4)/5.2));
-    const xBays = Math.max(2, Math.floor((w-4)/5.2));
+  // Vagtelvej as seen from the street: long strips of dark glazing in pale
+  // brick, quiet end walls, grey garage bases and low wings beside taller ones.
+  const estateBrick = toon('#fff', { map: brickTex('#d9c79e', '#ae9b75') });
+  const estateBase = toon('#9b9e9d'), estateRoof = toon('#3e464b');
+  const estateGlass = toon('#536a78'), estateFrame = toon('#34444e');
+  const estateShade = toon('#8295a0'), estateRail = toon('#505b60');
+  const estateBlock = (x, z, w, d, floors, opts = {}) => {
+    const storey = 3.05, h = 1.65 + floors * storey;
+    const alongZ = d > w, run = alongZ ? d : w;
+    box(w, h, d, estateBrick, x, 0, z, { col: true, edges: true, map: '#d3bf93' });
+    box(w + .07, 1.55, d + .07, estateBase, x, 0, z, { cast: false });
+    box(w + .34, .32, d + .34, estateRoof, x, h - .12, z, { edges: true, cast: false });
+    box(w - .55, .08, d - .55, estateRoof, x, h + .2, z, { cast: false });
     for (let floor = 0; floor < floors; floor++) {
-      const y = 1.73 + floor*3.0;
-      for (let i = 0; i < zBays; i++) {
-        const wz = z - d/2 + 2.5 + i*(d-5)/Math.max(1,zBays-1);
-        if (!(floor === 0 && entryZ !== null && Math.abs(wz-entryZ) < 2.5))
-          addWin('modern', x+w/2+.08, y, wz, Math.PI/2, 2.05, 1.72, .35);
-        addWin('modern', x-w/2-.08, y, wz, -Math.PI/2, 2.05, 1.72, .35);
+      const y = 2.08 + floor * storey;
+      for (const side of [-1, 1]) {
+        const face = alongZ ? x + side * (w / 2 + .085) : z + side * (d / 2 + .085);
+        if (alongZ) {
+          box(.10, 1.10, run - 1.1, estateFrame, face, y - .07, z, { cast: false });
+          box(.12, .91, run - 1.3, estateGlass, face + side * .025, y + .03, z, { cast: false });
+          box(.14, .08, run - 1.1, estateShade, face + side * .035, y + 1.02, z, { cast: false });
+        } else {
+          box(run - 1.1, 1.10, .10, estateFrame, x, y - .07, face, { cast: false });
+          box(run - 1.3, .91, .12, estateGlass, x, y + .03, face + side * .025, { cast: false });
+          box(run - 1.1, .08, .14, estateShade, x, y + 1.02, face + side * .035, { cast: false });
+        }
+        // Window divisions are deliberately close together, like the real ribbon windows.
+        const panes = Math.max(6, Math.round((run - 1.6) / 2.45));
+        for (let p = 1; p < panes; p++) {
+          const along = -run / 2 + .55 + p * (run - 1.1) / panes;
+          if (alongZ)
+            box(.14, 1.08, .095, estateFrame, face + side * .055, y - .055, z + along, { cast: false });
+          else
+            box(.095, 1.08, .14, estateFrame, x + along, y - .055, face + side * .055, { cast: false });
+        }
       }
-      for (let i = 0; i < xBays; i++) {
-        const wx = x - w/2 + 2.5 + i*(w-5)/Math.max(1,xBays-1);
-        addWin('modern', wx, y, z-d/2-.08, Math.PI, 2.05, 1.72, .35);
-        addWin('modern', wx, y, z+d/2+.08, 0, 2.05, 1.72, .35);
-      }
-      if (floor > 0) box(w+.15, .07, d+.15, estateBase, x, floor*3.0+.35, z, { cast: false });
     }
-    for (const wz of [z-d*.24,z+d*.24])
-      box(1.5,.34,1.4,estateRoof,x,h+.34,wz,{cast:false});
+    // Gables stay mostly brick. A slim stairwell glazing strip breaks up the short blocks.
+    if (floors <= 3) for (let floor = 0; floor < floors; floor++) {
+      const y = 2.1 + floor * storey;
+      for (const side of [-1, 1]) {
+        if (alongZ) {
+          box(1.0, 1.08, .12, estateFrame, x + w * .19, y, z + side * (d / 2 + .085), { cast: false });
+          box(.82, .88, .14, estateGlass, x + w * .19, y + .1, z + side * (d / 2 + .12), { cast: false });
+        } else {
+          box(.12, 1.08, 1.0, estateFrame, x + side * (w / 2 + .085), y, z + d * .19, { cast: false });
+          box(.14, .88, .82, estateGlass, x + side * (w / 2 + .12), y + .1, z + d * .19, { cast: false });
+        }
+      }
+    }
+    if (opts.garage) {
+      const side = opts.streetSide || 1;
+      for (const offset of [-run * .27, run * .20]) {
+        if (alongZ) {
+          box(.15, 1.42, 5.8, estateFrame, x + side * (w / 2 + .12), 0, z + offset, { cast: false });
+          for (const dz of [-1.7, -.4, .9, 2.2])
+            box(.17, 1.30, .045, estateShade, x + side * (w / 2 + .22), .07, z + offset + dz, { cast: false });
+        } else
+          box(5.8, 1.42, .15, estateFrame, x + offset, 0, z + side * (d / 2 + .12), { cast: false });
+      }
+    }
+    if (opts.balconies && alongZ) {
+      // Recessed balcony bays near the far gable of the tall block.
+      for (let floor = 1; floor < floors; floor++) {
+        const y = 1.65 + floor * storey;
+        const bz = z - d * .36;
+        const sx = x + w / 2 + .13;
+        box(.13, 2.42, 3.0, estateFrame, sx, y, bz, { cast: false });
+        box(.14, 1.0, 2.75, estateGlass, sx + .035, y + .75, bz, { cast: false });
+        box(.16, .72, 2.9, estateRail, sx + .08, y + .12, bz, { cast: false });
+        box(.5, .13, 3.25, estateBase, sx + .2, y, bz, { cast: false });
+      }
+    }
+    for (const at of [-run * .24, run * .24])
+      if (alongZ) box(1.35, .28, 1.8, estateRoof, x, h + .28, z + at, { cast: false });
+      else box(1.8, .28, 1.35, estateRoof, x + at, h + .28, z, { cast: false });
   };
-  // Aerial reference: two parallel southern blocks nearest Egernvej.
-  estateBlock(-320,55,11.5,61,19.1,6);
-  estateBlock(-283,55,11.5,61,19.1,6,68);
-  addWin('doorModern',-277.16,1.35,68,Math.PI/2,1.5,2.35,.85);
-  box(.65,.16,2.1,M.concrete,-276.88,0,68,{cast:false});
-  // The northern group encloses a central lawn: north, west, east and south wings.
-  estateBlock(-321,-78,60,12,19.1,6);
-  estateBlock(-344.5,-33,11,47,25.1,8,-27);
-  estateBlock(-297,-31,11,49,25.1,8);
-  estateBlock(-330,3,42,12,19.1,6);
-  addWin('doorModern',-338.87,1.35,-27,Math.PI/2,1.5,2.35,.85);
-  box(.7,.15,2.1,M.concrete,-338.65,0,-27,{cast:false});
-  box(1.2,.14,2.5,estateBase,-338.3,2.76,-27,{cast:false});
-  label('31',.9,.55,-338.78,2.52,-24.8,Math.PI/2,'#294b40','#fff3d0');
-  // Balconies follow the two courtyard-facing apartment fronts.
-  for (const [faceX,sgn] of [[-338.8,1],[-302.7,-1]]) {
-    for (let floor=1;floor<8;floor++) for (const z of [-48,-33,-18]) {
-      box(.78,.12,2.7,M.concrete,faceX+sgn*.15,floor*3+.46,z,{cast:false});
-      box(.07,.72,2.7,estateRail,faceX+sgn*.55,floor*3+.58,z,{cast:false});
-    }
-  }
+  // The two long blocks first seen from Egernvej have three residential floors
+  // above the grey garage/utility level in Street View.
+  estateBlock(-320, 55, 11.5, 61, 3, { garage: true });
+  estateBlock(-283, 55, 11.5, 61, 3, { garage: true });
+  addWin('doorModern', -277.16, 1.35, 68, Math.PI / 2, 1.5, 2.35, .85);
+  box(.65, .16, 2.1, M.concrete, -276.88, 0, 68, { cast: false });
+  // The courtyard combines tall west and south blocks with lower street-side wings.
+  estateBlock(-321, -78, 60, 12, 3);
+  estateBlock(-344.5, -33, 11, 47, 7, { balconies: true });
+  estateBlock(-297, -31, 11, 49, 3, { garage: true });
+  estateBlock(-330, 3, 42, 12, 5);
+  addWin('doorModern', -338.87, 1.35, -14, Math.PI / 2, 1.5, 2.35, .85);
+  box(.7, .15, 2.1, M.concrete, -338.65, 0, -14, { cast: false });
+  box(1.2, .14, 2.5, estateBase, -338.3, 2.76, -14, { cast: false });
+  label('31', .9, .55, -338.78, 2.52, -11.8, Math.PI / 2, '#294b40', '#fff3d0');
   // Asphalt parking runs along the western and southern edges of the main lawn.
   rectG(-338,-326,-53,-11,M.road,.034,'#85878a');
   for (const z of [-48,-41,-34,-27,-20,-13]) {
