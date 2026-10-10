@@ -2081,13 +2081,14 @@ apartment(-140, -60, -132, -114, 5); apartment(-34, 36, -132, -114, 5); apartmen
   // Southern block is drawn below from Michel's photographs.
   rand = savedRand;
 }
+let label;
 // Southern Duevej, simplified from Michel's six photos (9 October 2026).
 // +x is left when walking south (+z). Distances are compressed for the game.
 {
   const savedRand = rand; rand = mulberry32(9102026);
   const yellow = toon('#fff', { map: brickTex('#c6ac70', '#9c8b6b') });
   const rail = toon('#fff', { map: ctex(64, 64, (g, w, h) => { g.fillStyle = '#30373a'; g.fillRect(0, 0, w, h); g.fillStyle = '#596063'; for (let x = 0; x < w; x += 16) g.fillRect(x, 0, 2, h); }, { rep: 1 }) }), green = toon('#304f39'), white = toon('#f1eee5');
-  const label = (txt, w, h, x, y, z, ry, bg, fg) => {
+  label = (txt, w, h, x, y, z, ry, bg, fg) => {
     const tx = ctex(512, 128, (g, W, H) => {
       g.fillStyle = bg; g.fillRect(0, 0, W, H);
       g.fillStyle = fg; g.font = 'bold 76px sans-serif';
