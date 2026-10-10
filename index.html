@@ -2328,14 +2328,53 @@ let label;
   rectG(-270,-260,30,166,M.road,.021,'#8b8b8e');
   slab(-275,-270,30,166,.12,M.sidewalk,'#d8d3c8');
   slab(-260,-257,30,166,.12,M.sidewalk,'#d8d3c8');
-  const corner=toon('#d2bd87'),lightWall=toon('#eeebe0');
-  box(12,12.4,50,corner,-284,0,102,{col:true,edges:true});
-  box(12.05,2.4,50.05,lightWall,-284,10,102,{cast:false});
-  box(12.4,.2,50.4,M.concrete,-284,12.4,102);
-  for(const z of [81,88,95,102,109,116,123])for(const y of [2.4,5.5,8.6,11.1]){
-    addWin('green',-277.88,y,z,Math.PI/2,2.2,1.15,.4);
+  // Four apartment wings from the aerial sketch west of Vagtelvej.
+  // The lower, long block is closest to Egernvej; three taller wings sit behind a courtyard.
+  const estateBrick = toon('#fff', { map: brickTex('#d0b987', '#94866e') });
+  const estateBase = toon('#b7afa0'), estateRoof = toon('#3d4c66');
+  const estateRail = toon('#485367');
+  const estateBlock = (x, z, w, d, h, floors, entryZ = null) => {
+    box(w, h, d, estateBrick, x, 0, z, { col: true, edges: true, map: '#cdb681' });
+    box(w+.06, .65, d+.06, estateBase, x, 0, z, { cast: false });
+    box(w+.42, .34, d+.42, estateRoof, x, h, z, { edges: true });
+    const bays = Math.max(2, Math.floor((d-4)/4.8));
+    for (let floor = 0; floor < floors; floor++) {
+      const y = 1.73 + floor*3.0;
+      for (let i = 0; i < bays; i++) {
+        const wz = z - d/2 + 2.5 + i*(d-5)/Math.max(1,bays-1);
+        if (!(floor === 0 && entryZ !== null && Math.abs(wz-entryZ) < 2.5))
+          addWin('modern', x+w/2+.08, y, wz, Math.PI/2, 2.05, 1.72, .35);
+        addWin('modern', x-w/2-.08, y, wz, -Math.PI/2, 2.05, 1.72, .35);
+      }
+      for (const wx of [x-w*.23,x+w*.23]) {
+        addWin('modern', wx, y, z-d/2-.08, Math.PI, 1.7, 1.72, .35);
+        addWin('modern', wx, y, z+d/2+.08, 0, 1.7, 1.72, .35);
+      }
+      if (floor > 0) box(w+.15, .07, d+.15, estateBase, x, floor*3.0+.35, z, { cast: false });
+    }
+    for (const wz of [z-d*.24,z+d*.24])
+      box(1.5,.34,1.4,estateRoof,x,h+.34,wz,{cast:false});
+  };
+  // The first block is lower and stands beside the junction with Egernvej.
+  estateBlock(-283, 112, 11.5, 47, 13.1, 4, 104);
+  addWin('doorModern', -277.16, 1.35, 104, Math.PI/2, 1.5, 2.35, .85);
+  box(.45,.16,2.1,M.concrete,-276.92,0,104,{cast:false});
+  // Three separate high wings frame a green courtyard farther from the street.
+  estateBlock(-321, 47, 58, 11, 19.1, 6);
+  estateBlock(-344.5, 78, 11, 45, 19.1, 6);
+  estateBlock(-297, 78, 11, 45, 19.1, 6);
+  rectG(-338.5,-302.5,53,101,M.grass,.024,'#9fbd79');
+  rectG(-337,-304,74,78,M.path,.05,'#d6c8a5');
+  rectG(-322,-319,55,99,M.path,.052,'#d6c8a5');
+  for (const [x,z] of [[-333,64],[-309,67],[-329,91],[-311,91]]) tree(x,z,'round',.75);
+  for (const [x,z] of [[-332,79],[-309,79]]) bench(x,z);
+  // Short balcony rows distinguish the courtyard-facing walls from the street facade.
+  for (const [faceX,sgn] of [[-338.8,1],[-302.7,-1]]) {
+    for (let floor=1;floor<6;floor++) for (const z of [64,78,92]) {
+      box(.78,.12,2.7,M.concrete,faceX+sgn*.15,floor*3+.46,z,{cast:false});
+      box(.07,.72,2.7,estateRail,faceX+sgn*.55,floor*3+.58,z,{cast:false});
+    }
   }
-  box(.16,2.4,3.5,M.dark,-277.86,0,110,{cast:false});
   for(let n=0;n<6;n++){
     const x=-258.5;mesh(new THREE.ShapeGeometry((()=>{const s=new THREE.Shape();s.moveTo(0,0);s.lineTo(.38,.7);s.lineTo(-.38,.7);s.closePath();return s;})()),M.zebra,x,.025,100.6+n*1.45,{rx:-Math.PI/2,cast:false});
   }
@@ -3548,7 +3587,7 @@ const mapCv = $('map'), mctx = mapCv.getContext('2d');
 let mapBase = null; let MX0 = -60, MX1 = 64, MZ0 = -112, MZ1 = 256;
 function focusStreetMap() {
   const west=P.pos.x < -58;
-  const x0=west?Math.max(-278,Math.floor((P.pos.x-60)/60)*60-10):-60;
+  const x0=west?Math.max(-360,Math.floor((P.pos.x-60)/60)*60-10):-60;
   const x1=west?x0+140:64,z0=west?20:-112,z1=west?160:256;
   if(MX0===x0&&MX1===x1&&MZ0===z0&&MZ1===z1)return;
   MX0=x0;MX1=x1;MZ0=z0;MZ1=z1;sizeMap();
