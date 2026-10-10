@@ -7753,8 +7753,10 @@ function updPlayerCharacter(dt, t) {
     if(message)toast('Du parkerer her. I haverne og husene går du til fods.');
   }
   function take(v){
-    if(!started||paused||!P.onGround||P.ride||P.swing||BALL.held||FX.juice?.left>0||R.active||!street(P.pos)||P.pos.distanceTo(v.g.position)>2)return;
-    R.active=v;R.phase=0;P.vel.set(0,0,0);v.last.copy(P.pos);v.last.y=groundAt(P.pos.x,P.pos.z,.5);v.marker.visible=false;
+    if(!started||paused||!P.onGround||P.ride||P.swing||BALL.held||FX.juice?.left>0||R.active||!street(v.g.position)||P.pos.distanceTo(v.g.position)>2)return;
+    // Mount from the corner path as well as the carriageway.
+    P.pos.set(v.g.position.x,groundAt(v.g.position.x,v.g.position.z,.5),v.g.position.z);
+    P.face=v.g.rotation.y;R.active=v;R.phase=0;P.vel.set(0,0,0);v.last.copy(P.pos);v.marker.visible=false;
     toast(v.kind==='bike'?'Du cykler! Brug de samme taster som når du går. Vælg Stig af for at parkere.':'Du kører på løbehjul! Brug de samme taster som når du går. Vælg Stig af for at parkere.');
   }
   R.stop=stop;R.take=take;R.vehicles=vehicles;R.street=street;
