@@ -2325,10 +2325,10 @@ let label;
   colBox(-225.6,-224.4,69.8,73,1.25);
   for(const z of [77,80,83])box(6,.18,.45,M.concrete,-231,0,z,{col:true,cast:false});
   // Vagtelvej crosses the far end, with a modern pale-yellow building opposite.
-  rectG(-270,-260,-22,166,M.road,.021,'#8b8b8e');
-  slab(-275,-270,-22,166,.12,M.sidewalk,'#d8d3c8');
-  slab(-260,-257,-22,166,.12,M.sidewalk,'#d8d3c8');
-  for (const z of [-12,6,24,42,60,78,121,143])
+  rectG(-270,-260,-105,166,M.road,.021,'#8b8b8e');
+  slab(-275,-270,-105,166,.12,M.sidewalk,'#d8d3c8');
+  slab(-260,-257,-105,166,.12,M.sidewalk,'#d8d3c8');
+  for (const z of [-93,-76,-59,-42,-25,-8,28,46,64,82,121,143])
     box(.16,.02,6,M.zebra,-265,.022,z,{cast:false});
   // Vagtelvænget west of Vagtelvej: the long southern block comes first from Egernvej.
   // The courtyard wings follow the photographed yellow-brick, flat-roofed estate.
@@ -2359,110 +2359,101 @@ let label;
     for (const wz of [z-d*.24,z+d*.24])
       box(1.5,.34,1.4,estateRoof,x,h+.34,wz,{cast:false});
   };
-  // The first block is lower and stands beside the junction with Egernvej.
-  estateBlock(-283, 112, 11.5, 47, 13.1, 4, 104);
-  addWin('doorModern', -277.16, 1.35, 104, Math.PI/2, 1.5, 2.35, .85);
-  box(.45,.16,2.1,M.concrete,-276.92,0,104,{cast:false});
-  // The taller residential wings frame a green courtyard farther from the street.
-  estateBlock(-321, 47, 58, 11, 25.1, 8);
-  estateBlock(-344.5, 78, 11, 45, 25.1, 8, 70);
-  estateBlock(-297, 78, 11, 45, 25.1, 8);
-  // No. 31 is the entrance along the western wing, beyond the street-facing buildings.
-  addWin('doorModern', -338.87, 1.35, 70, Math.PI/2, 1.5, 2.35, .85);
-  box(.7,.15,2.1,M.concrete,-338.65,0,70,{cast:false});
-  box(1.2,.14,2.5,estateBase,-338.3,2.76,70,{cast:false});
-  label('31',.9,.55,-338.78,2.52,72.2,Math.PI/2,'#294b40','#fff3d0');
-  // A northern row faces the residential parking court shown in the photos.
-  estateBlock(-321, 6, 64, 11, 19.1, 6);
-  rectG(-352,-290,14,39,M.road,.035,'#85878a');
-  rectG(-291,-270,24,29,M.road,.037,'#85878a');
-  for (const x of [-344,-338,-332,-326,-320,-314,-308,-302,-296]) {
-    box(.08,.018,5.7,M.zebra,x+2.9,.04,18,{cast:false});
-    car(x,18,0,['#ece7dc','#4a7bd0','#2f3138','#d9534f'][Math.abs(x)%4]);
+  // Aerial reference: two parallel southern blocks nearest Egernvej.
+  estateBlock(-320,55,11.5,61,19.1,6);
+  estateBlock(-283,55,11.5,61,19.1,6,68);
+  addWin('doorModern',-277.16,1.35,68,Math.PI/2,1.5,2.35,.85);
+  box(.65,.16,2.1,M.concrete,-276.88,0,68,{cast:false});
+  // The northern group encloses a central lawn: north, west, east and south wings.
+  estateBlock(-321,-78,60,12,19.1,6);
+  estateBlock(-344.5,-33,11,47,25.1,8,-27);
+  estateBlock(-297,-31,11,49,25.1,8);
+  estateBlock(-330,3,42,12,19.1,6);
+  addWin('doorModern',-338.87,1.35,-27,Math.PI/2,1.5,2.35,.85);
+  box(.7,.15,2.1,M.concrete,-338.65,0,-27,{cast:false});
+  box(1.2,.14,2.5,estateBase,-338.3,2.76,-27,{cast:false});
+  label('31',.9,.55,-338.78,2.52,-24.8,Math.PI/2,'#294b40','#fff3d0');
+  // Balconies follow the two courtyard-facing apartment fronts.
+  for (const [faceX,sgn] of [[-338.8,1],[-302.7,-1]]) {
+    for (let floor=1;floor<8;floor++) for (const z of [-48,-33,-18]) {
+      box(.78,.12,2.7,M.concrete,faceX+sgn*.15,floor*3+.46,z,{cast:false});
+      box(.07,.72,2.7,estateRail,faceX+sgn*.55,floor*3+.58,z,{cast:false});
+    }
   }
-  for (const x of [-344,-332,-320,-308,-296])
-    car(x,34,0,['#6aa56b','#8e5bb5','#ece7dc'][Math.abs(x)%3]);
-  rectG(-326,-316,24,29,M.grass,.043,'#8eae70');
-  tree(-321,26,'round',.72);
-  // A smaller row of cars sits between the east wing and Vagtelvej.
-  rectG(-290,-276,55,87,M.road,.037,'#85878a');
-  rectG(-277,-270,53,57,M.road,.039,'#85878a');
-  for (const z of [60,66,72,78,84]) {
-    box(10,.018,.08,M.zebra,-283,.045,z+2.8,{cast:false});
-    car(-284,z,0,['#ece7dc','#384451','#d9534f','#648b83'][z%4]);
+  // Asphalt parking runs along the western and southern edges of the main lawn.
+  rectG(-338,-326,-53,-11,M.road,.034,'#85878a');
+  for (const z of [-48,-41,-34,-27,-20,-13]) {
+    box(8,.018,.08,M.zebra,-332,.044,z+2.9,{cast:false});
+    car(-332,z,Math.PI/2,['#ece7dc','#4a7bd0','#384451','#d9534f'][Math.abs(z)%4]);
   }
-  // Large lawn, gravel pétanque court, picnic places and a separate play area.
-  rectG(-393,-352,53,139,M.grass,.024,'#9fbd79');
-  rectG(-385,-365,71,79,M.path,.052,'#cfc8b6');
-  for (const z of [71,79]) box(20,.16,.16,M.deck,-375,.04,z,{cast:false});
-  for (const x of [-385,-365]) box(.16,.16,8,M.deck,x,.04,75,{cast:false});
-  for (const [x,z] of [[-388,62],[-372,59],[-389,92],[-362,91],[-387,133],[-356,128]])
-    tree(x,z,'round',.78);
-  for (const [x,z] of [[-379,84],[-368,96],[-381,105]]) bench(x,z);
-  for (const [x,z] of [[-374,93],[-381,101]]) {
-    box(2.4,.14,.9,M.deck,x,.72,z,{cast:false});
-    for (const dx of [-.8,.8]) box(.12,.7,.12,M.deck,x+dx,0,z,{cast:false});
-    for (const dz of [-1.05,1.05]) box(2.2,.12,.36,M.deck,x,.45,z+dz,{cast:false});
-  }
-  rectG(-384,-364,113,134,M.sand,.054,'#dfc992');
-  // Timber playhouse with a slide and two swings.
-  box(3.4,1.3,3.1,M.deck,-378,0,121,{col:true});
-  for (const x of [-379.4,-376.6]) for (const z of [119.7,122.3])
-    box(.14,2.7,.14,M.deck,x,0,z,{cast:false});
-  gableRoof(3.8,3.6,1.0,M.tile,-378,2.7,121,{gableMat:estateBrick});
-  const estateSlide=mesh(new THREE.BoxGeometry(1.15,.12,3.5),M.steel,-378,.75,124.2,{rx:.31});
-  colBox(-378.7,-377.3,122.4,126,1.2);
-  for (const x of [-371,-365]) box(.15,2.9,.15,M.steel,x,0,125,{cast:false});
-  box(6.2,.16,.16,M.steel,-368,2.72,125,{cast:false});
-  for (const x of [-369.5,-366.5]) {
-    for (const z of [124.65,125.35]) box(.035,1.5,.035,M.steel,x,1.16,z,{cast:false});
-    box(1.15,.12,.62,M.deck,x,1.05,125,{col:true});
-  }
-  hedgeBox(-394,-392,54,137,.9);
-  rectG(-367,-363,80,139,M.path,.055,'#d6c8a5');
-  rectG(-367,-336,104,108,M.path,.055,'#d6c8a5');
-  // Pool courtyard: pale paving, blue water, tile rim and a locked perimeter fence.
-  rectG(-338.5,-302.5,53,105,M.grass,.025,'#9fbd79');
-  rectG(-337,-304,74,78,M.path,.051,'#d6c8a5');
-  rectG(-339,-334,68,142,M.path,.055,'#d6c8a5');
-  rectG(-339,-319,68,72,M.path,.057,'#d6c8a5');
-  rectG(-322,-318,55,78,M.path,.054,'#d6c8a5');
-  rectG(-322,-318,104,142,M.path,.054,'#d6c8a5');
-  rectG(-338,-318,104,108,M.path,.056,'#d6c8a5');
-  rectG(-320,-273,138,142,M.path,.055,'#d6c8a5');
-  for (const [x,z] of [[-330,62],[-309,65],[-334,111]]) tree(x,z,'round',.7);
-  bench(-309,71);
+  rectG(-327,-305,-12,-4,M.road,.036,'#85878a');
+  for (const x of [-322,-315,-308])
+    car(x,-8,0,['#648b83','#ece7dc','#8e5bb5'][Math.abs(x)%3]);
+  // Green central courtyard, gravel court and outdoor seating.
+  rectG(-325,-304,-54,-13,M.grass,.028,'#9fbd79');
+  rectG(-322,-308,-29,-23,M.path,.051,'#cfc8b6');
+  for (const z of [-29,-23]) box(14,.13,.14,M.deck,-315,.045,z,{cast:false});
+  for (const x of [-322,-308]) box(.14,.13,6,M.deck,x,.045,-26,{cast:false});
+  for (const [x,z] of [[-319,-46],[-308,-39],[-312,-17]]) tree(x,z,'round',.75);
+  bench(-310,-49);
+  box(2.4,.14,.9,M.deck,-318,.72,-17,{cast:false});
+  for (const dx of [-.8,.8]) box(.12,.7,.12,M.deck,-318+dx,0,-17,{cast:false});
+  for (const dz of [-1.05,1.05]) box(2.2,.12,.36,M.deck,-318,.45,-17+dz,{cast:false});
+  // The northern courtyard remains walkable from the street at its southeast gap.
+  rectG(-352,-274,12,22,M.road,.032,'#85878a');
+  rectG(-307,-273,15,18,M.path,.052,'#d6c8a5');
+  rectG(-307,-303,-10,18,M.path,.053,'#d6c8a5');
+  rectG(-337,-304,-10,-7,M.path,.054,'#d6c8a5');
+  rectG(-338,-334,-61,-10,M.path,.055,'#d6c8a5');
+  rectG(-353,-337,-64,-60,M.path,.055,'#d6c8a5');
+  // The residents' outdoor pool is northwest of the lawn, inside its own fence.
+  rectG(-387,-353,-82,-37,M.grass,.025,'#8eae70');
+  for (const [x,z] of [[-385,-73],[-384,-48],[-379,-36]]) tree(x,z,'round',.72);
   const poolWater=toon('#fff',{map:ctex(128,128,(g,w,h)=>{
     g.fillStyle='#40b7df'; g.fillRect(0,0,w,h);
     for(let i=0;i<22;i++){const x=(i*31)%w,y=(i*47)%h;g.strokeStyle=i%3?'rgba(231,251,255,.29)':'rgba(19,117,171,.19)';g.lineWidth=2;g.beginPath();g.moveTo(x,y);g.quadraticCurveTo(x+9,y-4,x+19,y);g.stroke();}
   },{rep:4})});
   const poolTile=toon('#e7ebe7'),poolDeep=toon('#1984b5');
-  rectG(-331.8,-305.2,79.8,102.2,M.sidewalk,.065,'#c9cbc6');
-  box(23,.18,13,poolDeep,-318.5,.04,91,{cast:false});
-  rectG(-329.4,-307.6,85.1,96.9,poolWater,.235,'#40b7df');
-  for (const x of [-330,-307]) box(.55,.08,13.6,poolTile,x,.18,91,{cast:false});
-  for (const z of [84.45,97.55]) box(23.6,.08,.55,poolTile,-318.5,.18,z,{cast:false});
-  for (const z of [87,90,93,96]) box(21,.014,.08,poolDeep,-318.5,.236,z,{cast:false});
-  // A low brick pool house sits beside the water, as in the reference photos.
-  box(8,2.7,3,estateBrick,-310,0,81.5,{col:true,edges:true});
-  box(8.4,.22,3.4,estateRoof,-310,2.7,81.5,{cast:false});
-  addWin('doorModern',-310,1.25,83.08,0,1.2,2.1,.85);
-  for (const z of [87.2,96]) {
-    mesh(new THREE.CylinderGeometry(.045,.045,1.05,8),M.steel,-306.5,.72,z,{cast:false});
-    mesh(new THREE.CylinderGeometry(.045,.045,1.05,8),M.steel,-305.95,.72,z,{cast:false});
+  rectG(-374,-354,-74,-39,M.sidewalk,.064,'#c9cbc6');
+  box(12,.18,23,poolDeep,-364,.04,-57,{cast:false});
+  rectG(-369.5,-358.5,-68,-46,poolWater,.235,'#40b7df');
+  for (const x of [-370,-358]) box(.55,.08,23.6,poolTile,x,.18,-57,{cast:false});
+  for (const z of [-69,-45]) box(12.6,.08,.55,poolTile,-364,.18,z,{cast:false});
+  for (const x of [-368,-365,-362]) box(.08,.014,20,poolDeep,x,.236,-57,{cast:false});
+  box(9,2.7,3,estateBrick,-364,0,-42,{col:true,edges:true});
+  box(9.4,.22,3.4,estateRoof,-364,2.7,-42,{cast:false});
+  addWin('doorModern',-364,1.25,-43.58,Math.PI,1.2,2.1,.85);
+  for (const x of [-368,-360]) {
+    mesh(new THREE.CylinderGeometry(.045,.045,1.05,8),M.steel,x,.72,-46,{cast:false});
+    mesh(new THREE.CylinderGeometry(.045,.045,1.05,8),M.steel,x+.55,.72,-46,{cast:false});
   }
-  fenceSeg(-332.4,79.2,-304.6,79.2,1.9);
-  fenceSeg(-332.4,103,-304.6,103,1.9);
-  fenceSeg(-332.4,79.2,-332.4,103,1.9);
-  fenceSeg(-304.6,79.2,-304.6,103,1.9);
-  label('Beboerpool',2.1,.42,-319,1.47,79.13,Math.PI,'#294b40','#fff3d0');
-  // Short balcony rows distinguish the courtyard-facing walls from the street facade.
-  for (const [faceX,sgn] of [[-338.8,1],[-302.7,-1]]) {
-    for (let floor=1;floor<8;floor++) for (const z of [64,78,92]) {
-      box(.78,.12,2.7,M.concrete,faceX+sgn*.15,floor*3+.46,z,{cast:false});
-      box(.07,.72,2.7,estateRail,faceX+sgn*.55,floor*3+.58,z,{cast:false});
-    }
+  fenceSeg(-375,-75,-353,-75,1.9);
+  fenceSeg(-375,-39,-353,-39,1.9);
+  fenceSeg(-375,-75,-375,-39,1.9);
+  fenceSeg(-353,-75,-353,-39,1.9);
+  label('Beboerpool',2.1,.42,-364,1.47,-38.9,0,'#294b40','#fff3d0');
+  bench(-361,-35);
+  // The parallel southern blocks have their own green strip and small playground.
+  rectG(-313,-290,25,85,M.grass,.026,'#9fbd79');
+  rectG(-311,-307,28,82,M.path,.052,'#d6c8a5');
+  for (const [x,z] of [[-296,31],[-295,71],[-303,80]]) tree(x,z,'round',.67);
+  rectG(-306,-292,40,61,M.sand,.055,'#dfc992');
+  box(3.4,1.3,3.1,M.deck,-302,0,48,{col:true});
+  for (const x of [-303.4,-300.6]) for (const z of [46.7,49.3])
+    box(.14,2.7,.14,M.deck,x,0,z,{cast:false});
+  gableRoof(3.8,3.6,1.0,M.tile,-302,2.7,48,{gableMat:estateBrick});
+  mesh(new THREE.BoxGeometry(1.15,.12,3.5),M.steel,-302,.75,51.2,{rx:.31});
+  colBox(-302.7,-301.3,49.4,53,1.2);
+  for (const x of [-299,-293]) box(.15,2.9,.15,M.steel,x,0,55,{cast:false});
+  box(6.2,.16,.16,M.steel,-296,2.72,55,{cast:false});
+  for (const x of [-297.5,-294.5]) {
+    for (const z of [54.65,55.35]) box(.035,1.5,.035,M.steel,x,1.16,z,{cast:false});
+    box(1.15,.12,.62,M.deck,x,1.05,55,{col:true});
   }
+  bench(-295,64);
+  // Trees and low hedges soften the street side of the northern blocks.
+  for (const [x,z] of [[-281,-61],[-280,-30],[-280,-2]]) tree(x,z,'round',.72);
+  hedgeBox(-286,-284,-54,-7,.8);
   for(let n=0;n<6;n++){
     const x=-258.5;mesh(new THREE.ShapeGeometry((()=>{const s=new THREE.Shape();s.moveTo(0,0);s.lineTo(.38,.7);s.lineTo(-.38,.7);s.closePath();return s;})()),M.zebra,x,.025,100.6+n*1.45,{rx:-Math.PI/2,cast:false});
   }
@@ -3539,7 +3530,11 @@ const camCols = [...cols.filter(c => c.t === 'b' && c.top > 1.7), ...camOnly];
 
 // ======================================================================== POIs
 const POIS = [
-  {n:'Ved Vagtelvej',t:'Egernvej ender her ved Vagtelvej. De gule rækkehuse ligger på den ene side, og det grønne område med legeplads ligger på den anden. Følg Egernvej tilbage til skolen.',area:[-275.5,-251,95,114],s:.7},
+  {n:'Poolen i Vagtelvænget',t:'Den udendørs pool ligger i bebyggelsens nordvestlige hjørne bag et hegn, med fliser og et lille poolhus.',area:[-379,-351,-79,-36],s:.55},
+  {n:'Vagtelvej 31',t:'Indgangen ligger på den vestlige boligfløj ved den store grønne gård.',area:[-339,-333,-32,-21],s:.45},
+  {n:'Den store gård',t:'En åben græsplæne ligger mellem de høje boligfløje. Bilerne holder langs vest- og sydsiden, og der er plads til ophold og petanque.',area:[-339,-303,-56,-4],s:.7},
+  {n:'De parallelle blokke',t:'To lange boligblokke ligger nærmest Egernvej med et grønt fællesareal og en legeplads imellem sig.',area:[-327,-275,24,91],s:.75},
+  {n:'Ved Vagtelvej',t:'Egernvej ender her ved Vagtelvej. Mod vest ligger Vagtelvængets gule boligblokke. De to parallelle huse er dem, man først ser fra Egernvej.',area:[-275.5,-251,95,114],s:.7},
   {n:'Legepladsen ved Egernvej',t:'Et grønt område med store træer, bænke og en lille legeplads. Her stiger man af cyklen og løbehjulet.',area:[-257,-187,48,95],s:.7},
   {n:'Plænen ved Egernvej',t:'En åben græsplæne mellem sidevejene, med træer langs Egernvej.',area:[-173,-113,65,95],s:.7},
   { n: 'For enden af Duevej', t: 'Her ligger Netto og Vagns ved hjørnerne. På den anden side af den store vej ligger Stalden. Vend om her og gå tilbage til skolen.', area: [40, 61, 237, 254] },
@@ -3676,7 +3671,7 @@ let mapBase = null; let MX0 = -60, MX1 = 64, MZ0 = -112, MZ1 = 256;
 function focusStreetMap() {
   const west=P.pos.x < -58;
   const x0=west?Math.max(-400,Math.floor((P.pos.x-60)/60)*60-10):-60;
-  const x1=west?x0+140:64,z0=west?20:-112,z1=west?160:256;
+  const x1=west?x0+140:64,z0=west?Math.max(-115,Math.floor((P.pos.z-60)/60)*60-10):-112,z1=west?z0+140:256;
   if(MX0===x0&&MX1===x1&&MZ0===z0&&MZ1===z1)return;
   MX0=x0;MX1=x1;MZ0=z0;MZ1=z1;sizeMap();
 }
@@ -3707,7 +3702,7 @@ function buildMapBase() {
   g.textAlign = 'center'; g.fillText('Mariendalsvej', mpx(-4), mpz(-101));
   g.save(); g.translate(mpx(49), mpz(20)); g.rotate(Math.PI / 2); g.fillText('Duevej', 0, 0); g.restore();
   g.fillText('Egernvej', mpx(MX0 < -60 ? (MX0+MX1)/2 : -12), mpz(104.5));
-  if(MX0 < -60){g.save();g.translate(mpx(-265),mpz(73));g.rotate(Math.PI/2);g.fillText('Vagtelvej',0,0);g.restore();}
+  if(MX0 < -60){g.save();g.translate(mpx(-265),mpz(22));g.rotate(Math.PI/2);g.fillText('Vagtelvej',0,0);g.restore();g.fillText('Vagtelvænget',mpx(-331),mpz(-67));}
   g.fillText('Stalden', mpx(26), mpz(249));
   mapBase = cv;
 }
