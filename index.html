@@ -46,6 +46,8 @@ body{margin:0;overflow:hidden;background:var(--sky);color:var(--ink);font-family
 .chip.on{background:var(--leaf);opacity:1}
 #poi b{font-family:var(--display);font-size:20px;font-weight:800;display:block;margin-bottom:3px;text-wrap:balance}
 #poi p{margin:0;font-size:14px;line-height:1.5}
+#poi.nameOnly{width:max-content;padding:8px 14px 6px}
+#poi.nameOnly b{margin:0}
 #toast{position:fixed;left:50%;top:24%;transform:translateX(-50%);padding:9px 16px;font-weight:600;font-size:15px;max-width:calc(100% - 32px);box-sizing:border-box;text-align:center;background:#fff1d8;animation:pop .3s ease-out}
 @keyframes pop{from{opacity:0;translate:0 8px}to{opacity:1;translate:0 0}}
 .overlay{position:fixed;inset:0;display:grid;place-items:center;padding:16px;box-sizing:border-box;background:radial-gradient(ellipse at center,rgba(42,34,56,.06),rgba(42,34,56,.38))}
@@ -3613,7 +3615,7 @@ const POIS = [
   { n: 'Husene med haver', t: 'Små huse med hver sin have. Her bor der nogen, så de hører ikke til skolen.', area: [-37.5, -6, -21.5, 91] },
   { n: 'Husene med haver', t: 'Små huse med hver sin have. Her bor der nogen, så de hører ikke til skolen.', area: [-6, 40, 72.5, 91] },
   { n: 'Egernvej', t: 'Vejen syd for skolen. Den løber langs stien med træerne og fortsætter mod vest til Vagtelvej. På den anden side ligger lange rækkehuse i gule mursten med grønne døre. Cyklisterne kører her, så kig dig for.', area: [-275.5, 44, 98, 116] },
-  { n: 'Duevej', t: 'Vejen, der har givet skolen sit navn. Bilerne holder parkeret i en lang række under træerne, og cyklisterne suser forbi. Fodgængerovergangen ligger mellem det lille røde hus og huset med fiskeskælstaget. Langs skolen er der et grønt bælte med højt græs og små træer.', area: [40, 60, -96, 200] },
+  { n: 'Duevej', t: '', area: [40, 60, -96, 200] },
   { n: 'Mariendalsvej', t: 'Den store vej på nordsiden af skolen. Kig dig for, før du går over.', area: [-200, 200, -200, -92] },
   { n: 'Vejen bag haverne', t: 'Her kan du gå hele vejen rundt om skolen. På den anden side af vejen ligger små parcelhuse med haver. Cyklisterne kører i begge retninger, så kig dig for, før du går over.', area: [-60, -37.5, -92, 200] },
   { n: 'Stien med træerne', t: 'En sti med træer på begge sider. Lige ved siden af løber Egernvej.', area: [-37.5, 40, 91, 98] },
@@ -3782,7 +3784,7 @@ function renderChips() { $('chips').innerHTML = ANIMAL_DEFS.map((d, i) => `<span
 let toastTimer = 0;
 function toast(msg) { sayToast(msg); const t = $('toast'); t.hidden = true; void t.offsetWidth; t.textContent = msg; t.hidden = false; toastTimer = 3.4; }
 let curPoi = null;
-function showPoi(p) { if (p === curPoi) return; curPoi = p; const el = $('poi'); if (!p) { el.hidden = true; return; } sayPoi(p); $('poiName').textContent = p.n; $('poiText').textContent = p.t; el.hidden = true; void el.offsetWidth; el.hidden = false; }
+function showPoi(p) { if (p === curPoi) return; curPoi = p; const el = $('poi'); if (!p) { el.hidden = true; return; } sayPoi(p); $('poiName').textContent = p.n; $('poiText').textContent = p.t; $('poiText').hidden = !p.t; el.classList.toggle('nameOnly', !p.t); el.hidden = true; void el.offsetWidth; el.hidden = false; }
 
 $('bMap').addEventListener('click', () => setMapVisible(!showMap));
 $('bVoice').addEventListener('click', () => setVoice(!voiceOn));
@@ -4653,7 +4655,7 @@ function sayPoi(p) {
   if (!p || !started) return;
   if (clockT - toastSaidAt < 3.5) { pendingPoi = p; return; }
   const last = lastPoiSaid.get(p.n) ?? -999; if (clockT - last < 90) return;
-  lastPoiSaid.set(p.n, clockT); say(`${p.n}. ${p.t}`);
+  lastPoiSaid.set(p.n, clockT); say(p.t ? `${p.n}. ${p.t}` : p.n);
 }
 function updVoice() { if (pendingPoi && clockT - toastSaidAt >= 3.5) { const p = pendingPoi; pendingPoi = null; if (p === curPoi) sayPoi(p); } }
 function setVoice(v) {
