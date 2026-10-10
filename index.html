@@ -1948,7 +1948,9 @@ const SWINGS = [], SLIDE = { x: 12, zb: 33.6, z0: 35.0, z1: 40.3, top: 2.0 };
   for (const x of [-90, -66, -28, -6, 16, 34]) car(x, 107.8, -Math.PI / 2, CAR_COLS[ci++ % CAR_COLS.length]);
   for (const x of [-70, -25, 5, 32]) lamp(x, 111.4, 7, true);
   for (const z of [-86, -70, -54, -38, -6, 10, 46, 62, 78]) car(-49.8, z, 0, CAR_COLS[ci++ % CAR_COLS.length]);
-  bike(41.4, -14.5, Math.PI / 2, '#f2c14e'); bike(41.4, -13.3, Math.PI / 2 + 0.08, '#4a7bd0'); bike(41.4, 39.5, Math.PI / 2, '#d9534f');
+  bike(41.4, -14.5, Math.PI / 2, '#f2c14e'); bike(41.4, -13.3, Math.PI / 2 + 0.08, '#4a7bd0');
+  // Park the red bicycle on the path at the Duevej / Egernvej corner.
+  bike(41.4, 97.0, 0, '#d9534f');
 }
 apartment(-140, -60, -132, -114, 5); apartment(-34, 36, -132, -114, 5); apartment(62, 140, -132, -114, 5);
 // ---------------- Duevej homes, simplified from Google Street View (April 2025)
