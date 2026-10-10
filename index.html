@@ -2328,8 +2328,8 @@ let label;
   rectG(-270,-260,30,166,M.road,.021,'#8b8b8e');
   slab(-275,-270,30,166,.12,M.sidewalk,'#d8d3c8');
   slab(-260,-257,30,166,.12,M.sidewalk,'#d8d3c8');
-  // Four apartment wings from the aerial sketch west of Vagtelvej.
-  // The lower, long block is closest to Egernvej; three taller wings sit behind a courtyard.
+  // Vagtelvænget west of Vagtelvej: the long southern block comes first from Egernvej.
+  // The courtyard wings follow the photographed yellow-brick, flat-roofed estate.
   const estateBrick = toon('#fff', { map: brickTex('#d0b987', '#94866e') });
   const estateBase = toon('#b7afa0'), estateRoof = toon('#3d4c66');
   const estateRail = toon('#485367');
@@ -2359,18 +2359,26 @@ let label;
   estateBlock(-283, 112, 11.5, 47, 13.1, 4, 104);
   addWin('doorModern', -277.16, 1.35, 104, Math.PI/2, 1.5, 2.35, .85);
   box(.45,.16,2.1,M.concrete,-276.92,0,104,{cast:false});
-  // Three separate high wings frame a green courtyard farther from the street.
-  estateBlock(-321, 47, 58, 11, 19.1, 6);
-  estateBlock(-344.5, 78, 11, 45, 19.1, 6);
-  estateBlock(-297, 78, 11, 45, 19.1, 6);
+  // The taller residential wings frame a green courtyard farther from the street.
+  estateBlock(-321, 47, 58, 11, 25.1, 8);
+  estateBlock(-344.5, 78, 11, 45, 25.1, 8, 70);
+  estateBlock(-297, 78, 11, 45, 25.1, 8);
+  // No. 31 is the entrance along the western wing, beyond the street-facing buildings.
+  addWin('doorModern', -338.87, 1.35, 70, Math.PI/2, 1.5, 2.35, .85);
+  box(.7,.15,2.1,M.concrete,-338.65,0,70,{cast:false});
+  box(1.2,.14,2.5,estateBase,-338.3,2.76,70,{cast:false});
+  label('31',.9,.55,-338.78,2.52,72.2,Math.PI/2,'#294b40','#fff3d0');
   rectG(-338.5,-302.5,53,101,M.grass,.024,'#9fbd79');
   rectG(-337,-304,74,78,M.path,.05,'#d6c8a5');
-  rectG(-322,-319,55,99,M.path,.052,'#d6c8a5');
+  rectG(-339,-334,68,78,M.path,.053,'#d6c8a5');
+  rectG(-339,-319,68,72,M.path,.055,'#d6c8a5');
+  rectG(-322,-318,55,142,M.path,.052,'#d6c8a5');
+  rectG(-320,-273,138,142,M.path,.053,'#d6c8a5');
   for (const [x,z] of [[-333,64],[-309,67],[-329,91],[-311,91]]) tree(x,z,'round',.75);
   for (const [x,z] of [[-332,79],[-309,79]]) bench(x,z);
   // Short balcony rows distinguish the courtyard-facing walls from the street facade.
   for (const [faceX,sgn] of [[-338.8,1],[-302.7,-1]]) {
-    for (let floor=1;floor<6;floor++) for (const z of [64,78,92]) {
+    for (let floor=1;floor<8;floor++) for (const z of [64,78,92]) {
       box(.78,.12,2.7,M.concrete,faceX+sgn*.15,floor*3+.46,z,{cast:false});
       box(.07,.72,2.7,estateRail,faceX+sgn*.55,floor*3+.58,z,{cast:false});
     }
@@ -3741,7 +3749,7 @@ canvas.addEventListener('contextmenu', e => e.preventDefault());
 const P = { pos: new THREE.Vector3(42, 0.12, -57.5), vel: new THREE.Vector3(), onGround: true, walkT: 0, face: -Math.PI / 2 };
 const TRAMP_Y = 0.3;
 function trampAt(x, z) { for (const t of TRAMPS) if ((x - t.x) ** 2 + (z - t.z) ** 2 < t.r * t.r) return t; return null; }
-const STEP = 0.5, RAD = 0.35, G = 22, BOUNDS = [-275.5, 60.6, -112, 253.5];
+const STEP = 0.5, RAD = 0.35, G = 22, BOUNDS = [-359, 60.6, -112, 253.5];
 const angDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 function resolve(p, velocity = null) {
   const stopInto = (nx, nz) => {
