@@ -7213,10 +7213,11 @@ function updActions() {
   const H = FX.halloweenHall = { inside:false, hasFlashlight:false };
   const DOOR = { x:12.05, z:-58.5 };
   const PICKUP = { x:13.2, z:-56.9 };
-  const HX=-180, HZ=-58.5, HW=14, HD=20;
+  const HX=-180, HZ=-58.5, HW=14, HD=34;
   const hall = grp(dyn,0,0,0);
   const pickup = grp(dyn,PICKUP.x,groundAt(PICKUP.x,PICKUP.z,0.6),PICKUP.z);
-  const floorMat=toon('#554752'), wallMat=toon('#655568'), ceilingMat=toon('#3b3248');
+  const floorMat=toon('#554752'), ceilingMat=toon('#3b3248');
+  const brickWall=new THREE.MeshLambertMaterial({map:brickTex('#76505b','#39323f')});
   const wood=toon('#694637'), frameMat=toon('#b0844e'), cloth=toon('#713e54');
   const lensMat=new THREE.MeshBasicMaterial({color:'#ffe79c'});
   pt(pickup,cyl(0.13,0.13,0.62,8),toon('#ef9a38'),0,0.32,0,{r:[0,0,Math.PI/2],ol:true});
@@ -7227,7 +7228,7 @@ function updActions() {
 
   // The room lives away from the outdoor map; entry and exit at the real front door move the player.
   box(HW,0.12,HD,floorMat,HX,-0.12,HZ,{parent:hall,cast:false});
-  box(2.35,0.025,14,cloth,HX,0.005,HZ,{parent:hall,cast:false});
+  box(2.35,0.025,28,cloth,HX,0.005,HZ,{parent:hall,cast:false});
   box(HW,0.2,HD,ceilingMat,HX,4.15,HZ,{parent:hall,cast:false});
   const hallWalls=[
     [HX-HW/2,0.35,HD],[HX+HW/2,0.35,HD],
@@ -7236,10 +7237,12 @@ function updActions() {
   for(let i=0;i<4;i++){
     const wall=hallWalls[i];
     if(i<2) {
-      box(wall[1],4.15,wall[2],wallMat,wall[0],0,HZ,{parent:hall,edges:true});
+      const panels=Math.ceil(HD/3), length=HD/panels;
+      for(let n=0;n<panels;n++)box(wall[1],4.15,length,brickWall,wall[0],0,HZ-HD/2+(n+.5)*length,{parent:hall,cast:false});
       colBox(wall[0]-wall[1]/2,wall[0]+wall[1]/2,HZ-HD/2,HZ+HD/2,4.15);
     } else {
-      box(wall[1],4.15,wall[2],wallMat,HX,0,wall[3],{parent:hall,edges:true});
+      const panels=Math.ceil(HW/3), length=HW/panels;
+      for(let n=0;n<panels;n++)box(length,4.15,wall[2],brickWall,HX-HW/2+(n+.5)*length,0,wall[3],{parent:hall,cast:false});
       colBox(HX-HW/2,HX+HW/2,wall[3]-wall[2]/2,wall[3]+wall[2]/2,4.15);
     }
     camCols.push(cols[cols.length-1]);
@@ -7247,7 +7250,7 @@ function updActions() {
   // A door shape tells the player where to leave.
   box(0.08,2.85,2.25,wood,HX+HW/2-0.25,0,HZ,{parent:hall,edges:true});
   pt(hall,sph(0.075,8,6),frameMat,HX+HW/2-0.34,1.25,HZ+0.74,{cast:false});
-  for(const [x,z] of [[HX-4,HZ-6],[HX+3.5,HZ+5.5]]){
+  for(const [x,z] of [[HX-4,HZ-12],[HX+3.5,HZ+12]]){
     box(2.2,0.5,0.55,wood,x,0,z,{parent:hall,edges:true});
   }
 
@@ -7301,10 +7304,10 @@ function updActions() {
     },{wrap:false});
   }
   const stories=[
-    [0,HX-HW/2+0.23,HZ-5,Math.PI/2,'Rytteren uden hoved leder efter sin hat. Den svæver lige over ham!'],
-    [1,HX-HW/2+0.23,HZ+1.5,Math.PI/2,'Endnu en hovedløs rytter! Han har taget et græskar med på tur.'],
+    [0,HX-HW/2+0.23,HZ-10,Math.PI/2,'Rytteren uden hoved leder efter sin hat. Den svæver lige over ham!'],
+    [1,HX-HW/2+0.23,HZ+5,Math.PI/2,'Endnu en hovedløs rytter! Han har taget et græskar med på tur.'],
     [2,HX-3.6,HZ-HD/2+0.23,0,'Det lille spøgelse øver sig på at sige bøh.'],
-    [3,HX+3.6,HZ-HD/2+0.23,0,'Skelettet danser, så knoglerne rasler.'],
+    [3,HX+HW/2-0.23,HZ-4,-Math.PI/2,'Skelettet danser, så knoglerne rasler.'],
     [4,HX-3.6,HZ+HD/2-0.23,Math.PI,'Den kloge ugle læser en bog om skolens dyr.']
   ];
   const paintings=[];
@@ -7318,7 +7321,7 @@ function updActions() {
   });
 
   // A smiling ghost waits at the far end of the room.
-  const ghost=grp(hall,HX-0.5,0,HZ-6.4);
+  const ghost=grp(hall,HX-0.5,0,HZ-13);
   const pale=toon('#eee8fa',{transparent:true,opacity:0.82,depthWrite:false});
   pt(ghost,sph(0.42,14,10),pale,0,1.38,0,{s:[1,1.2,0.8],cast:false});
   pt(ghost,cone(0.45,0.7,12),pale,0,0.81,0,{r:[Math.PI,0,0],cast:false});
@@ -7380,13 +7383,29 @@ function updActions() {
   const rewardLight=new THREE.PointLight('#ffe2a1',0,9,2);rewardLight.position.set(armour.position.x,2.8,armour.position.z-1.0);hall.add(rewardLight);
   colCirc(armour.position.x,armour.position.z,.72,2.7);
   eyes.forEach(e=>e.visible=true);
-  H.armour=armour;
+  const armour2=armour.clone(true);hall.add(armour2);
+  armour2.position.set(HX-4.5,0,HZ-7);armour2.rotation.y=0;
+  colCirc(armour2.position.x,armour2.position.z,.72,2.7);
+  H.armour=armour;H.armours=[armour,armour2];
+  let lastRattle=-1;
+  HOOKS.frame.push((dt,t)=>{
+    if(!started||paused||!H.inside||gameVersion!=='halloween')return;
+    const cycle=Math.floor(t/18), phase=t%18;
+    const shake=!reduceMotion&&phase<1.15?Math.sin(phase*26)*Math.sin(Math.PI*phase/1.15)*.065:0;
+    armour.rotation.z=shake;armour2.rotation.z=-shake*.8;
+    waving.rotation.z=!reduceMotion&&phase<1.15?Math.sin(phase*12)*.16:0;
+    if(phase<.12&&cycle!==lastRattle){
+      lastRattle=cycle;
+      if(Math.min(...H.armours.map(a=>Math.hypot(P.pos.x-a.position.x,P.pos.z-a.position.z)))<9)
+        tone(180,110,0,.16,.018,'triangle');
+    }
+  });
 
 // Find the little witch, accompany her outside, then watch her wave and fly home.
   const witchKey='duevej3d-heks-farvel';
   let witchDone=false;try{witchDone=localStorage.getItem(witchKey)==='1';}catch(_){}
   const W=H.witch={state:witchDone?'done':'waiting',time:0,start:new THREE.Vector3()};
-  const witchRoot=grp(dyn,HX-3.4,0,HZ+5.5), witchBody=grp(witchRoot,0,0,0);
+  const witchRoot=grp(dyn,HX-3.4,0,HZ-12.5), witchBody=grp(witchRoot,0,0,0);
   const purple=toon('#8052a5'), lilac=toon('#c298d6'), skin=toon('#f4c79e'), hair=toon('#9b503d'), hat=toon('#344646');
   pt(witchBody,cyl(.16,.27,.53,14),purple,0,.48,0,{ol:true});
   pt(witchBody,cyl(.18,.2,.07,12),lilac,0,.52,0);
@@ -7436,7 +7455,7 @@ function updActions() {
   }
   H.witchOutside=witchOutside;
   H.resetWitch=()=>{
-    W.state='waiting';W.time=0;witchRoot.position.set(HX-3.4,0,HZ+5.5);witchRoot.rotation.set(0,0,0);witchBody.position.y=0;witchArm.rotation.set(0,0,0);broom.position.set(.32,.52,-.04);broom.rotation.set(0,0,0);witchGlow.visible=true;
+    W.state='waiting';W.time=0;witchRoot.position.set(HX-3.4,0,HZ-12.5);witchRoot.rotation.set(0,0,0);witchBody.position.y=0;witchArm.rotation.set(0,0,0);broom.position.set(.32,.52,-.04);broom.rotation.set(0,0,0);witchGlow.visible=true;
     try{localStorage.removeItem(witchKey);}catch(_){}
   };
   W.root=witchRoot;W.take=takeWitch;W.broom=broom;W.arm=witchArm;
@@ -7465,7 +7484,7 @@ function updActions() {
         if(f===1){W.state='done';witchRoot.visible=false;try{localStorage.setItem(witchKey,'1');}catch(_){}}
       }
     }
-    if(H.inside&&Math.hypot(P.pos.x-armour.position.x,P.pos.z-armour.position.z)<2.4)
+    if(H.inside&&H.armours.some(a=>Math.hypot(P.pos.x-a.position.x,P.pos.z-a.position.z)<2.4))
       offerAction({id:'hall-armour-hello',label:'Hils på rustningen',prio:1.9,run:()=>{tone(500,650,0,.2,.025,'triangle');toast(W.state==='waiting'?'En lille heks gemmer sig herinde. Vil du hjælpe hende ud?':'Rustningen nikker til dig. Tak for at hjælpe heksen!');}});
   });
 
