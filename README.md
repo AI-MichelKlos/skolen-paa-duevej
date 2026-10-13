@@ -4,14 +4,14 @@ En hyggelig 3D-gåtur i tegnefilmsstil rundt på Skolen på Duevej på Frederiks
 
 **Spil her:** https://ai-michelklos.github.io/skolen-paa-duevej/
 
-Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, hop på trampolinerne ved den lille fodboldbane, og gå hele vejen rundt om skolen ad Mariendalsvej, Duevej og Egernvej, hvor cyklisterne kører forbi. Tolv dyr gemmer sig rundt omkring: en due, en kat, en and, et egern, en hund, en høne, et pindsvin, en frø, en kanin, en ugle, en ræv og en skildpadde. Kan du finde dem alle?
+Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, hop på trampolinerne ved den lille fodboldbane, og gå hele vejen rundt om skolen ad Mariendalsvej, Duevej og Egernvej, hvor cyklisterne kører forbi. I den almindelige udgave gemmer der sig tolv dyr: en due, en kat, en and, et egern, en hund, en høne, et pindsvin, en frø, en kanin, en ugle, en ræv og en skildpadde. Kan du finde dem alle?
 
 ## Vælg udgave
 
 På startkortet kan man vælge mellem **Almindelig**, **Halloween** og **Jul**. Valget huskes i browseren og kan ændres på Hjælp-kortet uden at miste de dyr, man allerede har fundet.
 
 - **Almindelig** viser skolen uden julepynt eller Halloween-pynt. Vinter-knappen kan stadig bruges til sne og snemænd.
-- **Halloween** pynter skolen med græskarlygter, edderkopper, flagermus og rotter med lysende røde øjne. Kloge ugler kan vise vej til det næste dyr. Ved Hovedbygningens buede dør ligger en lommelygte. Tag den, gå ind i den mørke sal, og lys på malerier af hovedløse ryttere, et venligt spøgelse og andre fjollede motiver. Den store handlingsknap bruges til at gå ind og ud og undersøge billederne. Figuren og dyrejagten er den samme.
+- **Halloween** pynter skolen med græskarlygter, edderkopper, flagermus og rotter med lysende røde øjne. Fire af de tolv figurer, man skal finde, bliver til en flagermus, et spøgelse, en heks og en edderkop. De kan findes, følge spilleren og gå hjem til Filipa som de andre. Kloge ugler kan vise vej til den næste figur. Ved Hovedbygningens buede dør ligger en lommelygte. Tag den, gå ind i den mørke sal, og lys på malerier af hovedløse ryttere, et venligt spøgelse og andre fjollede motiver. Den store handlingsknap bruges til at gå ind og ud og undersøge billederne. Fundene bevares, når man skifter tema.
 - **Jul** viser juletræet, de fem valgfrie julestjerner, nissen og julefesten hos Filipa. Jul starter med vintervejr.
 
 ## Styring

@@ -171,9 +171,9 @@ body.touch #poi{bottom:calc(118px + env(safe-area-inset-bottom,0px))}
       <p id="versionHint" class="lead" hidden></p>
     </section>
     <button class="go" id="goBtn" type="button" disabled>Henter skolen …</button>
-    <p class="lead" id="introLead">Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, hop på trampolinerne, og gå hele vejen rundt om skolen. Ved krydset mellem Duevej og Egernvej står en cykel, du kan køre på. Tolv dyr gemmer sig rundt omkring. Kan du finde dem alle?</p>
+    <p class="lead" id="introLead">Gå rundt mellem de røde murstenshuse, de gule huse og den store træbygning, hop på trampolinerne, og gå hele vejen rundt om skolen. Ved krydset mellem Duevej og Egernvej står en cykel, du kan køre på. Tolv figurer gemmer sig rundt omkring. Kan du finde dem alle?</p>
     <p class="err" id="loadErr" hidden>3D-motoren kunne ikke hentes. Tjek internetforbindelsen og genindlæs siden.</p>
-    <p class="chipsHead">Dyrene, du skal finde</p>
+    <p class="chipsHead" id="chipsHeading">Dyrene, du skal finde</p>
     <div class="chips" id="chips"></div>
     <p class="chipsHead">Vælg farve på jakken</p>
     <div class="swatches" id="swJacket"></div>
@@ -3280,6 +3280,86 @@ function buildTurtle() {
   return { g, head, legs };
 }
 
+function buildBat() {
+  const g = new THREE.Group(), fur = toon('#51436d'), wingMat = toon('#72558e', { side: THREE.DoubleSide }), pink = toon('#d6a4cb');
+  pt(g, sph(0.17), fur, 0, 0.29, 0, { s: [1, 1.12, 0.82], ol: true });
+  const head = grp(g, 0, 0.47, 0.05);
+  pt(head, sph(0.15), fur, 0, 0, 0, { ol: true });
+  for (const side of [-1, 1]) {
+    pt(head, cone(0.055, 0.17, 5), fur, side * 0.1, 0.16, -0.025, { r: [0, 0, -side * 0.18] });
+    pt(head, cone(0.024, 0.085, 5), pink, side * 0.1, 0.17, 0.016, { r: [0, 0, -side * 0.18], cast: false });
+    pt(head, sph(0.035), toon('#ffd87b'), side * 0.06, 0.025, 0.126, { cast: false });
+    pt(head, sph(0.016), EYE, side * 0.06, 0.025, 0.151, { cast: false });
+    pt(head, cone(0.012, 0.055, 5), WHITE, side * 0.035, -0.085, 0.135, { r: [Math.PI, 0, 0], cast: false });
+  }
+  pt(head, sph(0.026), pink, 0, -0.05, 0.135, { cast: false });
+  const wings = [];
+  for (const side of [-1, 1]) {
+    const wing = grp(g, side * 0.13, 0.36, 0);
+    const shape = new THREE.Shape(); shape.moveTo(0, 0); shape.lineTo(side * 0.4, 0.22); shape.lineTo(side * 0.36, 0.04);
+    shape.quadraticCurveTo(side * 0.27, -0.02, side * 0.22, -0.13);
+    shape.quadraticCurveTo(side * 0.15, -0.02, side * 0.08, -0.12); shape.closePath();
+    pt(wing, new THREE.ShapeGeometry(shape), wingMat, 0, 0, -0.015, { ol: true }); wings.push(wing);
+  }
+  return { g, head, wings };
+}
+function buildGhost() {
+  const g = new THREE.Group(), cloth = toon('#f4eefb'), shade = toon('#cfbfe5'), blush = toon('#f4a7ba');
+  const float = grp(g, 0, 0, 0);
+  pt(float, sph(0.22), cloth, 0, 0.45, 0, { s: [1, 1.2, 0.82], ol: true });
+  pt(float, cyl(0.21, 0.25, 0.26, 12), cloth, 0, 0.18, 0, { ol: true });
+  for (const x of [-0.16, 0, 0.16]) pt(float, sph(0.08), cloth, x, 0.06, 0, { s: [1, 0.7, 1.2] });
+  for (const side of [-1, 1]) {
+    pt(float, sph(0.065), shade, side * 0.22, 0.3, 0, { s: [1.35, 0.6, 0.8], r: [0, 0, side * 0.35] });
+    pt(float, sph(0.039), EYE, side * 0.082, 0.48, 0.172, { s: [0.8, 1.2, 0.5], cast: false });
+    pt(float, sph(0.034), blush, side * 0.15, 0.4, 0.155, { s: [1, 0.55, 0.4], cast: false });
+  }
+  smileG(float, 0.06, 0.36, 0.18, 0.8);
+  return { g, head: float, float };
+}
+function buildSpider() {
+  const g = new THREE.Group(), body = toon('#49344f'), legMat = toon('#382d49'), eyeMat = toon('#e6b2dc');
+  pt(g, sph(0.17), body, 0, 0.24, -0.08, { s: [1.2, 0.8, 1.2], ol: true });
+  const head = grp(g, 0, 0.25, 0.13);
+  pt(head, sph(0.12), body, 0, 0, 0, { ol: true });
+  for (const side of [-1, 1]) for (const y of [0, 0.07]) {
+    pt(head, sph(0.025), eyeMat, side * (y ? 0.06 : 0.045), y, 0.105, { cast: false });
+    pt(head, sph(0.011), EYE, side * (y ? 0.06 : 0.045), y, 0.129, { cast: false });
+  }
+  const legs = [];
+  for (const side of [-1, 1]) for (let i = 0; i < 4; i++) {
+    const z = 0.13 - i * 0.095, leg = grp(g, side * 0.12, 0.25, z);
+    const knee = new THREE.Vector3(side * (0.22 + i * 0.015), 0.1, (1.5 - i) * 0.045);
+    const tip = new THREE.Vector3(side * (0.29 + i * 0.018), -0.2, (1.5 - i) * 0.095);
+    for (const [p, q] of [[new THREE.Vector3(), knee], [knee, tip]]) {
+      const d = q.clone().sub(p), m = pt(leg, cyl(0.014, 0.014, d.length(), 6), legMat, (p.x+q.x)/2, (p.y+q.y)/2, (p.z+q.z)/2);
+      m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), d.normalize());
+    }
+    legs.push(leg);
+  }
+  smileG(head, 0.045, -0.045, 0.112, 0.5);
+  return { g, head, legs };
+}
+function buildWitchAnimal() {
+  const g = new THREE.Group(), dress = toon('#65457d'), hat = toon('#382c56'), skin = toon('#a5cb8a'), hair = toon('#ec9b45'), broom = toon('#a87947');
+  pt(g, cone(0.29, 0.68, 12), dress, 0, 0.41, 0, { ol: true });
+  const head = grp(g, 0, 0.82, 0.05);
+  pt(head, sph(0.18), skin, 0, 0, 0, { ol: true });
+  for (const side of [-1,1]) {
+    pt(head, sph(0.07), hair, side * 0.16, -0.08, -0.01, { s: [0.65, 2, 0.8] });
+    pt(head, sph(0.025), EYE, side * 0.065, 0.02, 0.155, { cast: false });
+    pt(g, capg(0.035, 0.19), dress, side * 0.27, 0.51, 0.01, { r: [0, 0, side * 0.55] });
+  }
+  pt(head, sph(0.04), skin, 0, -0.035, 0.18, { s: [0.8, 0.8, 1.25] });
+  smileG(head, 0.06, -0.09, 0.155, 0.7);
+  pt(head, cyl(0.25, 0.25, 0.035, 18), hat, 0, 0.2, 0, { ol: true });
+  pt(head, cone(0.19, 0.48, 12), hat, 0, 0.43, 0, { r: [0, 0, -0.18], ol: true });
+  pt(head, cyl(0.195, 0.195, 0.045, 12), toon('#db8a40'), 0, 0.24, 0);
+  const stick = pt(g, cyl(0.022, 0.022, 0.85, 7), broom, 0.35, 0.4, 0, { r: [0, 0, -0.35] });
+  pt(g, cone(0.1, 0.25, 8), toon('#d6ae66'), 0.48, 0.04, 0, { r: [0, 0, Math.PI] });
+  return { g, head, stick };
+}
+
 const ANIMAL_DEFS = [
   { k: 'due', n: 'Due', d: 'duen', b: buildDove, x: 42.2, z: 13.3, s: 1.7, wander: 1.5, speed: 0.75 },
   { k: 'kat', n: 'Kat', d: 'katten', b: buildCat, x: 21.6, z: -50.6, s: 1.45 },
@@ -3294,13 +3374,34 @@ const ANIMAL_DEFS = [
   { k: 'raev', n: 'Ræv', d: 'ræven', b: buildFox, x: -17.5, z: 15, s: 1.45, wander: 1.0, speed: 0.8 },
   { k: 'skildpadde', n: 'Skildpadde', d: 'skildpadden', b: buildTurtle, x: 36.5, z: 69, s: 1.5, wander: 1.2, speed: 0.2 },
 ];
+const HALLOWEEN_DEFS = {
+  0: { ...ANIMAL_DEFS[0], k: 'flagermus', n: 'Flagermus', d: 'flagermusen', b: buildBat, s: 1.9, wander: 0 },
+  2: { ...ANIMAL_DEFS[2], k: 'spoegelse', n: 'Spøgelse', d: 'spøgelset', b: buildGhost, s: 1.7, wander: 0 },
+  10: { ...ANIMAL_DEFS[10], k: 'heks', n: 'Heks', d: 'heksen', b: buildWitchAnimal, s: 1.35, wander: 0 },
+  11: { ...ANIMAL_DEFS[11], k: 'edderkop', n: 'Edderkop', d: 'edderkoppen', b: buildSpider, s: 2.2, wander: 0 },
+};
+const animalDef = id => gameVersion === 'halloween' && HALLOWEEN_DEFS[id] ? HALLOWEEN_DEFS[id] : ANIMAL_DEFS[id];
 const animals = [];
-ANIMAL_DEFS.forEach((def, i) => {
+ANIMAL_DEFS.forEach((_, i) => {
+  const def = animalDef(i);
   const o = def.b(); o.g.scale.setScalar(def.s);
   const y = groundAt(def.x, def.z, 4.0);
   o.g.position.set(def.x, y, def.z); o.g.rotation.y = rand() * 6.28; dyn.add(o.g);
   animals.push({ id: i, def, k: def.k, ...o, home: [def.x, def.z], baseY: y, gy: y, elevated: y > 0.5, state: 'idle', t: rr(0.5, 3), target: null, happy: 0, ph: rand() * 10, blink: rr(2, 5) });
 });
+function setHalloweenAnimals() {
+  for (const id of Object.keys(HALLOWEEN_DEFS).map(Number)) {
+    const a = animals[id], def = animalDef(id);
+    if (a.def === def) continue;
+    const old = a.g, pose = old.position.clone(), facing = old.rotation.clone(), visible = old.visible;
+    dyn.remove(old);
+    const model = def.b(); Object.assign(a, model);
+    a.def = def; a.k = def.k; a.g.scale.setScalar(def.s);
+    a.g.position.copy(pose); a.g.rotation.copy(facing); a.g.visible = visible; dyn.add(a.g);
+    a.target = null; a.state = a.follow || a.gather ? 'walk' : 'idle';
+  }
+  renderChips();
+}
 
 // ======================================================================== CYCLISTS
 function lanePath(o) {
@@ -3682,6 +3783,10 @@ const SOUNDS = {
   ugle: () => { tone(430, 400, 0, 0.32, 0.16); tone(390, 360, 0.5, 0.5, 0.16); },
   raev: () => { tone(760, 1250, 0, 0.12, 0.09, 'triangle'); tone(760, 1250, 0.18, 0.12, 0.09, 'triangle'); },
   skildpadde: () => { tone(210, 185, 0, 0.6, 0.13); tone(250, 230, 0.65, 0.3, 0.09); },
+  flagermus: () => { tone(960, 1250, 0, 0.12, 0.05, 'triangle'); tone(1100, 1450, 0.13, 0.1, 0.04, 'triangle'); },
+  spoegelse: () => { tone(520, 730, 0, 0.45, 0.06, 'sine'); },
+  edderkop: () => { for (let i = 0; i < 4; i++) tone(780 + i * 80, 990 + i * 80, i * 0.07, 0.06, 0.035, 'triangle'); },
+  heks: () => { [587, 740, 880].forEach((f, i) => tone(f, f * 1.02, i * 0.13, 0.25, 0.055, 'triangle')); },
 };
 function sparkleSound() { [1320, 1760, 2093].forEach((f, i) => tone(f, f * 1.01, 0.08 + i * 0.07, 0.3, 0.045)); }
 function bellSound() { tone(2150, 2120, 0, 0.4, 0.07); tone(2150, 2120, 0.17, 0.5, 0.07); }
@@ -3790,12 +3895,12 @@ function setEvening(v) {
 function setSound(v) { soundOn = v; $('bSound').setAttribute('aria-pressed', String(v)); $('iWave').style.display = v ? '' : 'none'; save(); }
 function nFound() { let n = 0; for (const id of found) if (id < 12) n++; return n; }   // the 12 normal animals (the secret mouse is id 12)
 function updCounter() { $('cnt').textContent = `${nFound()} af 12`; }
-function renderChips() { $('chips').innerHTML = ANIMAL_DEFS.map((d, i) => `<span class="chip${found.has(i) ? ' on' : ''}">${found.has(i) ? '✓ ' : ''}${d.n}</span>`).join(''); renderFoundList(); }
+function renderChips() { $('chips').innerHTML = ANIMAL_DEFS.map((_, i) => `<span class="chip${found.has(i) ? ' on' : ''}">${found.has(i) ? '✓ ' : ''}${animalDef(i).n}</span>`).join(''); renderFoundList(); }
 function renderFoundList() {
   const ids = [...found].filter(id => id >= 0 && id <= 12);
   const panel = $('foundList'); panel.querySelector('.empty').hidden = ids.length > 0;
   panel.querySelector('ul').innerHTML = ids.map(id => {
-    const name = id === 12 ? 'Mus (hemmelig)' : ANIMAL_DEFS[id].n;
+    const name = id === 12 ? 'Mus (hemmelig)' : animalDef(id).n;
     return `<li${PARADE.some(a => a.id === id) ? ' class="current"' : ''}>✓ ${name}</li>`;
   }).join('');
 }
@@ -3815,7 +3920,7 @@ $('finAgain').addEventListener('click', () => { leaveParade(); found.clear(); up
 function openIntro(help) {
   closeMoreTools();
   paused = true; keys.clear(); renderChips();
-  if (help) { goBtn.textContent = 'Fortsæt'; $('introTitle').textContent = 'Sådan går du rundt'; $('introLead').textContent = `Du har fundet ${nFound()} af 12 dyr. Hvide prikker på kortet viser, hvor de sidste gemmer sig.`; }
+  if (help) { goBtn.textContent = 'Fortsæt'; $('introTitle').textContent = 'Sådan går du rundt'; $('introLead').textContent = `Du har fundet ${nFound()} af 12 figurer. Hvide prikker på kortet viser, hvor de sidste gemmer sig.`; }
   intro.hidden = false; goBtn.focus();
 }
 goBtn.addEventListener('click', () => {
@@ -4215,6 +4320,10 @@ const ANIM = {
   ugle: (a, t, dt) => { const s = Math.sin(t * 0.45); const want = s > 0.35 ? 1.0 : (s < -0.35 ? -1.0 : 0); a.head.rotation.y += (want - a.head.rotation.y) * Math.min(1, dt * 4); a.blink -= dt; const closed = a.blink < 0.14; a.lids.forEach(l => { l.scale.y = closed ? 1 : 0.05; }); if (a.blink < 0) a.blink = rr(2, 5); flap(a, t, 18); },
   raev: (a, t) => { a.tail[0].rotation.y = Math.sin(t * (a.happy > 0 ? 8 : 1.5)) * 0.32; a.head.rotation.y = Math.sin(t * 0.6) * 0.4; walkLegs(a, t, 0.5); },
   skildpadde: (a, t) => { a.head.position.z = 0.24 + (Math.sin(t * 0.6) * 0.5 + 0.5) * 0.06; walkLegs(a, t, 0.45); },
+  flagermus: (a, t) => { a.wings[0].rotation.z = Math.sin(t * 9) * 0.35; a.wings[1].rotation.z = -Math.sin(t * 9) * 0.35; a.head.rotation.y = Math.sin(t * 1.2) * 0.14; },
+  spoegelse: (a, t) => { a.float.position.y = Math.sin(t * 2.2 + a.ph) * 0.07; a.float.rotation.z = Math.sin(t * 1.5) * 0.045; },
+  edderkop: (a, t) => { a.legs.forEach((leg, i) => { leg.rotation.z = Math.sin(t * 9 + i * 1.7) * (a.state === 'walk' ? 0.18 : 0.05); }); a.head.rotation.y = Math.sin(t * 1.1) * 0.2; },
+  heks: (a, t) => { a.head.rotation.z = Math.sin(t * 1.8) * 0.07; a.stick.rotation.z = -0.35 + Math.sin(t * 2) * 0.04; },
 };
 function discover(a) {
   if (found.has(a.id)) return;
@@ -4822,7 +4931,7 @@ function clearTrail() { for (const s of TRAILFX.sprites) dyn.remove(s); TRAILFX.
 function showWay() {
   if (!started || paused) return;
   const todo = animals.filter(a => !found.has(a.id));
-  if (!todo.length) { toast('Du har fundet alle dyrene!'); return; }
+  if (!todo.length) { toast(gameVersion === 'halloween' ? 'Du har fundet alle figurerne!' : 'Du har fundet alle dyrene!'); return; }
   const res = navPath(P.pos.x, P.pos.z, todo.map(a => ({ x: a.g.position.x, z: a.g.position.z })));
   if (!res) { toast('Jeg kan ikke finde vejen lige nu. Prøv et andet sted.'); return; }
   const a = todo[res.target]; clearTrail();
@@ -5673,8 +5782,12 @@ function updActions() {
     ugle: 'Uglen sidder oppe på ståltrappen ved den nye træbygning og kigger ud over skolen. Om dagen blinker den søvnigt. Om natten vågner den og siger uhu, uhu til månen.',
     raev: 'Ræven lister rundt om skolen, når alle børnene er gået hjem. Den har en stor, blød hale, som den sover i. Den kigger nysgerrigt ind ad vinduerne og ser på børnenes tegninger.',
     skildpadde: 'Skildpadden går en tur ved rørene i skolegården. Den har sit hus med på ryggen. Den går meget langsomt, men den kommer altid frem til sidst.',
+    flagermus: 'Flagermusen flyver lydløst over Duevej. Den finder vej i mørket ved at lytte efter sine egne små pip. Den synes, at skolegårdens træer er et dejligt sted at hvile.',
+    spoegelse: 'Det lille spøgelse bor ved skolens gamle mur. Det vil gerne sige bøh, men kommer til at fnise hver gang. Derfor er der ingen, som bliver bange for det.',
+    edderkop: 'Edderkoppen har vævet et fint spind ved skolegården. Hver tråd glitrer i måneskinnet. Den kan mærke på nettet, når en ven kommer forbi.',
+    heks: 'Den venlige heks øver sig i at flyve på sin kost. Hun flyver kun ganske lavt, så hun kan hilse på dyrene i skolegården og lande blødt mellem bladene.',
   };
-  const EMO = { due: '🕊️', kat: '🐱', and: '🦆', egern: '🐿️', hund: '🐶', hoene: '🐔', pindsvin: '🦔', froe: '🐸', kanin: '🐰', ugle: '🦉', raev: '🦊', skildpadde: '🐢' };
+  const EMO = { due: '🕊️', kat: '🐱', and: '🦆', egern: '🐿️', hund: '🐶', hoene: '🐔', pindsvin: '🦔', froe: '🐸', kanin: '🐰', ugle: '🦉', raev: '🦊', skildpadde: '🐢', flagermus: '🦇', spoegelse: '👻', edderkop: '🕷️', heks: '🧙' };
   const book = document.createElement('div'); book.id = 'rumBook'; book.className = 'sticker'; book.hidden = true; book.setAttribute('role', 'status');
   book.innerHTML = '<div class="pic" aria-hidden="true"></div><div><b></b><p></p></div><button type="button" class="x" aria-label="Luk bogen">×</button>';
   $('hud').appendChild(book);
@@ -6616,7 +6729,7 @@ function updActions() {
     kid.root.position.copy(P.pos); TRAIL.length = 0;
     $('finale').hidden = true;
     goBtn.click();
-    fanfare(); setTimeout(() => toast('Nu starter vi forfra. Kan du finde alle 12 dyr?'), 300);
+    fanfare(); setTimeout(() => toast(gameVersion === 'halloween' ? 'Nu starter vi forfra. Kan du finde alle 12 figurer?' : 'Nu starter vi forfra. Kan du finde alle 12 dyr?'), 300);
   }
 
   // ---------------- 3. soft music (follows the Lyd button, and can be turned off on the help card)
@@ -6806,7 +6919,7 @@ function updActions() {
   function hello() {
     const n = nReg();
     let msg;
-    if (!met) { msg = 'Hej! Jeg hedder Filipa, og jeg er lærer her på skolen. Kan du finde alle 12 dyr?'; met = true; try { localStorage.setItem('duevej3d-filipa', '1'); } catch (e) {} }
+    if (!met) { msg = gameVersion === 'halloween' ? 'Hej! Jeg hedder Filipa. Kan du finde alle 12 figurer, også Halloween-vennerne?' : 'Hej! Jeg hedder Filipa, og jeg er lærer her på skolen. Kan du finde alle 12 dyr?'; met = true; try { localStorage.setItem('duevej3d-filipa', '1'); } catch (e) {} }
     else if (n === 12) msg = `Hej! Du er så dygtig. Du har ${starsWord(ST.stars)}.`;
     else if (n === 0) msg = 'Hej igen! Kan du finde dyrene? De gemmer sig rundt omkring på skolen.';
     else msg = `Hej igen! Du har fundet ${n} dyr. Der er ${12 - n} tilbage.`;
@@ -6819,7 +6932,7 @@ function updActions() {
   function giveStar() {
     if (F.give >= 0) return;
     F.give = 0; ST.awarded = true; saveStars();
-    toast('Du har fundet alle 12 dyr! Her er en guldstjerne til dig.');
+    toast(gameVersion === 'halloween' ? 'Du har fundet alle 12 figurer! Her er en guldstjerne til dig.' : 'Du har fundet alle 12 dyr! Her er en guldstjerne til dig.');
     fanfare();
   }
   function landStar() {
@@ -6945,7 +7058,7 @@ function updActions() {
   }
 
   // Every animal has a short, distinct greeting before following the player.
-  const greetings = { due:'Duen flyver en lille runde!', kat:'Katten gemmer sig i en kasse. Hov, kassen går!', and:'Anden vrikker og siger rap!', egern:'Egernet viser sin agern frem!', hund:'Hunden har fundet en nissehue!', hoene:'Hønen hakker efter et lille frø!', pindsvin:'Pindsvinet putter næsen og kigger frem!', froe:'Frøen hopper tre høje hop!', kanin:'Kaninen hopper og vipper med ørerne!', ugle:'Uglen kigger til begge sider og bukker!', raev:'Ræven snurrer rundt med sin store hale!', skildpadde:'Skildpadden strækker hals og vinker!', mus:'Musen danser en lille dans!' };
+  const greetings = { due:'Duen flyver en lille runde!', kat:'Katten gemmer sig i en kasse. Hov, kassen går!', and:'Anden vrikker og siger rap!', egern:'Egernet viser sin agern frem!', hund:'Hunden har fundet en nissehue!', hoene:'Hønen hakker efter et lille frø!', pindsvin:'Pindsvinet putter næsen og kigger frem!', froe:'Frøen hopper tre høje hop!', kanin:'Kaninen hopper og vipper med ørerne!', ugle:'Uglen kigger til begge sider og bukker!', raev:'Ræven snurrer rundt med sin store hale!', skildpadde:'Skildpadden strækker hals og vinker!', mus:'Musen danser en lille dans!', flagermus:'Flagermusen slår et par glade vingeslag!', spoegelse:'Spøgelset siger et lille bøh og fniser!', edderkop:'Edderkoppen danser med alle otte ben!', heks:'Heksen vinker med kosten og smiler!' };
   const catBox = grp(dyn,0,0,0); catBox.visible = false;
   for (const [x,z,w,d] of [[-0.47,0,0.08,1],[0.47,0,0.08,1],[0,-0.47,1,0.08],[0,0.47,1,0.08]]) pt(catBox,new THREE.BoxGeometry(w,0.55,d),wood,x,0.27,z,{ol:true});
   const dog = animals.find(a => a.k === 'hund'), dogHat = grp(dog.head,0,0.17,0); dogHat.visible = false;
@@ -7030,12 +7143,12 @@ function updActions() {
     FUN.party=true; FUN.partyDone=true; FUN.partyTime=0;
     P.face=Math.atan2(13-P.pos.x,-23-P.pos.z); cam.yaw=P.face+Math.PI;
     bulbs.forEach(b=>b.visible=isChristmas()); FX.ude.startShow(true); fanfare();
-    const message = isChristmas() ? 'Du fandt alle dyrene! Nu holder vi julefest!' : gameVersion === 'halloween' ? 'Du fandt alle dyrene! Nu holder vi Halloween-fest!' : 'Du fandt alle dyrene! Nu fejrer vi det!';
+    const message = isChristmas() ? 'Du fandt alle dyrene! Nu holder vi julefest!' : gameVersion === 'halloween' ? 'Du fandt alle figurerne! Nu holder vi Halloween-fest!' : 'Du fandt alle dyrene! Nu fejrer vi det!';
     toast(message);
     $('finale').querySelector('.lead').textContent = isChristmas()
       ? 'Godt gået! Alle dyrene er hos Filipa, og juletræet lyser. Du har fået en guldstjerne! Du kan lege videre og finde de fem julestjerner, hvis du har lyst.'
       : gameVersion === 'halloween'
-        ? 'Godt gået! Alle dyrene er hos Filipa, og de venlige Halloween-dyr fejrer med. Du har fået en guldstjerne! Du kan lege videre.'
+        ? 'Godt gået! Alle figurerne er hos Filipa, og Halloween-vennerne fejrer med. Du har fået en guldstjerne! Du kan lege videre.'
         : 'Godt gået! Alle dyrene er hos Filipa. Du har fået en guldstjerne! Du kan lege videre.';
     if(!FX.filipa.ST.awarded) FX.filipa.giveStar();
   }
@@ -7062,7 +7175,7 @@ function updActions() {
       const allHome = nFound()===12 && animals.filter(a=>a.id<12).every(a=>a.arrived);
       // The last animal stays with the player until they bring it to Filipa.
       if(nFound()===12 && near && FUN.intros.size===0 && PARADE.length) { for(const a of [...PARADE]) sendToFilipa(a); renderFoundList(); }
-      if(nFound()===12 && !readyHint && FUN.intros.size===0) { readyHint=true; toast(isChristmas() ? 'Alle dyr er fundet! Gå hen til Filipa og juletræet. Tryk på Vis vej.' : 'Alle dyr er fundet! Gå hen til Filipa. Tryk på Vis vej.'); }
+      if(nFound()===12 && !readyHint && FUN.intros.size===0) { readyHint=true; toast(isChristmas() ? 'Alle dyr er fundet! Gå hen til Filipa og juletræet. Tryk på Vis vej.' : gameVersion === 'halloween' ? 'Alle figurer er fundet! Gå hen til Filipa. Tryk på Vis vej.' : 'Alle dyr er fundet! Gå hen til Filipa. Tryk på Vis vej.'); }
       if(allHome && near && !FUN.partyDone) startParty();
       if(FUN.party) {
         FUN.partyTime+=dt; FX.filipa.F.wave=1;
@@ -7104,7 +7217,7 @@ function updActions() {
 }
 
 
- // ---- Halloween: gentle creatures and decorations, separate from the animal hunt
+ // ---- Halloween: gentle creatures and decorations around the hunt
 {
   const H = FX.halloween = {};
   const root = grp(dyn, 0, 0, 0);
@@ -7598,7 +7711,7 @@ function updActions() {
     const hint = $('versionHint');
     hint.hidden = gameVersion === 'normal';
     hint.textContent = gameVersion === 'halloween'
-      ? 'Find lommelygten ved Hovedbygningens trappe. Inde i huset gemmer sig en lille heks. Hjælp hende ud, så hun kan flyve hjem på sin kost.'
+      ? 'Find flagermusen, spøgelset, edderkoppen og heksen blandt de 12 figurer. Ved Hovedbygningens trappe ligger også en lommelygte; inde i huset kan du hjælpe en lille heks ud.'
       : gameVersion === 'christmas' ? 'Find julestjerner, byg snemænd og hold julefest hos Filipa.' : '';
   };
   function selectVersion(next, initial = false) {
@@ -7606,6 +7719,12 @@ function updActions() {
     const previous = gameVersion;
     gameVersion = next;
     try { localStorage.setItem(VERSION_KEY, gameVersion); } catch (_) {}
+    setHalloweenAnimals();
+    $('counter').querySelector('.lbl').textContent = gameVersion === 'halloween' ? 'Figurer fundet' : 'Dyr fundet';
+    $('foundList').querySelector('h2').textContent = gameVersion === 'halloween' ? 'Fundne figurer' : 'Fundne dyr';
+    $('foundList').setAttribute('aria-label', gameVersion === 'halloween' ? 'Fundne figurer' : 'Fundne dyr');
+    $('chipsHeading').textContent = gameVersion === 'halloween' ? 'Figurerne, du skal finde' : 'Dyrene, du skal finde';
+    $('finale').querySelector('h2').textContent = gameVersion === 'halloween' ? 'Alle 12 figurer er fundet!' : 'Alle 12 dyr er fundet!';
     FX.fun.setVersion();
     FX.halloween.setVersion();
     FX.halloweenHall.setVersion();
@@ -7617,7 +7736,7 @@ function updActions() {
   }
   choices.forEach(button => button.addEventListener('click', () => {
     selectVersion(button.dataset.version);
-    if (gameVersion === 'halloween') say('Halloween. Find lommelygten ved det store hus. Så kan du gå ind.');
+    if (gameVersion === 'halloween') say('Halloween. Find flagermus, spøgelse, edderkop og heks. Find også lommelygten ved det store hus.');
     else if (gameVersion === 'christmas') say('Jul. Find julestjerner og hold julefest.');
     else say('Almindelig udgave. Find de tolv dyr.');
   }));
@@ -7972,7 +8091,7 @@ function boot(data) {
   if (data.pos) { P.pos.fromArray(data.pos); if (typeof data.face === 'number') { P.face = data.face; cam.yaw = data.face + Math.PI; } }
   kid.root.position.copy(P.pos); kid.root.rotation.y = P.face;
   window.__gameReady = true;
-  goBtn.disabled = false; goBtn.textContent = nFound() ? `Fortsæt (${nFound()} af 12 dyr)` : 'Gå ind i skolegården';
+  goBtn.disabled = false; goBtn.textContent = nFound() ? `Fortsæt (${nFound()} af 12 fundet)` : 'Gå ind i skolegården';
   newGameBtn.hidden = nFound() === 0;
   if (data.started) { intro.hidden = true; hud.hidden = false; started = true; paused = false; shadowExtent(60); startBlend = 1; }
   requestAnimationFrame(t => { last = t; frame(t); });
