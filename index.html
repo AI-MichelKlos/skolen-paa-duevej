@@ -31,6 +31,15 @@ body{margin:0;overflow:hidden;background:var(--sky);color:var(--ink);font-family
 #counter svg{width:34px;height:34px;flex:none}
 #counter .lbl{display:block;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;font-weight:600;opacity:.72}
 #cnt{display:block;font-family:var(--display);font-weight:800;font-size:22px;line-height:1.05;font-variant-numeric:tabular-nums}
+#foundList{position:fixed;left:14px;top:calc(163px + env(safe-area-inset-top,0px));width:168px;max-height:calc(100vh - 185px);box-sizing:border-box;padding:11px 12px;overflow:auto;pointer-events:none}
+#foundList h2{margin:0 0 7px;font:800 16px var(--display)}
+#foundList ul{list-style:none;margin:0;padding:0;display:grid;gap:5px}
+#foundList li{font-size:12px;line-height:1.25}
+#foundList li.current{font-weight:600;color:#8b4a11}
+#foundList li.current::after{content:' · følger dig';font-size:10px}
+#foundList .empty{font-size:12px;line-height:1.35;margin:0}
+@media(max-width:799px){#foundList{display:none}}
+body.touch #foundList{display:none}
 #tools{position:fixed;right:14px;top:calc(14px + env(safe-area-inset-top,0px));display:flex;gap:8px}
 .btn{font:600 13px var(--body);color:var(--ink);display:inline-flex;align-items:center;gap:6px;padding:7px 11px;cursor:pointer;transition:transform .08s,box-shadow .08s}
 .btn:hover{transform:translate(-1px,-1px);box-shadow:4px 5px 0 var(--ink)}
@@ -118,6 +127,7 @@ body.touch #poi{bottom:calc(118px + env(safe-area-inset-bottom,0px))}
     <svg viewBox="0 0 40 40" aria-hidden="true"><g fill="#e9a25a" stroke="#2a2238" stroke-width="2.2"><path d="M20 19c-5.5 0-10 6.2-10 10.4 0 3.6 3.4 4.6 6 3.8 1.6-.5 2.6-.8 4-.8s2.4.3 4 .8c2.6.8 6-.2 6-3.8C30 25.2 25.5 19 20 19z"/><ellipse cx="9.5" cy="16.5" rx="3.6" ry="4.4" transform="rotate(-20 9.5 16.5)"/><ellipse cx="16" cy="9.5" rx="3.6" ry="4.6"/><ellipse cx="24" cy="9.5" rx="3.6" ry="4.6"/><ellipse cx="30.5" cy="16.5" rx="3.6" ry="4.4" transform="rotate(20 30.5 16.5)"/></g></svg>
     <div><span class="lbl">Dyr fundet</span><span id="cnt">0 af 12</span></div>
   </div>
+  <aside id="foundList" class="sticker" aria-label="Fundne dyr"><h2>Fundne dyr</h2><p class="empty">Ingen endnu</p><ul></ul></aside>
   <div id="tools">
     <button id="bMap" class="sticker btn" type="button" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg><span>Kort</span></button>
     <button id="bNight" class="sticker btn" type="button" aria-pressed="false"><svg id="iNight" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/></svg><span id="tNight">Aften</span></button>
@@ -3780,7 +3790,15 @@ function setEvening(v) {
 function setSound(v) { soundOn = v; $('bSound').setAttribute('aria-pressed', String(v)); $('iWave').style.display = v ? '' : 'none'; save(); }
 function nFound() { let n = 0; for (const id of found) if (id < 12) n++; return n; }   // the 12 normal animals (the secret mouse is id 12)
 function updCounter() { $('cnt').textContent = `${nFound()} af 12`; }
-function renderChips() { $('chips').innerHTML = ANIMAL_DEFS.map((d, i) => `<span class="chip${found.has(i) ? ' on' : ''}">${found.has(i) ? '✓ ' : ''}${d.n}</span>`).join(''); }
+function renderChips() { $('chips').innerHTML = ANIMAL_DEFS.map((d, i) => `<span class="chip${found.has(i) ? ' on' : ''}">${found.has(i) ? '✓ ' : ''}${d.n}</span>`).join(''); renderFoundList(); }
+function renderFoundList() {
+  const ids = [...found].filter(id => id >= 0 && id <= 12);
+  const panel = $('foundList'); panel.querySelector('.empty').hidden = ids.length > 0;
+  panel.querySelector('ul').innerHTML = ids.map(id => {
+    const name = id === 12 ? 'Mus (hemmelig)' : ANIMAL_DEFS[id].n;
+    return `<li${PARADE.some(a => a.id === id) ? ' class="current"' : ''}>✓ ${name}</li>`;
+  }).join('');
+}
 let toastTimer = 0;
 function toast(msg) { sayToast(msg); const t = $('toast'); t.hidden = true; void t.offsetWidth; t.textContent = msg; t.hidden = false; toastTimer = 3.4; }
 let curPoi = null;
@@ -4421,11 +4439,11 @@ function updRain(dt) {
 }
 
 // ======================================================================== FUN FOR SMALL CHILDREN
-// The animals she has found follow her in a little parade, piles of leaves fly up when she runs into them,
+// The newest animal she has found follows her, piles of leaves fly up when she runs into them,
 // puddles appear when it rains (plask!), and the texts are read aloud in Danish.
 
 // ---------------- animal parade
-// Found animals return to Filipa after their greeting and gather by the flagpole.
+// The latest animal follows the player; the previous one goes to Filipa when a new animal is found.
 const PARADE = [], FILIPA_ANIMALS = [], TRAIL = [], _tp = { x: 0, y: 0, z: 0 };
 const FILIPA_ANIMAL_X = 15, FILIPA_ANIMAL_Z = -21.5;
 function filipaAnimalSpot(i) {
@@ -4442,13 +4460,17 @@ function sendToFilipa(a) {
   a.returnShortcut = a.gy > 1.2 || inWing(from.x,from.z,0) || rayHit(from,to) < 0.98;
   a.returnOrigin = a.g.position.clone();
 }
-// Kept as a compatibility entry point for discovery and the secret mouse.
-function joinParade(a) { sendToFilipa(a); }
+function joinParade(a) {
+  for (const old of [...PARADE]) if (old !== a) sendToFilipa(old);
+  if (!PARADE.includes(a)) PARADE.push(a);
+  a.follow = true; a.gather = false; a.arrived = false; a.state = 'walk'; a.happy = 0; a.idleHop = rr(1.5, 4.5);
+  renderFoundList();
+}
 function leaveParade() {
   for (const a of animals.filter(a => a.follow || a.gather || found.has(a.id))) {
     a.follow = false; a.gather = false; a.state = 'idle'; a.happy = 0; a.gy = a.baseY; a.g.position.set(a.home[0], a.baseY, a.home[1]);
   }
-  PARADE.length = 0; FILIPA_ANIMALS.length = 0; TRAIL.length = 0;
+  PARADE.length = 0; FILIPA_ANIMALS.length = 0; TRAIL.length = 0; renderFoundList();
   if (FX.fun) FX.fun.reset();
 }
 function trailPoint(dist, out) {
@@ -6922,7 +6944,7 @@ function updActions() {
     toast(FUN.stars.size === 5 ? 'Alle fem julestjerner! Se dem på træet hos Filipa.' : `En julestjerne! ${FUN.stars.size} af 5. Den hænger på træet hos Filipa.`);
   }
 
-  // Every animal has a short, distinct greeting before returning to Filipa.
+  // Every animal has a short, distinct greeting before following the player.
   const greetings = { due:'Duen flyver en lille runde!', kat:'Katten gemmer sig i en kasse. Hov, kassen går!', and:'Anden vrikker og siger rap!', egern:'Egernet viser sin agern frem!', hund:'Hunden har fundet en nissehue!', hoene:'Hønen hakker efter et lille frø!', pindsvin:'Pindsvinet putter næsen og kigger frem!', froe:'Frøen hopper tre høje hop!', kanin:'Kaninen hopper og vipper med ørerne!', ugle:'Uglen kigger til begge sider og bukker!', raev:'Ræven snurrer rundt med sin store hale!', skildpadde:'Skildpadden strækker hals og vinker!', mus:'Musen danser en lille dans!' };
   const catBox = grp(dyn,0,0,0); catBox.visible = false;
   for (const [x,z,w,d] of [[-0.47,0,0.08,1],[0.47,0,0.08,1],[0,-0.47,1,0.08],[0,0.47,1,0.08]]) pt(catBox,new THREE.BoxGeometry(w,0.55,d),wood,x,0.27,z,{ol:true});
@@ -6934,6 +6956,7 @@ function updActions() {
     for (const old of [...FUN.intros.keys()]) { FUN.intros.delete(old); old.g.position.y = old.gy; old.g.rotation.x = old.g.rotation.z = 0; if(old.legs)old.legs.forEach(l=>l.rotation.z=0); old.g.scale.setScalar(old.def.s || 1); sendToFilipa(old); }
     FUN.intros.set(a, { t: 0, origin: a.g.position.clone(), face: a.g.rotation.y });
     a.arrived = false;
+    renderFoundList();
   });
   FUN.greetings = greetings;
   FUN.updateIntro = (a,dt,t) => {
@@ -6957,7 +6980,7 @@ function updActions() {
       case 'skildpadde': a.head.position.z = 0.24 + phase*0.15; if(a.legs[0]) a.legs[0].rotation.z = phase*0.6*motion; break;
       default: gp.y += Math.abs(Math.sin(u*12))*0.2*motion;
     }
-    if (u === 1) { FUN.intros.delete(a); gp.copy(intro.origin); a.g.rotation.x = a.g.rotation.z = 0; if(a.legs)a.legs.forEach(l=>l.rotation.z=0); a.happy = 0; catBox.visible = false; sendToFilipa(a); }
+    if (u === 1) { FUN.intros.delete(a); gp.copy(intro.origin); a.g.rotation.x = a.g.rotation.z = 0; if(a.legs)a.legs.forEach(l=>l.rotation.z=0); a.happy = 0; catBox.visible = false; joinParade(a); }
     return true;
   };
 
@@ -7037,6 +7060,8 @@ function updActions() {
       }
       if(near && greetCd===0 && FUN.arrivals.length && nFound()<12) { const a=FUN.arrivals.shift(); toast(`Hej, ${a.def.d}! ${12-nFound()} dyr gemmer sig endnu.`); greetCd=4.5; }
       const allHome = nFound()===12 && animals.filter(a=>a.id<12).every(a=>a.arrived);
+      // The last animal stays with the player until they bring it to Filipa.
+      if(nFound()===12 && near && FUN.intros.size===0 && PARADE.length) { for(const a of [...PARADE]) sendToFilipa(a); renderFoundList(); }
       if(nFound()===12 && !readyHint && FUN.intros.size===0) { readyHint=true; toast(isChristmas() ? 'Alle dyr er fundet! Gå hen til Filipa og juletræet. Tryk på Vis vej.' : 'Alle dyr er fundet! Gå hen til Filipa. Tryk på Vis vej.'); }
       if(allHome && near && !FUN.partyDone) startParty();
       if(FUN.party) {
@@ -7931,7 +7956,7 @@ function boot(data) {
   selectPlayerCharacter(st.character, false);
   (data.found || st.found || []).forEach(i => found.add(i));
   {
-    const savedFound = animals.filter(a => found.has(a.id));
+    const savedFound = [...found].map(id => animals.find(a => a.id === id)).filter(Boolean);
     savedFound.forEach((a, i) => {
       if (i === savedFound.length - 1 && nFound() < 12) joinParade(a);
       else sendToFilipa(a);
