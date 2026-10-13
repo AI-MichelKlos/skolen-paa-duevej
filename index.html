@@ -7058,7 +7058,7 @@ function updActions() {
   }
 
   // Every animal has a short, distinct greeting before following the player.
-  const greetings = { due:'Duen flyver en lille runde!', kat:'Katten gemmer sig i en kasse. Hov, kassen går!', and:'Anden vrikker og siger rap!', egern:'Egernet viser sin agern frem!', hund:'Hunden har fundet en nissehue!', hoene:'Hønen hakker efter et lille frø!', pindsvin:'Pindsvinet putter næsen og kigger frem!', froe:'Frøen hopper tre høje hop!', kanin:'Kaninen hopper og vipper med ørerne!', ugle:'Uglen kigger til begge sider og bukker!', raev:'Ræven snurrer rundt med sin store hale!', skildpadde:'Skildpadden strækker hals og vinker!', mus:'Musen danser en lille dans!', flagermus:'Flagermusen slår et par glade vingeslag!', spoegelse:'Spøgelset siger et lille bøh og fniser!', edderkop:'Edderkoppen danser med alle otte ben!', heks:'Heksen vinker med kosten og smiler!' };
+  const greetings = { due:'Duen flyver en lille runde!', kat:'Katten gemmer sig i en kasse. Hov, kassen går!', and:'Anden vrikker og siger rap!', egern:'Egernet viser sin agern frem!', hund:'Hunden har fundet en nissehue!', hoene:'Hønen hakker efter et lille frø!', pindsvin:'Pindsvinet putter næsen og kigger frem!', froe:'Frøen hopper tre høje hop!', kanin:'Kaninen hopper og vipper med ørerne!', ugle:'Uglen kigger til begge sider og bukker!', raev:'Ræven snurrer rundt med sin store hale!', skildpadde:'Skildpadden strækker hals og vinker!', mus:'Musen danser en lille dans!', flagermus:'Flagermusen slår et par glade vingeslag!', spoegelse:'Spøgelset siger et lille bøh og fniser!', edderkop:'Edderkoppen danser med alle otte ben!', heks:'Abrakadabra! Skolegården lyser lilla, og græskarrene danser!' };
   const catBox = grp(dyn,0,0,0); catBox.visible = false;
   for (const [x,z,w,d] of [[-0.47,0,0.08,1],[0.47,0,0.08,1],[0,-0.47,1,0.08],[0,0.47,1,0.08]]) pt(catBox,new THREE.BoxGeometry(w,0.55,d),wood,x,0.27,z,{ol:true});
   const dog = animals.find(a => a.k === 'hund'), dogHat = grp(dog.head,0,0.17,0); dogHat.visible = false;
@@ -7229,7 +7229,7 @@ function updActions() {
 
   // Lanterns watch passers-by, blink, and sometimes giggle without blocking a path.
   const lanterns = [];
-  for (const [x,z] of [[11,-25],[19,-25],[26,8],[-7,-18],[5,37],[40,-56]]) {
+  for (const [x,z] of [[11,-25],[19,-25],[26,8],[-7,-18],[5,37],[40,-56],[-15,16]]) {
     const p = grp(root, x, groundAt(x,z,0.5), z);
     pt(p, bodyGeo, pumpkin, 0, 0.48, 0, { s:[1.06,0.86,0.94], ol:true });
     pt(p, cyl(0.08,0.11,0.3,7), stem, 0, 0.97, 0);
@@ -7250,6 +7250,19 @@ function updActions() {
   const viewDir = new THREE.Vector3(), toWindow = new THREE.Vector3();
   let peekTime = 0, peekAge = 0, peekCooldown = 0;
   H.lanterns = lanterns; H.windowGhost = windowGhost;
+
+  // Finding the collectable witch briefly colours the yard and starts a pumpkin dance.
+  const SPELL_LENGTH = 7;
+  const spellSky = [new THREE.Color('#60438e'), new THREE.Color('#b792db'), new THREE.Color('#9a79c5')];
+  const spellHemi = new THREE.Color('#b997f3'), spellGround = new THREE.Color('#78519e'), spellSun = new THREE.Color('#d5a8ff');
+  const spellLight = new THREE.PointLight('#a769e8', 0, 26, 2); root.add(spellLight);
+  let spellTime = 0;
+  H.spell = { light:spellLight, get remaining() { return spellTime; } };
+  HOOKS.found.push(a => {
+    if (gameVersion !== 'halloween' || a.k !== 'heks') return;
+    spellTime = SPELL_LENGTH;
+    spellLight.position.set(a.g.position.x, 3.2, a.g.position.z);
+  });
 
   // Three webs with visible little spiders.
   const webs = [], webMat = new THREE.LineBasicMaterial({ color:'#d8c7de', transparent:true, opacity:0.85 });
@@ -7336,8 +7349,15 @@ function updActions() {
 
   H.setVersion = () => {
     root.visible = gameVersion === 'halloween' && !FX.halloweenHall?.inside;
-    if (!root.visible) { windowGhost.visible = false; peekTime = 0; }
-    if (gameVersion !== 'halloween') lanterns.forEach(l => { l.active = 0; l.wasNear = false; l.eyes.forEach(e => e.scale.y = 1); });
+    if (!root.visible) {
+      windowGhost.visible = false; peekTime = 0;
+      if (spellTime > 0) { spellTime = 0; spellLight.intensity = 0; evApplied = -1; applyEvening(); }
+    }
+    if (gameVersion !== 'halloween') lanterns.forEach(l => {
+      l.active = 0; l.cooldown = 0; l.wasNear = false;
+      l.g.position.y = l.y; l.g.rotation.set(0,0,0);
+      l.eyes.forEach(e => e.scale.y = 1); l.mouth.scale.y = 0.55;
+    });
   };
   H.setVersion();
   HOOKS.frame.push((dt,t) => {
@@ -7347,6 +7367,19 @@ function updActions() {
         offerAction({id:'wise-owl-'+i,label:'Spørg uglen',prio:1.5,run:()=>{tone(430,390,0,0.25,0.06);showWay();}});
     }
     if (started) {
+      if (spellTime > 0) {
+        spellTime = Math.max(0, spellTime-dt);
+        const blend = Math.min(1, (SPELL_LENGTH-spellTime)/0.7, spellTime/1.2) * 0.78;
+        skyU.top.value.lerp(spellSky[0],blend);
+        skyU.mid.value.lerp(spellSky[1],blend);
+        skyU.bot.value.lerp(spellSky[2],blend);
+        scene.fog.color.copy(skyU.mid.value);
+        hemi.color.lerp(spellHemi,blend);
+        hemi.groundColor.lerp(spellGround,blend);
+        sun.color.lerp(spellSun,blend);
+        spellLight.intensity = 10*blend;
+        evApplied = -1; // restore the usual day, evening or weather colours before the next frame
+      } else spellLight.intensity = 0;
       lanterns.forEach((l,i) => {
         const near = Math.hypot(P.pos.x-l.x,P.pos.z-l.z) < 4.1 && Math.abs(P.pos.y-l.y) < 1.8;
         l.cooldown = Math.max(0,l.cooldown-dt);
@@ -7356,15 +7389,22 @@ function updActions() {
         }
         l.wasNear = near;
         l.active = Math.max(0,l.active-dt);
-        const turn = near ? Math.atan2(P.pos.x-l.x,P.pos.z-l.z) : 0;
-        if (!reduceMotion) {
-          l.g.rotation.y += angDiff(turn,l.g.rotation.y)*Math.min(1,dt*3.2);
-          l.g.rotation.z = l.active ? Math.sin((2.2-l.active)*13)*0.06 : 0;
-          l.g.position.y = l.y + (l.active ? Math.abs(Math.sin((2.2-l.active)*9))*0.035 : 0);
+        if (spellTime > 0 && !reduceMotion) {
+          const dance = Math.min(1, (SPELL_LENGTH-spellTime)/0.45, spellTime/0.65);
+          l.g.rotation.y += dt*3.4*dance;
+          l.g.rotation.z = Math.sin(t*9+i*1.4)*0.2*dance;
+          l.g.position.y = l.y + Math.abs(Math.sin(t*8+i*1.7))*0.3*dance;
+        } else {
+          const turn = near ? Math.atan2(P.pos.x-l.x,P.pos.z-l.z) : 0;
+          if (!reduceMotion) {
+            l.g.rotation.y += angDiff(turn,l.g.rotation.y)*Math.min(1,dt*3.2);
+            l.g.rotation.z += (0-l.g.rotation.z)*Math.min(1,dt*7);
+            l.g.position.y += (l.y + (l.active ? Math.abs(Math.sin((2.2-l.active)*9))*0.035 : 0)-l.g.position.y)*Math.min(1,dt*8);
+          } else { l.g.rotation.z = 0; l.g.position.y = l.y; }
         }
-        const blink = l.active > 0 && Math.floor((2.2-l.active)*6) % 4 === 1;
+        const blink = spellTime > 0 ? !reduceMotion && Math.floor(t*7+i) % 5 === 1 : l.active > 0 && Math.floor((2.2-l.active)*6) % 4 === 1;
         l.eyes.forEach(e => e.scale.y = blink ? 0.08 : 1);
-        l.mouth.scale.y = l.active ? 0.55 + Math.abs(Math.sin((2.2-l.active)*11))*0.35 : 0.55;
+        l.mouth.scale.y = spellTime > 0 ? reduceMotion ? 0.85 : 0.7 + Math.abs(Math.sin(t*8+i))*0.5 : l.active ? 0.55 + Math.abs(Math.sin((2.2-l.active)*11))*0.35 : 0.55;
       });
       const nearWindow = !inWing(P.pos.x,P.pos.z,0.2) && Math.hypot(P.pos.x-ghostWindow.x,P.pos.z-ghostWindow.z) < 17 && P.pos.y < 2;
       peekCooldown = Math.max(0,peekCooldown-dt);
