@@ -7227,15 +7227,29 @@ function updActions() {
   const owlFur = toon('#66517e'), owlBelly = toon('#e4cbb0'), owlEye = new THREE.MeshBasicMaterial({ color: '#ffe79b' });
   const bodyGeo = sph(0.5, 12, 8), tinyGeo = sph(0.07, 8, 6);
 
-  // Lanterns make the schoolyard easy to recognise, without blocking a path.
+  // Lanterns watch passers-by, blink, and sometimes giggle without blocking a path.
+  const lanterns = [];
   for (const [x,z] of [[11,-25],[19,-25],[26,8],[-7,-18],[5,37],[40,-56]]) {
     const p = grp(root, x, groundAt(x,z,0.5), z);
     pt(p, bodyGeo, pumpkin, 0, 0.48, 0, { s:[1.06,0.86,0.94], ol:true });
     pt(p, cyl(0.08,0.11,0.3,7), stem, 0, 0.97, 0);
-    pt(p, tinyGeo, goldEye, -0.17, 0.58, 0.43, { s:[1.2,1,0.35], cast:false });
-    pt(p, tinyGeo, goldEye, 0.17, 0.58, 0.43, { s:[1.2,1,0.35], cast:false });
-    pt(p, tinyGeo, goldEye, 0, 0.36, 0.45, { s:[2.1,0.55,0.3], cast:false });
+    const face = grp(p, 0, 0, 0);
+    const eyes = [-0.17,0.17].map(ex => pt(face, tinyGeo, goldEye, ex, 0.58, 0.43, { s:[1.2,1,0.35], cast:false }));
+    const mouth = pt(face, tinyGeo, goldEye, 0, 0.36, 0.45, { s:[2.1,0.55,0.3], cast:false });
+    lanterns.push({ g:p, face, eyes, mouth, x, z, y:p.position.y, active:0, cooldown:0, wasNear:false });
   }
+
+  // A small ghost peeks through one of the real courtyard windows, then slips away.
+  const windowGhost = buildGhost().g;
+  windowGhost.scale.setScalar(1.35);
+  windowGhost.position.set(19.32, 1.4, -5.94);
+  windowGhost.rotation.y = Math.PI;
+  windowGhost.visible = false;
+  root.add(windowGhost);
+  const ghostWindow = new THREE.Vector3(19.32, 2.0, -6.2);
+  const viewDir = new THREE.Vector3(), toWindow = new THREE.Vector3();
+  let peekTime = 0, peekAge = 0, peekCooldown = 0;
+  H.lanterns = lanterns; H.windowGhost = windowGhost;
 
   // Three webs with visible little spiders.
   const webs = [], webMat = new THREE.LineBasicMaterial({ color:'#d8c7de', transparent:true, opacity:0.85 });
@@ -7320,13 +7334,52 @@ function updActions() {
     owls.push({x,z});
   }
 
-  H.setVersion = () => { root.visible = gameVersion === 'halloween' && !FX.halloweenHall?.inside; };
+  H.setVersion = () => {
+    root.visible = gameVersion === 'halloween' && !FX.halloweenHall?.inside;
+    if (!root.visible) { windowGhost.visible = false; peekTime = 0; }
+    if (gameVersion !== 'halloween') lanterns.forEach(l => { l.active = 0; l.wasNear = false; l.eyes.forEach(e => e.scale.y = 1); });
+  };
   H.setVersion();
   HOOKS.frame.push((dt,t) => {
     if (!root.visible || paused) return;
     if (started) for(const [i,o] of owls.entries()) {
       if(Math.hypot(P.pos.x-o.x,P.pos.z-o.z)<2.5 && Math.abs(P.pos.y-groundAt(o.x,o.z,0.5))<1.5)
         offerAction({id:'wise-owl-'+i,label:'Spørg uglen',prio:1.5,run:()=>{tone(430,390,0,0.25,0.06);showWay();}});
+    }
+    if (started) {
+      lanterns.forEach((l,i) => {
+        const near = Math.hypot(P.pos.x-l.x,P.pos.z-l.z) < 4.1 && Math.abs(P.pos.y-l.y) < 1.8;
+        l.cooldown = Math.max(0,l.cooldown-dt);
+        if (near && !l.wasNear && l.cooldown === 0) {
+          l.active = 2.2; l.cooldown = 10;
+          if (i % 2 === 0) { tone(740,930,0,0.11,0.035,'triangle'); tone(910,1120,0.13,0.11,0.03,'triangle'); }
+        }
+        l.wasNear = near;
+        l.active = Math.max(0,l.active-dt);
+        const turn = near ? Math.atan2(P.pos.x-l.x,P.pos.z-l.z) : 0;
+        if (!reduceMotion) {
+          l.g.rotation.y += angDiff(turn,l.g.rotation.y)*Math.min(1,dt*3.2);
+          l.g.rotation.z = l.active ? Math.sin((2.2-l.active)*13)*0.06 : 0;
+          l.g.position.y = l.y + (l.active ? Math.abs(Math.sin((2.2-l.active)*9))*0.035 : 0);
+        }
+        const blink = l.active > 0 && Math.floor((2.2-l.active)*6) % 4 === 1;
+        l.eyes.forEach(e => e.scale.y = blink ? 0.08 : 1);
+        l.mouth.scale.y = l.active ? 0.55 + Math.abs(Math.sin((2.2-l.active)*11))*0.35 : 0.55;
+      });
+      const nearWindow = !inWing(P.pos.x,P.pos.z,0.2) && Math.hypot(P.pos.x-ghostWindow.x,P.pos.z-ghostWindow.z) < 17 && P.pos.y < 2;
+      peekCooldown = Math.max(0,peekCooldown-dt);
+      camera.getWorldDirection(viewDir);
+      toWindow.copy(ghostWindow).sub(camera.position).normalize();
+      const looking = viewDir.dot(toWindow);
+      if (nearWindow && peekTime <= 0 && peekCooldown === 0 && looking < 0.72) {
+        peekTime = 2.5; peekAge = 0; peekCooldown = 18 + rand()*8; windowGhost.visible = true;
+      }
+      if (peekTime > 0) {
+        peekAge += dt; peekTime = Math.max(0,peekTime-dt);
+        if (peekAge > 0.65 && looking > 0.92) peekTime = Math.min(peekTime,0.45);
+        windowGhost.position.y = 1.4 - (peekTime < 0.35 && !reduceMotion ? (1-peekTime/0.35)*0.45 : 0);
+        windowGhost.visible = nearWindow && peekTime > 0;
+      } else windowGhost.visible = false;
     }
     if(reduceMotion) return;
     webs.forEach((spider,i)=>{spider.position.y=-0.19+Math.sin(t*1.3+i)*0.06;});
