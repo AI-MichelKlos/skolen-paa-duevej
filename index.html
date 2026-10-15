@@ -3546,6 +3546,7 @@ function updCyclists(dt) {
   }
 }
 function pushFromCyclists(p) {
+  if (FX.ghostTrain) FX.ghostTrain.push(p);
   for (const c of cyclists) {
     const dx = p.x - c.g.position.x, dz = p.z - c.g.position.z, d = Math.hypot(dx, dz), m = 0.75 + RAD;
     if (d < m && p.y < 1.8) { if (d > 1e-5) { p.x = c.g.position.x + dx / d * m; p.z = c.g.position.z + dz / d * m; } }
@@ -6743,6 +6744,7 @@ function updActions() {
   HOOKS.frame.push(() => { const show = started && !intro.hidden; if (rb.hidden === show) { rb.hidden = !show; if (!show) disarm(); } });
   function startOver() {
     if (FX.juice) FX.juice.reset();
+    if (FX.ghostTrain) FX.ghostTrain.reset();
     leaveParade(); found.clear(); homeAgain(); updCounter(); renderChips(); save();
     if (P.ride) { if (P.ride.s) P.ride.s.busy = false; P.ride = null; }
     P.swing = null; BALL.held = false; updKickHint();
@@ -7152,7 +7154,7 @@ function updActions() {
   for(let i=0;i<6;i++) smoke.push(pt(dyn,smokeGeo,smokeM,0,0,0,{cast:false}));
 
   function reset() {
-    if(FX.halloweenHall?.resetWitch)FX.halloweenHall.resetWitch();if(FX.roadRide)FX.roadRide.reset();
+    if(FX.halloweenHall?.resetWitch)FX.halloweenHall.resetWitch();if(FX.roadRide)FX.roadRide.reset();if(FX.ghostTrain)FX.ghostTrain.reset();
     FUN.stars.clear(); saveStars(); pickups.forEach(p=>p.root.visible=isChristmas()); ornaments.forEach(o=>o.visible=false);
     FUN.intros.clear(); FUN.arrivals.length=0; FUN.party=false; FUN.partyDone=false; FUN.partyTime=0; readyHint=false; catBox.visible=false; dogHat.visible=false; bulbs.forEach(b=>b.visible=false);
     animals.forEach(a=>{a.arrived=false; a.returnTime=0; a.g.rotation.x=a.g.rotation.z=0;});
@@ -7937,7 +7939,7 @@ function updActions() {
     const hint = $('versionHint');
     hint.hidden = gameVersion === 'normal';
     hint.textContent = gameVersion === 'halloween'
-      ? 'Find flagermusen, spøgelset, edderkoppen og heksen blandt de 12 figurer. Ved Hovedbygningens trappe ligger også en lommelygte; inde i huset kan du hjælpe en lille heks ud.'
+      ? 'Find flagermusen, spøgelset, edderkoppen og heksen blandt de 12 figurer. Spøgelsestoget stopper ved indgangen på Duevej. Ved Hovedbygningens trappe ligger en lommelygte; inde i huset kan du hjælpe en lille heks ud.'
       : gameVersion === 'christmas' ? 'Find julestjerner, byg snemænd og hold julefest hos Filipa.' : '';
   };
   function selectVersion(next, initial = false) {
@@ -8213,12 +8215,171 @@ function updPlayerCharacter(dt, t) {
   });
 }
 
+// A friendly Halloween road train: one lap around the school, boarding on Duevej.
+{
+  const route = lanePath(6.3), point = new THREE.Vector3(), tangent = new THREE.Vector3();
+  let stopS = 0, best = Infinity;
+  route.pts.forEach((p,i) => { const d=(p.x-50.3)**2+(p.z+53.5)**2; if(d<best){best=d;stopS=i/route.N*route.L;} });
+  const T = FX.ghostTrain = { active:false, route, stopS, s:stopS, travelled:0, wait:22, speed:0, station:new THREE.Vector3(42.1,.12,-57.5), cars:[], enabled:false };
+  const root = grp(dyn,0,0,0), station = grp(root,T.station.x,0,T.station.z);
+  const purple=toon('#68529b'), teal=toon('#5c9d9a'), orange=toon('#efaa4c'), cream=toon('#f5f1dc'), black=toon('#302e43'), rail=toon('#b6c2c8');
+  const glow=new THREE.MeshBasicMaterial({color:'#b9f4db'}), smokeM=new THREE.MeshBasicMaterial({color:'#c7e4df',transparent:true,opacity:.28,depthWrite:false});
+  const cube=new THREE.BoxGeometry(1,1,1), ball=sph(1,10,8);
+  function block(parent,m,x,y,z,w,h,d){return pt(parent,cube,m,x,y,z,{s:[w,h,d],cast:!isTouch});}
+  // Merge each fixed body by material. Wheels and ghosts keep their own animation.
+  function bake(body){
+    body.updateMatrixWorld(true); const inverse=new THREE.Matrix4().copy(body.matrixWorld).invert(), mats=new Map();
+    body.traverse(o=>{if(o.isMesh&&!o.children.length&&!Array.isArray(o.material)){
+      if(!mats.has(o.material))mats.set(o.material,[]);mats.get(o.material).push(o);
+    }});
+    for(const [mat,list] of mats){if(list.length<2)continue;
+      const gs=list.map(o=>{const g=o.geometry.index?o.geometry.toNonIndexed():o.geometry.clone();g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inverse,o.matrixWorld));return g;});
+      const count=gs.reduce((n,g)=>n+g.attributes.position.count,0),pos=new Float32Array(count*3),nor=new Float32Array(count*3);let at=0;
+      for(const g of gs){pos.set(g.attributes.position.array,at);nor.set(g.attributes.normal.array,at);at+=g.attributes.position.array.length;g.dispose();}
+      const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('normal',new THREE.BufferAttribute(nor,3));geo.computeBoundingSphere();
+      const m=new THREE.Mesh(geo,mat);m.castShadow=!isTouch;body.add(m);list.forEach(o=>o.removeFromParent());
+    }
+  }
+  function ghost(parent,x,y,z,driver=false){
+    const g=grp(parent,x,y,z), fixed=grp(g,0,0,0);
+    pt(fixed,ball,cream,0,.38,0,{s:[.32,.40,.27]});
+    for(const side of [-1,1]){
+      pt(fixed,ball,cream,side*.31,.27,.03,{s:[.18,.11,.13]});
+      pt(fixed,ball,black,side*.105,.43,.245,{s:[.045,.065,.025],cast:false});
+    }
+    smileG(fixed,.075,.28,.267);if(driver){pt(fixed,cyl(.33,.33,.055,12),purple,0,.73,0);pt(fixed,cyl(.24,.25,.16,12),purple,0,.82,0);}
+    bake(fixed);return g;
+  }
+  for(let i=0;i<3;i++){
+    const g=grp(root,0,0,0), body=grp(g,0,0,0), wheels=[];
+    block(body,black,0,.48,0,1.85,.22,i===0?3.3:2.9);
+    if(i===0){
+      pt(body,cyl(.59,.59,1.9,12),purple,0,1.15,.48,{r:[Math.PI/2,0,0]});
+      pt(body,cyl(.62,.62,.10,12),orange,0,1.15,1.46,{r:[Math.PI/2,0,0]});
+      block(body,teal,0,.89,-1.05,1.75,.69,.96);
+      for(const x of [-.79,.79])for(const z of [-1.42,-.68])block(body,orange,x,1.77,z,.09,1.1,.09);
+      block(body,purple,0,2.36,-1.05,2.12,.16,1.34);
+      pt(body,cyl(.19,.25,.70,10),black,0,1.98,.75);pt(body,cyl(.29,.19,.20,10),orange,0,2.42,.75);
+      pt(body,ball,cream,0,1.17,1.54,{s:[.43,.42,.10]});
+      for(const x of [-.14,.14])pt(body,ball,black,x,1.26,1.635,{s:[.065,.085,.025],cast:false});
+      smileG(body,.13,1.08,1.65);
+      for(const x of [-.68,.68])pt(body,ball,glow,x,.74,1.64,{s:[.13,.13,.09],cast:false});
+      T.driver=ghost(g,0,1.10,-1.04,true);
+    }else{
+      block(body,i===1?teal:purple,0,.72,0,1.8,.35,2.75);
+      for(const x of [-.86,.86]){
+        block(body,orange,x,1.01,0,.09,.17,2.75);
+        for(const z of [-1.25,1.25])block(body,orange,x,1.20,z,.09,.45,.09);
+      }
+      for(const z of [-1.27,1.27])block(body,purple,0,1.11,z,1.8,.64,.12);
+      block(body,cream,0,.92,-.38,1.45,.13,.74);block(body,teal,0,1.16,-.77,1.45,.56,.12);
+      if(i===2)T.passenger=ghost(g,.18,1.05,-.18);
+    }
+    block(body,black,0,.44,-1.80,.12,.12,.65);bake(body);
+    for(const side of [-1,1])for(const z of [-1.0,1.0]){
+      const w=grp(g,side*.96,.35,z);
+      pt(w,cyl(.35,.35,.14,12),black,0,0,0,{r:[0,0,Math.PI/2],cast:!isTouch});
+      pt(w,cyl(.24,.24,.15,12),orange,0,0,0,{r:[0,0,Math.PI/2],cast:!isTouch});
+      block(w,cream,0,0,0,.17,.055,.45);wheels.push(w);bake(w);
+    }
+    T.cars.push({g,wheels,offset:[0,-4,-7.4][i]});
+  }
+  const smoke=[];for(let i=0;i<5;i++)smoke.push(pt(T.cars[0].g,ball,smokeM,0,0,0,{cast:false}));
+  // The boarding marker sits on the pavement on the school side of the crossing.
+  block(station,purple,0,.65,.88,.10,1.3,.10);
+  const tex=ctex(512,256,g=>{
+    g.fillStyle='#403556';g.fillRect(0,0,512,256);g.strokeStyle='#f5c967';g.lineWidth=12;g.strokeRect(9,9,494,238);
+    g.fillStyle='#f8f5de';g.textAlign='center';g.font='bold 49px Trebuchet MS';g.fillText('SPØGELSESTOG',256,79);
+    g.font='35px Trebuchet MS';g.fillText('En tur rundt om skolen',256,135);
+    g.fillStyle='#bbf0dc';g.beginPath();g.arc(256,190,29,Math.PI,0);g.lineTo(285,223);g.lineTo(270,214);g.lineTo(256,224);g.lineTo(241,214);g.lineTo(227,223);g.closePath();g.fill();
+    g.fillStyle='#403556';g.beginPath();g.arc(246,188,4,0,Math.PI*2);g.arc(266,188,4,0,Math.PI*2);g.fill();
+  },{wrap:false});
+  const signMat=new THREE.MeshBasicMaterial({map:tex});
+  for(const side of [-1,1])pt(station,new THREE.PlaneGeometry(2.6,1.3),signMat,side*.012,1.72,.88,{r:[0,side*Math.PI/2,0],cast:false});
+  const marker=new THREE.Sprite(new THREE.SpriteMaterial({map:TX.glow,color:'#bdf8df',transparent:true,opacity:.55,depthWrite:false}));marker.position.set(0,.17,0);marker.scale.set(2.2,2.2,1);station.add(marker);
+  const carPoint=new THREE.Vector3(),carTangent=new THREE.Vector3(),seat=new THREE.Vector3();
+  function positionCars(){
+    for(const car of T.cars){laneAt(route,T.s+car.offset,carPoint,carTangent);car.g.position.copy(carPoint);car.g.position.y=.035;car.g.rotation.y=Math.atan2(carTangent.x,carTangent.z);}
+  }
+  positionCars();
+  function clearPose(){
+    kid.g.position.set(0,0,0);kid.g.rotation.set(0,0,0);kid.pose.rotation.set(0,0,0);kid.pose.scale.set(1,1,1);
+    for(const l of kid.legs){l.hip.rotation.x=0;l.knee.rotation.x=0;l.shoe.rotation.x=0;}kid.arms.forEach(a=>a.rotation.set(0,0,0));
+    for(const model of playerModels.values())model.g.position.set(0,0,0);
+  }
+  function leave(message=true){
+    if(!T.active)return;T.active=false;clearPose();
+    P.pos.copy(T.station);P.vel.set(0,0,0);P.face=-Math.PI/2;P.onGround=true;jumpReq=false;keys.clear();
+    kid.root.position.copy(P.pos);kid.root.rotation.y=P.face;cam.yaw=P.face+Math.PI;camInit=false;startBlend=1;
+    if(message){burst(P.pos.clone().add(new THREE.Vector3(0,1,0)));toast('Tak for turen! Du er tilbage ved skolen.');}
+  }
+  function board(){
+    if(!started||paused||gameVersion!=='halloween'||T.active||T.wait<=0||FX.halloweenHall?.inside||P.ride||P.swing||P.pos.distanceTo(T.station)>3.5)return;
+    FX.roadRide?.stop(false);FX.juice?.reset();BALL.held=false;updKickHint();
+    T.active=true;T.wait=Math.min(T.wait,3);P.vel.set(0,0,0);P.onGround=true;jumpReq=false;keys.clear();
+    if(UMB.open)toggleUmbrella();
+    toast('Hop op! Spøgelsestoget kører en tur rundt om skolen og tilbage hertil.');
+    tone(440,660,0,.3,.04,'sine');tone(660,880,.23,.3,.035,'sine');
+  }
+  T.board=board;T.leave=leave;
+  T.reset=()=>{leave(false);T.s=stopS;T.travelled=0;T.wait=22;T.speed=0;positionCars();};
+  T.update=(dt,time)=>{
+    const enabled=gameVersion==='halloween';root.visible=enabled;
+    if(enabled!==T.enabled){if(!enabled)leave(false);else T.reset();T.enabled=enabled;}
+    if(!enabled||!started||paused)return;
+    if(T.wait>0){T.wait=Math.max(0,T.wait-dt);T.speed=0;}
+    else{
+      const remaining=route.L-T.travelled;
+      let target=Math.min(7.5,Math.sqrt(Math.max(0,remaining)*3.5));
+      laneAt(route,T.s+4.5,point,tangent);
+      if(!T.active&&P.pos.y<2&&Math.hypot(P.pos.x-point.x,P.pos.z-point.z)<3)target=0;
+      T.speed+=(target-T.speed)*Math.min(1,dt*2.8);
+      const distance=Math.min(remaining,T.speed*dt);T.travelled+=distance;T.s=stopS+T.travelled;
+      if(remaining<.03){T.s=stopS;T.travelled=0;T.speed=0;T.wait=20;positionCars();leave();}
+    }
+    positionCars();
+    for(const car of T.cars)for(const wheel of car.wheels)wheel.rotation.x+=T.speed*dt/.35;
+    if(!reduceMotion){T.driver.position.y=1.1+Math.sin(time*2)*.035;T.passenger.position.y=1.05+Math.sin(time*2.4)*.07;}
+    smoke.forEach((p,i)=>{const u=(time*.45+i/5)%1;p.position.set(Math.sin(i*2)*u*.25,2.6+u*1.55,.75-u*.8);p.scale.setScalar(.16+u*.40);p.visible=T.speed>.15&&!reduceMotion;});
+    marker.material.opacity=reduceMotion?.5:.4+Math.sin(time*2)*.15;
+  };
+  T.pose=()=>{
+    if(!T.active)return;
+    kid.g.position.set(0,-.29,0);kid.g.rotation.x=0;kid.pose.rotation.set(0,0,0);kid.pose.scale.set(1,1,1);
+    kid.arms.forEach((a,i)=>a.rotation.set(-.55,0,i===0?-.12:.12));
+    kid.legs.forEach(l=>{l.hip.rotation.x=-1.22;l.knee.rotation.x=1.6;l.shoe.rotation.x=-.38;});
+    if(playerCharacter!=='girl'){const model=playerModels.get(playerCharacter);if(model){model.g.position.y=.07;model.g.rotation.z=0;if(model.legs)model.legs.forEach(l=>l.rotation.x=0);}}
+  };
+  HOOKS.ride.unshift(()=>{
+    if(!T.active)return false;
+    seat.set(0,.83,.13).applyAxisAngle(_y,T.cars[1].g.rotation.y).add(T.cars[1].g.position);
+    P.pos.copy(seat);P.vel.set(0,0,0);P.face=T.cars[1].g.rotation.y;P.onGround=true;jumpReq=false;
+    kid.root.position.copy(P.pos);kid.root.rotation.y=P.face;return true;
+  });
+  T.push=p=>{
+    if(!T.enabled||T.active||p.y>2.2)return;
+    for(const car of T.cars){
+      const angle=car.g.rotation.y,dx=p.x-car.g.position.x,dz=p.z-car.g.position.z;
+      const x=dx*Math.cos(angle)-dz*Math.sin(angle),z=dx*Math.sin(angle)+dz*Math.cos(angle);
+      if(Math.abs(x)<1.1+RAD&&Math.abs(z)<1.8+RAD){const shift=(x<0?-1:1)*(1.1+RAD)-x;p.x+=shift*Math.cos(angle);p.z-=shift*Math.sin(angle);}
+    }
+  };
+  HOOKS.frame.push(()=>{
+    if(!started||paused||gameVersion!=='halloween'||FX.halloweenHall?.inside)return;
+    if(T.active){offerAction({id:'leave-ghost-train',label:'Tilbage til stoppestedet',prio:9,run:()=>leave()});return;}
+    if(P.pos.distanceTo(T.station)<3.5&&!P.ride&&!P.swing){
+      offerAction(T.wait>0?{id:'board-ghost-train',label:'Kør med spøgelsestoget',prio:5,run:board}
+        :{id:'wait-ghost-train',label:'Vent på spøgelsestoget',prio:3,run:()=>toast('Toget er på vej rundt om skolen. Det stopper her igen om lidt.')});
+    }
+  });
+}
+
 // ---- walking presentation: a shared pose layer leaves rides and play animations intact
 const CONTACT = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 1.15), new THREE.MeshBasicMaterial({ map: TX.glow, color: '#30243b', transparent: true, opacity: 0.28, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
 CONTACT.rotation.x = -Math.PI / 2; dyn.add(CONTACT);
 const WALK_FEEL = { grounded: true, fallSpeed: 0, landing: 0 };
 function updWalkingPresentation(dt) {
-  CONTACT.visible = started && kid.root.visible;
+  CONTACT.visible = started && kid.root.visible && !FX.ghostTrain?.active;
   const floor = groundAt(P.pos.x, P.pos.z, P.pos.y + 0.15), height = Math.max(0, P.pos.y - floor);
   CONTACT.position.set(P.pos.x, floor + 0.018, P.pos.z);
   CONTACT.material.opacity = 0.28 / (1 + height * 1.4);
@@ -8227,7 +8388,7 @@ function updWalkingPresentation(dt) {
   if (!WALK_FEEL.grounded && P.onGround && !P.ride && !P.swing) WALK_FEEL.landing = Math.min(1, Math.abs(WALK_FEEL.fallSpeed) / 10);
   WALK_FEEL.grounded = P.onGround; WALK_FEEL.fallSpeed = P.vel.y;
   WALK_FEEL.landing = Math.max(0, WALK_FEEL.landing - dt * 5);
-  const special = FX.roadRide?.active || P.ride || P.swing || Math.abs(kid.g.rotation.x) > 0.12 || Math.abs(kid.g.rotation.z) > 0.12;
+  const special = FX.ghostTrain?.active || FX.roadRide?.active || P.ride || P.swing || Math.abs(kid.g.rotation.x) > 0.12 || Math.abs(kid.g.rotation.z) > 0.12;
   const speed = Math.min(1, Math.hypot(P.vel.x, P.vel.z) / 5.2);
   const tilt = !special && !reduceMotion ? speed * 0.065 : 0;
   const lean = !special && !reduceMotion ? -turnIn * speed * 0.075 : 0;
@@ -8263,6 +8424,7 @@ function updClock() { const d = new Date(); const m = d.getMinutes() + d.getSeco
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now; clockT += dt;
   ev += ((evening ? 1 : 0) - ev) * Math.min(1, dt * 1.6); applyEvening();
+  if (FX.ghostTrain) FX.ghostTrain.update(dt, clockT);
   if (started) updPlayer(dt);
   updBall(dt);
   updCyclists(dt);
@@ -8273,6 +8435,7 @@ function frame(now) {
   updPlayerCharacter(dt, clockT);
   if (FX.juice) FX.juice.pose(dt);
   if (FX.roadRide) FX.roadRide.pose();
+  if (FX.ghostTrain) FX.ghostTrain.pose();
   updWalkingPresentation(dt);
   updActions();
   updEffects(dt);
