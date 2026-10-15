@@ -8254,8 +8254,8 @@ function updPlayerCharacter(dt, t) {
   const route = lanePath(6.3), point = new THREE.Vector3(), tangent = new THREE.Vector3();
   let stopS = 0, best = Infinity;
   route.pts.forEach((p,i) => { const d=(p.x-50.3)**2+(p.z+53.5)**2; if(d<best){best=d;stopS=i/route.N*route.L;} });
-  const T = FX.ghostTrain = { active:false, route, stopS, s:stopS, travelled:0, wait:22, speed:0, station:new THREE.Vector3(42.1,.12,-57.5), cars:[], enabled:false };
-  const root = grp(dyn,0,0,0), station = grp(root,T.station.x,0,T.station.z);
+  const T = FX.ghostTrain = { active:false, route, stopS, s:stopS, travelled:0, wait:22, speed:0, station:new THREE.Vector3(42.1,.12,-57.5), cars:[], passengers:[], transition:null, enabled:false };
+  const root = grp(dyn,0,0,0), station = grp(root,T.station.x,0,T.station.z-3.5);
   const purple=toon('#68529b'), teal=toon('#5c9d9a'), orange=toon('#efaa4c'), cream=toon('#f5f1dc'), black=toon('#302e43'), rail=toon('#b6c2c8');
   const glow=new THREE.MeshBasicMaterial({color:'#b9f4db'}), smokeM=new THREE.MeshBasicMaterial({color:'#c7e4df',transparent:true,opacity:.28,depthWrite:false});
   const cube=new THREE.BoxGeometry(1,1,1), ball=sph(1,10,8);
@@ -8307,7 +8307,11 @@ function updPlayerCharacter(dt, t) {
       }
       for(const z of [-1.27,1.27])block(body,purple,0,1.11,z,1.8,.64,.12);
       block(body,cream,0,.92,-.38,1.45,.13,.74);block(body,teal,0,1.16,-.77,1.45,.56,.12);
-      if(i===2)T.passenger=ghost(g,.18,1.05,-.18);
+      const seats=i===1?[[-.50,1.01,.62,.72]]:[[-.45,1.01,.25,.80],[.45,1.01,.25,.80],[0,1.02,-.75,.64]];
+      for(const [x,y,z,scale] of seats){
+        const passenger=ghost(g,x,y,z);passenger.scale.setScalar(scale);
+        T.passengers.push({g:passenger,y,phase:T.passengers.length*1.7});
+      }
     }
     block(body,black,0,.44,-1.80,.12,.12,.65);bake(body);
     for(const side of [-1,1])for(const z of [-1.0,1.0]){
@@ -8324,7 +8328,7 @@ function updPlayerCharacter(dt, t) {
   const tex=ctex(512,256,g=>{
     g.fillStyle='#403556';g.fillRect(0,0,512,256);g.strokeStyle='#f5c967';g.lineWidth=12;g.strokeRect(9,9,494,238);
     g.fillStyle='#f8f5de';g.textAlign='center';g.font='bold 49px Trebuchet MS';g.fillText('SPØGELSESTOG',256,79);
-    g.font='35px Trebuchet MS';g.fillText('En tur rundt om skolen',256,135);
+    g.font='31px Trebuchet MS';g.fillText(isTouch?'Tryk Hop på for at komme på':'Tryk E for at komme på',256,135);
     g.fillStyle='#bbf0dc';g.beginPath();g.arc(256,190,29,Math.PI,0);g.lineTo(285,223);g.lineTo(270,214);g.lineTo(256,224);g.lineTo(241,214);g.lineTo(227,223);g.closePath();g.fill();
     g.fillStyle='#403556';g.beginPath();g.arc(246,188,4,0,Math.PI*2);g.arc(266,188,4,0,Math.PI*2);g.fill();
   },{wrap:false});
@@ -8341,27 +8345,95 @@ function updPlayerCharacter(dt, t) {
     for(const l of kid.legs){l.hip.rotation.x=0;l.knee.rotation.x=0;l.shoe.rotation.x=0;}kid.arms.forEach(a=>a.rotation.set(0,0,0));
     for(const model of playerModels.values())model.g.position.set(0,0,0);
   }
-  function leave(message=true){
-    if(!T.active)return;T.active=false;clearPose();
-    P.pos.copy(T.station);P.vel.set(0,0,0);P.face=-Math.PI/2;P.onGround=true;jumpReq=false;keys.clear();
-    kid.root.position.copy(P.pos);kid.root.rotation.y=P.face;cam.yaw=P.face+Math.PI;camInit=false;startBlend=1;
-    if(message){burst(P.pos.clone().add(new THREE.Vector3(0,1,0)));toast('Tak for turen! Du er tilbage ved skolen.');}
+  function seatPosition(){
+    return new THREE.Vector3(0,.83,.13).applyAxisAngle(_y,T.cars[1].g.rotation.y).add(T.cars[1].g.position);
   }
+  function doorPosition(){
+    const p=new THREE.Vector3(-1.65,0,.13).applyAxisAngle(_y,T.cars[1].g.rotation.y).add(T.cars[1].g.position);
+    p.y=groundAt(p.x,p.z,.5);return p;
+  }
+  function beginMove(phase,end,after,duration){
+    const start=P.pos.clone();
+    T.transition={phase,start,end:end.clone(),after,elapsed:0,duration:duration??Math.max(.2,start.distanceTo(end)/3.3)};
+    P.vel.set(0,0,0);jumpReq=false;
+  }
+  function finishExit(message=true){
+    T.active=false;T.transition=null;clearPose();P.vel.set(0,0,0);P.onGround=true;jumpReq=false;keys.clear();
+    kid.root.position.copy(P.pos);kid.root.rotation.y=P.face;
+    if(message)toast('Du hopper af. Tak for turen!');
+  }
+  // Theme changes and resets still clean up immediately; normal boarding and exits are animated.
+  function leave(message=true){
+    if(!T.active)return;
+    P.pos.copy(T.station);finishExit(message);P.face=-Math.PI/2;kid.root.rotation.y=P.face;
+  }
+  function landingPlace(){
+    const car=T.cars[1],angle=car.g.rotation.y;
+    for(const side of [4.3,3.7,3,-3.7,-4.3])for(const along of [0,.8,-.8]){
+      const p=new THREE.Vector3(side,0,along).applyAxisAngle(_y,angle).add(car.g.position);
+      p.y=groundAt(p.x,p.z,.6);
+      if(!FX.roadRide.street(p)||p.y>.3)continue;
+      const resolved=p.clone();resolve(resolved);
+      if(resolved.distanceTo(p)>.05||cyclists.some(c=>Math.hypot(c.g.position.x-p.x,c.g.position.z-p.z)<2.3))continue;
+      return p;
+    }
+    return null;
+  }
+  function hopOff(atStation=false){
+    if(!T.active||T.transition||paused)return;
+    const target=atStation?doorPosition():landingPlace();
+    if(!target){toast('Her er trangt. Prøv at hoppe af igen om lidt.');return;}
+    T.speed=0;
+    beginMove('hop',target,atStation?'exit-walk':'exit-done',.85);
+    hop();
+  }
+  function advanceTransition(dt){
+    const m=T.transition;if(!m)return;
+    const previous=P.pos.clone();m.elapsed=Math.min(m.duration,m.elapsed+dt);
+    const u=m.elapsed/m.duration, blend=m.phase==='hop'?u*u*(3-2*u):u;
+    P.pos.lerpVectors(m.start,m.end,blend);
+    if(m.phase==='hop')P.pos.y+=Math.sin(Math.PI*u)*1.25;
+    else P.pos.y=groundAt(P.pos.x,P.pos.z,.5);
+    const dx=P.pos.x-previous.x,dz=P.pos.z-previous.z;
+    if(Math.hypot(dx,dz)>.0001)P.face=Math.atan2(dx,dz);
+    P.vel.subVectors(P.pos,previous).multiplyScalar(1/Math.max(.001,dt));
+    P.onGround=m.phase==='walk';P.walkT+=Math.hypot(dx,dz)*2.1;
+    kid.root.position.copy(P.pos);kid.root.rotation.y=P.face;jumpReq=false;
+    if(u>=1){
+      P.pos.copy(m.end);
+      if(m.after==='board-hop')beginMove('hop',seatPosition(),'board-done',.7);
+      else if(m.after==='board-done'){T.transition=null;P.vel.set(0,0,0);P.onGround=true;T.wait=2;}
+      else if(m.after==='exit-walk')beginMove('walk',T.station,'exit-done');
+      else finishExit();
+    }
+  }
+  function nearBoarding(){
+    if(P.pos.y>2.6)return false;
+    if(Math.hypot(P.pos.x-T.station.x,P.pos.z-T.station.z)<6)return true;
+    return T.wait>0&&T.cars.slice(1).some(car=>Math.hypot(P.pos.x-car.g.position.x,P.pos.z-car.g.position.z)<3.3);
+  }
+  const canBoard=()=>started&&!paused&&gameVersion==='halloween'&&!T.active&&T.wait>0&&!FX.halloweenHall?.inside&&!P.ride&&!P.swing&&nearBoarding();
   function board(){
-    if(!started||paused||gameVersion!=='halloween'||T.active||T.wait<=0||FX.halloweenHall?.inside||P.ride||P.swing||P.pos.distanceTo(T.station)>3.5)return;
+    if(!canBoard())return;
     FX.roadRide?.stop(false);FX.juice?.reset();BALL.held=false;updKickHint();
-    T.active=true;T.wait=Math.min(T.wait,3);P.vel.set(0,0,0);P.onGround=true;jumpReq=false;keys.clear();
+    clearPose();T.active=true;T.wait=3;P.vel.set(0,0,0);P.onGround=true;jumpReq=false;keys.clear();
+    beginMove('walk',doorPosition(),'board-hop');
     if(UMB.open)toggleUmbrella();
-    toast('Hop op! Spøgelsestoget kører en tur rundt om skolen og tilbage hertil.');
+    toast('Du går hen til vognen og hopper på.');
     tone(440,660,0,.3,.04,'sine');tone(660,880,.23,.3,.035,'sine');
   }
-  T.board=board;T.leave=leave;
+  T.board=board;T.leave=leave;T.canBoard=canBoard;T.hopOff=hopOff;
   T.reset=()=>{leave(false);T.s=stopS;T.travelled=0;T.wait=22;T.speed=0;positionCars();};
   T.update=(dt,time)=>{
     const enabled=gameVersion==='halloween';root.visible=enabled;
     if(enabled!==T.enabled){if(!enabled)leave(false);else T.reset();T.enabled=enabled;}
     if(!enabled||!started||paused)return;
-    if(T.wait>0){T.wait=Math.max(0,T.wait-dt);T.speed=0;}
+    if(T.transition){T.speed=0;}
+    else if(T.wait>0){
+      // Give a child time to find the button: stay while someone is waiting nearby.
+      const holding=!T.active&&!FX.halloweenHall?.inside&&nearBoarding();
+      T.wait=Math.max(holding?5:0,T.wait-dt);T.speed=0;
+    }
     else{
       const remaining=route.L-T.travelled;
       let target=Math.min(7.5,Math.sqrt(Math.max(0,remaining)*3.5));
@@ -8369,23 +8441,37 @@ function updPlayerCharacter(dt, t) {
       if(!T.active&&P.pos.y<2&&Math.hypot(P.pos.x-point.x,P.pos.z-point.z)<3)target=0;
       T.speed+=(target-T.speed)*Math.min(1,dt*2.8);
       const distance=Math.min(remaining,T.speed*dt);T.travelled+=distance;T.s=stopS+T.travelled;
-      if(remaining<.03){T.s=stopS;T.travelled=0;T.speed=0;T.wait=20;positionCars();leave();}
+      if(remaining<.03){T.s=stopS;T.travelled=0;T.speed=0;T.wait=20;positionCars();if(T.active)hopOff(true);}
     }
     positionCars();
     for(const car of T.cars)for(const wheel of car.wheels)wheel.rotation.x+=T.speed*dt/.35;
-    if(!reduceMotion){T.driver.position.y=1.1+Math.sin(time*2)*.035;T.passenger.position.y=1.05+Math.sin(time*2.4)*.07;}
+    if(!reduceMotion){
+      T.driver.position.y=1.1+Math.sin(time*2)*.035;
+      for(const p of T.passengers){p.g.position.y=p.y+Math.sin(time*2.4+p.phase)*.055;p.g.rotation.z=Math.sin(time*1.5+p.phase)*.055;}
+    }
     smoke.forEach((p,i)=>{const u=(time*.45+i/5)%1;p.position.set(Math.sin(i*2)*u*.25,2.6+u*1.55,.75-u*.8);p.scale.setScalar(.16+u*.40);p.visible=T.speed>.15&&!reduceMotion;});
     marker.material.opacity=reduceMotion?.5:.4+Math.sin(time*2)*.15;
   };
   T.pose=()=>{
     if(!T.active)return;
+    if(T.transition){
+      kid.g.position.set(0,0,0);kid.g.rotation.x=0;
+      const walking=T.transition.phase==='walk',ph=P.walkT,w=walking?Math.sin(ph)*.65:0;
+      kid.legs.forEach((l,i)=>{l.hip.rotation.x=walking?(i===0?w:-w):(i===0?-.55:.25);l.knee.rotation.x=walking?Math.max(0,Math.sin(ph+(i===0?-Math.PI/2:Math.PI/2)))*.9:.7;l.shoe.rotation.x=-(l.hip.rotation.x+l.knee.rotation.x)*.55;});
+      kid.arms.forEach((a,i)=>a.rotation.set(walking?(i===0?-w:w)*.8:0,0,walking?(i===0?-.12:.12):(i===0?-.8:.8)));
+      return;
+    }
     kid.g.position.set(0,-.29,0);kid.g.rotation.x=0;kid.pose.rotation.set(0,0,0);kid.pose.scale.set(1,1,1);
     kid.arms.forEach((a,i)=>a.rotation.set(-.55,0,i===0?-.12:.12));
     kid.legs.forEach(l=>{l.hip.rotation.x=-1.22;l.knee.rotation.x=1.6;l.shoe.rotation.x=-.38;});
     if(playerCharacter!=='girl'){const model=playerModels.get(playerCharacter);if(model){model.g.position.y=.07;model.g.rotation.z=0;if(model.legs)model.legs.forEach(l=>l.rotation.x=0);}}
   };
-  HOOKS.ride.unshift(()=>{
+  HOOKS.ride.unshift(dt=>{
+    if(jumpReq&&T.active&&!T.transition&&!paused)hopOff();
+    else if(jumpReq&&canBoard())board();
     if(!T.active)return false;
+    if(paused){P.vel.set(0,0,0);jumpReq=false;return true;}
+    if(T.transition){advanceTransition(dt);return true;}
     seat.set(0,.83,.13).applyAxisAngle(_y,T.cars[1].g.rotation.y).add(T.cars[1].g.position);
     P.pos.copy(seat);P.vel.set(0,0,0);P.face=T.cars[1].g.rotation.y;P.onGround=true;jumpReq=false;
     kid.root.position.copy(P.pos);kid.root.rotation.y=P.face;return true;
@@ -8399,10 +8485,11 @@ function updPlayerCharacter(dt, t) {
     }
   };
   HOOKS.frame.push(()=>{
+    $('jump').textContent=T.active&&!T.transition?'Hop af':canBoard()?'Hop på':'Hop';
     if(!started||paused||gameVersion!=='halloween'||FX.halloweenHall?.inside)return;
-    if(T.active){offerAction({id:'leave-ghost-train',label:'Tilbage til stoppestedet',prio:9,run:()=>leave()});return;}
-    if(P.pos.distanceTo(T.station)<3.5&&!P.ride&&!P.swing){
-      offerAction(T.wait>0?{id:'board-ghost-train',label:'Kør med spøgelsestoget',prio:5,run:board}
+    if(T.active){if(!T.transition)offerAction({id:'leave-ghost-train',label:'Hop af toget',prio:9,run:()=>hopOff()});return;}
+    if(nearBoarding()&&!P.ride&&!P.swing){
+      offerAction(T.wait>0?{id:'board-ghost-train',label:'Hop på toget',prio:5,run:board}
         :{id:'wait-ghost-train',label:'Vent på spøgelsestoget',prio:3,run:()=>toast('Toget er på vej rundt om skolen. Det stopper her igen om lidt.')});
     }
   });
